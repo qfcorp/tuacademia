@@ -1,7 +1,7 @@
 <?php
 /*
  * Crea (o actualiza) el SUPERADMINISTRADOR desde la terminal.
- * Uso:  sudo -u www-data php /var/www/ligas/app/crear_admin.php
+ * Uso:  sudo -u www-data php /var/www/tuacademia/app/crear_admin.php
  */
 if (PHP_SAPI !== 'cli') {
     exit('Solo desde la terminal.');

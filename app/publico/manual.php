@@ -8,6 +8,13 @@ $manuales = [
     'ligas' => ['Manual de ligas y campeonatos', '🏆', 'Fútbol, indor, vóley, ecuavóley, básquet, balonmano, béisbol y deportes individuales: carreras, tenis, pádel, squash, tenis de mesa, artes marciales, boxeo, ajedrez, e-sports, bolos, natación, atletismo, carreras de ruta, pesas y triatlón; y olimpiadas multideportivas.', 'Manual-TuAcademia-Ligas.pdf'],
     'escuelas' => ['Manual de escuelas deportivas', '🎓', 'Grupos, alumnos, asistencia, entrenamientos, pagos, profesores, evaluaciones, club, tienda y escuela multideporte.', 'Manual-TuAcademia-Escuelas.pdf'],
 ];
+if (PRODUCTO === 'academia') { // (TuAcademia) solo el manual de escuelas y academias
+    unset($manuales['ligas']);
+    $manuales['escuelas'][0] = 'Manual de academias';
+    $manuales['escuelas'][2] = 'Cursos, alumnos, asistencia, pensiones, DeUna y Mensajes de hoy, niveles y certificados, recitales, clases particulares, profesores, evaluaciones y portal de padres.';
+    $manuales['escuelas'][3] = 'Manual-TuAcademia-Academias.pdf'; // PENDIENTE: generar el PDF nuevo
+    if (get('m') === 'ligas') $_GET['m'] = 'escuelas';
+}
 $m = get('m');
 // (v30) Manuales traducidos: app/manuales/<manual>.<idioma>.html y assets/manual/Manual-TuAcademia-<Manual>.<idioma>.pdf
 $idm = function_exists('idioma_actual') ? idioma_actual() : 'es';

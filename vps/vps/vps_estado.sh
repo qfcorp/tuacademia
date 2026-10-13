@@ -4,7 +4,7 @@
 paso "Contenedor PHP 8.5 de TuAcademia (limites: $LIM_CPUS nucleos, $LIM_RAM)"
 docker stats --no-stream --format 'CPU {{.CPUPerc}}  |  RAM {{.MemUsage}}  |  procesos {{.PIDs}}' "$CONTENEDOR" 2>/dev/null || rojo "El contenedor no esta corriendo: sudo docker start $CONTENEDOR"
 paso "Pagina"
-C="$(curl -s -o /dev/null -w '%{http_code} en %{time_total} s' -H 'Host: tuacademia.tukanec.com' http://127.0.0.1:$PUERTO_WEB/index.php)"; echo "Respuesta: $C"
+C="$(curl -s -o /dev/null -w '%{http_code} en %{time_total} s' -H "Host: $SITIO" http://127.0.0.1:$PUERTO_WEB/index.php)"; echo "Respuesta: $C"
 paso "Servidor completo"
 echo "Carga: $(cut -d' ' -f1-3 /proc/loadavg) (6 nucleos)"; free -h | awk 'NR==2{print "RAM usada " $3 " de " $2}'; df -h / | awk 'NR==2{print "Disco " $5}'
 paso "Tareas automaticas"

@@ -1,6 +1,6 @@
 #!/bin/bash
-# TuAcademia - PASO 1 en el VPS: PHP 8.5 aislado en Docker (con limites) + sitio de nginx solo interno.
-# No toca el ERP, su PHP 8.3, ni los puertos 80/443. Uso: sudo bash vps_1_preparar.sh
+# TuAcademia - PASO 1 en el VPS: PHP 8.5 aislado en Docker (con limites) + sitio de nginx solo interno (127.0.0.1:8096).
+# No toca el ERP, su PHP 8.3, TuVocalia (8095), ni los puertos 80/443. Uso: sudo bash vps_1_preparar.sh
 DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$DIR/comun.sh"
 [ "$(id -u)" = "0" ] || { rojo "Ejecute con sudo: sudo bash $0"; exit 1; }
@@ -48,11 +48,10 @@ else
   LIMITE=""
 fi
 cat > /etc/nginx/sites-available/tuacademia <<NGX
-# TuAcademia (sistema de ligas) - solo dentro del servidor; lo publica el tunel de Cloudflare
+# TuAcademia (academias) - solo dentro del servidor; lo publica el tunel de Cloudflare
 server {
     listen 127.0.0.1:$PUERTO_WEB default_server;
     server_name _;
-    if (\$host = tuacademia.tukanec.com) { return 301 https://tuacademia.tukanec.com\$request_uri; }
     root $DESTINO/public;
     index index.php;
     client_max_body_size 15M;
@@ -63,6 +62,7 @@ server {
         location ~ \.php\$ { deny all; }
         expires 30d;
     }
+    location = /.well-known/assetlinks.json { rewrite ^ /assetlinks.php last; } # apps de Android
     location ~ /\. { deny all; }
     location = /sw.js { add_header Cache-Control "no-cache"; }
     location ~ \.php\$ {
@@ -85,7 +85,7 @@ echo "$PUERTO_WEB" > "$DESTINO/data/puerto_nginx"; chown www-data:www-data "$DES
 
 paso "5/5 Prueba"
 echo '<?php echo "TUACADEMIA-OK PHP " . PHP_VERSION;' > "$DESTINO/public/zz_prueba_vps.php"; chown www-data "$DESTINO/public/zz_prueba_vps.php"
-R="$(curl -s -H 'Host: prueba-tuacademia.tukanec.com' http://127.0.0.1:$PUERTO_WEB/zz_prueba_vps.php)"
+R="$(curl -s -H "Host: $SITIO" http://127.0.0.1:$PUERTO_WEB/zz_prueba_vps.php)"
 rm -f "$DESTINO/public/zz_prueba_vps.php"
 if echo "$R" | grep -q TUACADEMIA-OK; then verde "Funciona: $R"; else rojo "La prueba fallo: $R"; echo "Revise: sudo tail -n 20 /var/log/nginx/tuacademia_error.log"; exit 1; fi
 ERP="$(curl -s -o /dev/null -w '%{http_code}' --resolve erp.tupassec.com:443:127.0.0.1 https://erp.tupassec.com/ -k)"

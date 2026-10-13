@@ -2,7 +2,7 @@
 /*
  * Respaldo diario de la base de datos y de las fotos/escudos.
  * Lo ejecuta automáticamente el cron (/etc/cron.d/ligas-respaldo).
- * Manual:  sudo -u www-data php /var/www/ligas/app/respaldo.php
+ * Manual:  sudo -u www-data php /var/www/tuacademia/app/respaldo.php
  */
 if (PHP_SAPI !== 'cli') exit;
 require __DIR__ . '/bootstrap.php';

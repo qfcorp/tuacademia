@@ -1,70 +1,50 @@
-TUACADEMIA EN EL VPS DEL ERP - QF PRODUCCIONES (version 23.1)
+TUACADEMIA EN EL VPS DEL ERP - TUKAN SOFTWARE (instalacion nueva)
 =====================================================================
 COMO QUEDA
-  - TuAcademia corre con PHP 8.5 dentro de Docker (contenedor "tuacademia-php").
-    El ERP sigue con su PHP 8.3: no se instala ni se actualiza nada del ERP.
-  - LIMITES para no afectar al ERP ni al SRT / Restreamer:
-      * maximo 1,5 de los 6 nucleos
-      * maximo 1,5 GB de los 12 GB de RAM (sin usar swap)
-      * prioridad BAJA: si el servidor esta ocupado, el ERP y el SRT van primero
-      * maximo 20 paginas por segundo por visitante
-  - nginx (el mismo del ERP) atiende TuAcademia SOLO dentro del servidor (127.0.0.1:8095).
-    No se tocan los puertos 80/443 del ERP ni los del SRT. Lo publica un tunel de Cloudflare.
-  - Datos en /var/www/ligas y respaldos en /var/www/ligas_respaldos: los dos entran solos
-    en el respaldo cifrado de cada noche (restic, 2:00 am) que ya copia /var/www.
+  - TuAcademia corre APARTE de TuVocalia: otra carpeta, otro contenedor, otra base de datos.
+      * Programa y datos:   /var/www/tuacademia      (respaldos en /var/www/tuacademia_respaldos)
+      * PHP 8.5 en Docker:  contenedor "tuacademia-php" (puerto interno 9086)
+      * nginx:              solo dentro del servidor en 127.0.0.1:8096 (TuVocalia usa 8095)
+      * Direccion:          https://tuacademia.tukanec.com (provisional), por el tunel de Cloudflare
+  - LIMITES para no afectar al ERP, a TuVocalia ni al SRT / Restreamer:
+      * maximo 1 de los 6 nucleos y 1 GB de RAM, prioridad BAJA, 20 paginas por segundo por visitante
+  - /var/www/tuacademia entra solo en el respaldo cifrado de cada noche (restic, 2:00 am) que ya copia /var/www.
+  - La app de Google Play queda APAGADA (app/config.php: 'google_play' => false).
 
-SI ALGO SALE MAL (apaga TuAcademia en el VPS; el ERP sigue igual), una linea a la vez:
+SI ALGO SALE MAL (apaga TuAcademia; el ERP y TuVocalia siguen igual), una linea a la vez:
   sudo docker stop tuacademia-php
   sudo rm -f /etc/nginx/sites-enabled/tuacademia
   sudo systemctl reload nginx
 
-FASE 1 - Subir y revisar (NO cambia nada)
-  Windows (CMD):
-    scp C:\Users\qfpro\Downloads\tuacademia_v23.1.tar.gz ubuntu@149.56.111.193:/home/ubuntu/
-  PuTTY en el VPS:
-    cd ~
-    tar -xzf tuacademia_v23.1.tar.gz
-    sudo bash tuacademia/vps/vps_0_revisar.sh
-  -> Envie a Claude todo lo que salio.
+PASO 0 - Revisar (NO cambia nada). PuTTY en el VPS:
+  cd
+  git clone https://github.com/qfcorp/tuacademia.git
+  sudo bash tuacademia/vps/vps/vps_0_revisar.sh
+  -> Envie a Claude todo lo que salio (debe decir "Puerto 8096 libre" y "Puerto 9086 libre").
+  (Si el repositorio es privado: primero  sudo gh auth login  o pida a Claude la llave de despliegue.)
 
-FASE 2 - Preparar el VPS (hacerlo cuando NO haya transmision)
-    sudo /usr/local/bin/git_backup_erp_qf.sh
-    sudo bash tuacademia/vps/vps_1_preparar.sh
-    sudo bash tuacademia/vps/vps_2_codigo.sh /home/ubuntu/tuacademia_v23.1.tar.gz
+PASO 1 - Preparar (hacerlo cuando NO haya transmision):
+  sudo /usr/local/bin/git_backup_erp_qf.sh
+  sudo bash tuacademia/vps/vps/vps_1_preparar.sh
 
-FASE 3 - Copia de los datos de la laptop (la laptop sigue funcionando normal)
-  Windows: subir el mismo paquete a la laptop
-    scp C:\Users\qfpro\Downloads\tuacademia_v23.1.tar.gz qf@192.168.90.38:/home/qf/
-  PuTTY en la laptop qfcorp:
-    cd ~
-    tar -xzf tuacademia_v23.1.tar.gz
-    sudo bash tuacademia/vps/laptop_1_sacar_datos.sh
-  Windows: bajar la copia y subirla al VPS (cambie XXXX por el nombre que mostro la laptop)
-    scp qf@192.168.90.38:/home/qf/tuacademia_datos_XXXX.tar.gz C:\Users\qfpro\Downloads\
-    scp C:\Users\qfpro\Downloads\tuacademia_datos_XXXX.tar.gz ubuntu@149.56.111.193:/home/ubuntu/
-  PuTTY en el VPS:
-    sudo bash tuacademia/vps/vps_3_datos.sh
-  (Modo PRUEBA: no manda avisos ni hace respaldos, para no repetir mensajes; la oficial sigue en la laptop.)
+PASO 2 - Instalar el programa (baja la ultima version de GitHub y crea la base nueva):
+  sudo bash tuacademia/vps/vps/vps_2_codigo.sh
+  -> La primera vez le pide el nombre, correo y clave del SUPERADMINISTRADOR.
 
-FASE 4 - Publicar https://prueba-tuacademia.tukanec.com (navegador)
-  1. https://one.dash.cloudflare.com > Networks (Redes) > Tunnels > Create a tunnel > Cloudflared
-  2. Nombre: vps-erp > Save tunnel
-  3. Elija Debian, 64-bit. Copie SOLO la linea que empieza con  sudo cloudflared service install
-     y peguela en PuTTY del VPS. Espere que el panel diga "Connected" > Next
-  4. Public hostname:  Subdomain: prueba   Domain: tuacademia.tukanec.com   Type: HTTP   URL: 127.0.0.1:8095
-     > Save hostname
-  5. Abra https://prueba-tuacademia.tukanec.com y entre con su usuario de siempre.
-  (Si la Fase 1 mostro que el VPS ya tiene un tunel, Claude le dira como agregar el nombre a ese tunel.)
-
-FASE 5 - Cambio DEFINITIVO (otro dia, cuando la prueba este bien; Claude le guia paso a paso)
-  a. Laptop:  sudo bash tuacademia/vps/laptop_2_cerrar.sh   (aviso de mantenimiento + copia final)
-  b. Windows: pasar la copia final al VPS (como en la Fase 3)
-  c. VPS:     sudo bash tuacademia/vps/vps_3_datos.sh /home/ubuntu/tuacademia_datos_XXXX.tar.gz produccion
-  d. Cloudflare: mover tuacademia.tukanec.com y tuacademia.tukanec.com del tunel de la laptop al tunel vps-erp
-  e. Si hay que volver atras: laptop  sudo bash tuacademia/vps/laptop_3_reabrir.sh  y devolver los nombres en Cloudflare
+PASO 3 - Publicar https://tuacademia.tukanec.com (navegador)
+  1. https://one.dash.cloudflare.com > Networks (Redes) > Tunnels > el tunel del VPS (vps-erp) > Configure
+  2. Public hostname > Add a public hostname:
+       Subdomain: tuacademia   Domain: tukanec.com   Type: HTTP   URL: 127.0.0.1:8096   > Save
+  3. Abra https://tuacademia.tukanec.com y entre con el superadministrador.
+  4. Superadministrador > Ajustes: escriba el WhatsApp y el correo de ventas, y los datos de pago.
 
 DIA A DIA EN EL VPS
-  Ver como esta:          sudo bash tuacademia/vps/vps_estado.sh
-  Actualizar a otra version (ej. v24), sin tocar datos:
-    sudo bash tuacademia/vps/vps_2_codigo.sh /home/ubuntu/tuacademia_v24.tar.gz
-  (En el VPS NO se usa instalar.sh: ese es solo para la laptop.)
+  Ver como esta:                     sudo bash tuacademia/vps/vps/vps_estado.sh
+  Actualizar a la ultima version:    cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps/vps/vps_2_codigo.sh
+  (vps_2_codigo.sh no toca la base de datos, las fotos ni app/config.php.)
+
+CUANDO SE ELIJA EL NOMBRE DEFINITIVO
+  - Cambiar SITIO en vps/vps/comun.sh y la marca en Superadministrador > Ajustes.
+  - Agregar el nuevo subdominio en el tunel (como en el paso 3) apuntando al mismo 127.0.0.1:8096.
+
+NUNCA correr en el servidor los scripts de pruebas/ (borran la base). vps_2_codigo.sh deja la marca data/.servidor para impedirlo.

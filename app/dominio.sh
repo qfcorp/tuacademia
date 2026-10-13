@@ -1,15 +1,15 @@
 #!/bin/bash
 # ==========================================================
-#  Activa el DOMINIO PROPIO de una liga (ej: ligadelnorte.com)
-#  Uso (en PuTTY):  sudo bash /var/www/ligas/app/dominio.sh ligadelnorte.com
+#  Activa el DOMINIO PROPIO de una academia (ej: academiaallegro.com)
+#  Uso (en PuTTY):  sudo bash /var/www/tuacademia/app/dominio.sh academiaallegro.com
 #
 #  Antes:
-#   1. En el panel: Ligas > Editar la liga > "Dominio propio": escriba el dominio y guarde.
+#   1. En el panel: Academias > Editar la academia > "Dominio propio": escriba el dominio y guarde.
 #   2. El dominio debe estar agregado en la cuenta de Cloudflare.
 # ==========================================================
 
-DESTINO="/var/www/ligas"
-LISTA="/etc/nginx/ligas_dominios.conf"
+DESTINO="/var/www/tuacademia"
+LISTA="/etc/nginx/tuacademia_dominios.conf"
 
 verde() { echo -e "\e[32m$1\e[0m"; }
 rojo()  { echo -e "\e[31m$1\e[0m"; }
@@ -18,23 +18,23 @@ amarillo() { echo -e "\e[33m$1\e[0m"; }
 if [ "$(id -u)" != "0" ]; then rojo "Ejecute con sudo:  sudo bash $0 sudominio.com"; exit 1; fi
 DOM="$(echo "$1" | tr 'A-Z' 'a-z' | sed -E 's#^https?://##; s#/.*$##; s#^www\.##')"
 if ! echo "$DOM" | grep -Eq '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$'; then
-  rojo "Escriba el dominio, por ejemplo:  sudo bash $0 ligadelnorte.com"; exit 1
+  rojo "Escriba el dominio, por ejemplo:  sudo bash $0 academiaallegro.com"; exit 1
 fi
 PUERTO="$(cat "$DESTINO/data/puerto_nginx" 2>/dev/null || echo 80)"
 
 # 1) nginx acepta el dominio
-[ -f "$LISTA" ] || echo "# Dominios propios de las ligas" > "$LISTA"
+[ -f "$LISTA" ] || echo "# Dominios propios de las academias (TuAcademia)" > "$LISTA"
 if grep -q "server_name $DOM " "$LISTA"; then
   verde "nginx ya tenia el dominio $DOM"
 else
   cp "$LISTA" "$LISTA.respaldo"
   echo "server_name $DOM www.$DOM;" >> "$LISTA"
-  if nginx -t >/tmp/ligas_dom.log 2>&1; then
+  if nginx -t >/tmp/tuacademia_dom.log 2>&1; then
     systemctl reload nginx
     verde "nginx: dominio $DOM agregado."
   else
     cp "$LISTA.respaldo" "$LISTA"
-    rojo "nginx dio un error; se deshizo el cambio:"; cat /tmp/ligas_dom.log; exit 1
+    rojo "nginx dio un error; se deshizo el cambio:"; cat /tmp/tuacademia_dom.log; exit 1
   fi
 fi
 

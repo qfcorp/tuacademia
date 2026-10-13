@@ -5,7 +5,7 @@
  * El mismo archivo sirve en dos lugares:
  *   1. En el servidor de TuAcademia (public/video.php), cuando los videos se guardan en el mismo servidor.
  *   2. En la LAPTOP (disco grande), copiado como /var/www/tuacademia-videos/index.php con su config.php,
- *      publicado por el túnel de Cloudflare (ej: https://videos.tukanec.com).
+ *      publicado por el túnel de Cloudflare (ej: https://videos-tuacademia.tukanec.com).
  *
  * Todo pedido va firmado con HMAC-SHA256 (clave compartida) y con hora de vencimiento, así nadie puede subir,
  * ver ni borrar sin un enlace generado por TuAcademia.

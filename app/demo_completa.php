@@ -98,6 +98,12 @@ function accesos_demo_liga(): array
 
 function accesos_demo_escuela(): array
 {
+    if (PRODUCTO === 'academia') return [ // (TuAcademia)
+        'dueno' => ['Dueña de la academia', 'Cursos, alumnos, pensiones, Mensajes de hoy, niveles, recitales, clases particulares y profesores.', '🏫'],
+        'profesor' => ['Profesora', 'Toma asistencia, plan de clase y evaluaciones de sus cursos.', '🧑‍🏫'],
+        'familia' => ['Familia (padres)', 'Asistencia, pagos por DeUna, recitales, niveles y clases de sus hijas.', '👨‍👩‍👧'],
+        'carnet' => ['Carnet del alumno', 'Lo que ve quien escanea el QR del carnet.', '🪪'],
+    ];
     return [
         'dueno' => ['Dueño de la escuela', 'Alumnos, grupos, asistencia, pagos, profesores, evaluaciones, tienda y reportes.', '🏫'],
         'profesor' => ['Entrenador (profesor)', 'Toma asistencia, plan de clase, medidas, tests y evaluaciones de sus grupos.', '🧑‍🏫'],
@@ -233,6 +239,11 @@ function crear_escuela_demo(): int
 /** Crea o recrea las dos demos (liga y escuela). */
 function crear_demos(): void
 {
+    if (PRODUCTO === 'academia') { // (TuAcademia) solo la academia de demostración (sin liga, federación, entradas ni olimpiadas)
+        crear_academia_demo();
+        guardar_ajuste('demo_creada', date('Y-m-d H:i'));
+        return;
+    }
     $lid = crear_liga_demo();
     completar_demo_liga($lid);
     $eid = crear_escuela_demo();

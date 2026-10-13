@@ -5541,7 +5541,7 @@ return [
     'en el menú' => 'in the menu',
     'en la cinta de arriba.' => 'in the top bar.',
     'en la ficha de cada equipo). En' => 'in each team\'s profile). In',
-    'en la laptop, publíquelo en el túnel de Cloudflare (ej: videos.tukanec.com) y escriba aquí la dirección y la clave que le mostró el instalador.' => 'on the laptop, publish it on the Cloudflare tunnel (e.g. videos.tukanec.com) and enter here the address and key the installer showed you.',
+    'en la laptop, publíquelo en el túnel de Cloudflare (ej: videos-tuacademia.tukanec.com) y escriba aquí la dirección y la clave que le mostró el instalador.' => 'on the laptop, publish it on the Cloudflare tunnel (e.g. videos-tuacademia.tukanec.com) and enter here the address and key the installer showed you.',
     'en la lista.' => 'in the list.',
     'en la página de la liga' => 'on the league page',
     'en la página pública del campeonato. Cada inscripción llega a' => 'on the championship\'s public page. Each registration goes to',

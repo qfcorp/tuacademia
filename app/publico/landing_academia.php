@@ -54,6 +54,7 @@ $funciones = [
   <div class="hero-botones">
     <a class="btn btn-grande btn-blanco" href="<?= e(url_empezar('escuela')) ?>"><?= e(texto_empezar()) ?></a>
     <?php if ($enlace_wa): ?><a class="btn btn-grande btn-wa" target="_blank" href="<?= e($enlace_wa) ?>">💬 Escríbanos por WhatsApp</a><?php endif; ?>
+    <?php if (escuela_demo()): ?><a class="btn btn-grande btn-sec-blanco" href="index.php?v=demo">👀 Ver demo</a><?php endif; ?>
   </div>
   <p class="hero-nota"><?= $registro ? 'Sin tarjeta de crédito · Lista en 2 minutos · ' : 'Demo guiada y acceso de prueba para su academia · ' ?>Soporte por WhatsApp en Ecuador</p>
 </section>

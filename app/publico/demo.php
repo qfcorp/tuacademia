@@ -26,7 +26,7 @@ foreach (tomar_flash() as [$tipo_f, $msg_f]) echo '<div class="aviso aviso-' . e
 ?>
 <section class="hero">
   <h1>Conozca <?= e(marca()) ?> por dentro</h1>
-  <p>Entre con un clic a cada panel, como si fuera el administrador, el árbitro, el delegado, el vocal o el jugador. <?= demo_guardar() ? 'Puede probar y guardar lo que quiera:' : 'Puede recorrer todo:' ?> los datos vuelven a estar como nuevos cada madrugada.</p>
+  <p>Entre con un clic a cada panel, como si fuera <?= es_academia() ? 'la dueña de la academia, la profesora o los padres' : 'el administrador, el árbitro, el delegado, el vocal o el jugador' ?>. <?= demo_guardar() ? 'Puede probar y guardar lo que quiera:' : 'Puede recorrer todo:' ?> los datos vuelven a estar como nuevos cada madrugada.</p>
 </section>
 
 <?php if (!$demo && !$edemo): ?>
@@ -80,8 +80,8 @@ if ($indiv): ?>
 
 <?php if ($edemo): ?>
 <section style="margin-top:22px">
-  <div class="fila-titulo"><h2 style="margin:0">🎓 Escuela de demostración</h2><a class="btn btn-sec" href="<?= e(url_liga($edemo)) ?>" target="_blank">Ver su página pública e inscripción ↗</a></div>
-  <p class="suave">Dos sedes, seis grupos (Sub-7 a Sub-15 y categoría abierta), 42 alumnos, asistencia de las últimas semanas, mensualidades con vencimiento, evaluaciones físicas y técnicas, libreta, tienda y pagos a los entrenadores.</p>
+  <div class="fila-titulo"><h2 style="margin:0">🎓 <?= es_academia() ? 'Academia' : 'Escuela' ?> de demostración</h2><a class="btn btn-sec" href="<?= e(url_liga($edemo)) ?>" target="_blank">Ver su página pública e inscripción ↗</a></div>
+  <p class="suave"><?= es_academia() ? 'Academia de baile y música: cursos de ballet, salsa, piano y guitarra, alumnos con su nivel, pensiones (algunas por cobrar en «Mensajes de hoy»), un recital con coreografías y cobro de vestuario, y clases particulares de piano con paquetes.' : 'Dos sedes, seis grupos (Sub-7 a Sub-15 y categoría abierta), 42 alumnos, asistencia de las últimas semanas, mensualidades con vencimiento, evaluaciones físicas y técnicas, libreta, tienda y pagos a los entrenadores.' ?></p>
   <div class="demo-accesos"><?php foreach (accesos_demo_escuela() as $rol => $a) echo $boton($rol, $a); ?></div>
 </section>
 <?php endif; ?>
@@ -93,7 +93,7 @@ if ($indiv): ?>
 <section class="cta-final">
   <h2>¿Le gustó?</h2>
   <div class="hero-botones">
-    <a class="btn btn-grande btn-blanco" href="<?= e(url_empezar()) ?>"><?= prueba_automatica() ? '🎁 Cree su liga gratis' : '📝 Solicitar mi demo' ?></a>
+    <a class="btn btn-grande btn-blanco" href="<?= e(url_empezar()) ?>"><?= prueba_automatica() ? (es_academia() ? '🎁 Cree su academia gratis' : '🎁 Cree su liga gratis') : '📝 Solicitar mi demo' ?></a>
     <?php if ($wa): ?><a class="btn btn-grande btn-wa" target="_blank" href="https://wa.me/<?= e($wa) ?>?text=<?= rawurlencode('Hola, vi la demostración de ' . marca() . ' y quiero información') ?>">💬 WhatsApp</a><?php endif; ?>
   </div>
 </section>

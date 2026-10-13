@@ -78,6 +78,7 @@ function modulos_deporte(bool $solo_activos = false): array
         foreach (modulos_deporte_base() as $k => [$nom, $ico, $desc, $mods, $deps, $precio]) {
             $r = $db[$k] ?? [];
             if (PRODUCTO === 'academia' && !$deps) $r['activo'] = 0; // (TuAcademia) automovilismo y olimpiadas son solo de ligas
+            if (PRODUCTO === 'academia' && ($da = descripcion_modulo_academia($k)) !== '') $desc = $da; // (TuAcademia) textos para escuelas, sin campeonatos
             $cache[$k] = ['clave' => $k, 'nombre' => $nom, 'icono' => $ico, 'descripcion' => trim((string)($r['descripcion'] ?? '')) !== '' ? (string)$r['descripcion'] : $desc,
                 'modalidades' => $mods, 'deportes' => $deps, 'precio' => isset($r['precio_mensual']) ? (float)$r['precio_mensual'] : (float)$precio,
                 'activo' => isset($r['activo']) ? (int)$r['activo'] === 1 : true, 'orden' => isset($r['orden']) ? (int)$r['orden'] : ++$i,

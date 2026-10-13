@@ -5477,7 +5477,7 @@ return [
     'en el menú' => 'nel menu',
     'en la cinta de arriba.' => 'nella barra in alto.',
     'en la ficha de cada equipo). En' => 'nella scheda di ogni squadra). In',
-    'en la laptop, publíquelo en el túnel de Cloudflare (ej: videos.tukanec.com) y escriba aquí la dirección y la clave que le mostró el instalador.' => 'sul laptop, lo pubblichi nel tunnel Cloudflare (es.: videos.tukanec.com) e scriva qui l\'indirizzo e la chiave che Le ha mostrato l\'installatore.',
+    'en la laptop, publíquelo en el túnel de Cloudflare (ej: videos-tuacademia.tukanec.com) y escriba aquí la dirección y la clave que le mostró el instalador.' => 'sul laptop, lo pubblichi nel tunnel Cloudflare (es.: videos-tuacademia.tukanec.com) e scriva qui l\'indirizzo e la chiave che Le ha mostrato l\'installatore.',
     'en la lista.' => 'nell\'elenco.',
     'en la página de la liga' => 'nella pagina della lega',
     'en la página pública del campeonato. Cada inscripción llega a' => 'nella pagina pubblica del campionato. Ogni iscrizione arriva a',

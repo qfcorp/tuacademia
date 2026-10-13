@@ -5,7 +5,7 @@
  *  - Envía los avisos pendientes por Telegram
  *  - Una vez al día: avisos de suscripciones por vencer y limpieza
  *  - (v10) Envía las notificaciones "Seguir a mi equipo" y reinicia la liga de demostración cada madrugada
- * Manual:  sudo -u www-data php /var/www/ligas/app/tareas.php
+ * Manual:  sudo -u www-data php /var/www/tuacademia/app/tareas.php
  */
 if (PHP_SAPI !== 'cli') exit;
 require __DIR__ . '/bootstrap.php';

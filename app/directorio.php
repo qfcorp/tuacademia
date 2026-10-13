@@ -60,8 +60,11 @@ function html_menu_clientes(): string
 {
     if (liga_por_dominio()) return ''; // en el dominio propio de una liga no se muestran otros clientes
     $h = '<nav class="menu-clientes" aria-label="Ligas y escuelas que usan ' . e(marca()) . '">';
-    foreach ([['liga', '🏆', 'Ligas', 'ligas', 'Todas las ligas', 'Su liga puede ser la primera en aparecer aquí.'],
-              ['escuela', '🎓', 'Escuelas', 'nuestras-escuelas', 'Todas las escuelas', 'Su escuela puede ser la primera en aparecer aquí.']] as [$tipo, $ico, $tit, $ruta, $todas, $vacio]) {
+    $tipos_menu = PRODUCTO === 'academia' // (TuAcademia) solo academias
+        ? [['escuela', '🎓', 'Academias', 'nuestras-escuelas', 'Todas las academias', 'Su academia puede ser la primera en aparecer aquí.']]
+        : [['liga', '🏆', 'Ligas', 'ligas', 'Todas las ligas', 'Su liga puede ser la primera en aparecer aquí.'],
+           ['escuela', '🎓', 'Escuelas', 'nuestras-escuelas', 'Todas las escuelas', 'Su escuela puede ser la primera en aparecer aquí.']];
+    foreach ($tipos_menu as [$tipo, $ico, $tit, $ruta, $todas, $vacio]) {
         $lista = clientes_directorio($tipo);
         $h .= '<details class="mc-grupo"><summary>' . $ico . ' ' . $tit . ($lista ? ' <span class="mc-n">' . count($lista) . '</span>' : '') . '</summary><div class="mc-panel">';
         if ($lista) {

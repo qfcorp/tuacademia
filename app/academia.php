@@ -110,6 +110,29 @@ function opciones_disciplinas(string $sel = '', ?callable $permitida = null): st
     return $h;
 }
 
+/** (TuAcademia) Descripción de cada disciplina para vender a academias (sin campeonatos ni vocalía). */
+function descripcion_modulo_academia(string $k): string
+{
+    return [
+        'futbol' => 'Escuelas de fútbol e indor: categorías por edad, evaluaciones técnicas y físicas, partidos de las divisiones formativas y portal de padres.',
+        'basquet' => 'Escuelas de básquet: tests de tiro y dribbling, evaluación técnica y categorías por edad.',
+        'voley' => 'Escuelas de vóley: saque, recepción y ataque, con tests y evaluaciones por edad.',
+        'ecuavoley' => 'Escuelas de ecuavóley con tests, habilidades y ejercicios propios.',
+        'balonmano' => 'Escuelas de balonmano con tests, habilidades y ejercicios propios.',
+        'beisbol' => 'Escuelas de béisbol y softbol con bateo, fildeo y lanzamiento.',
+        'ciclismo' => 'Escuelas de ciclismo: manejo, cadencia, subidas y seguridad vial.',
+        'combate' => 'Taekwondo, karate, judo y boxeo: cinturones con exámenes de grado, poomsae y kata, categorías de peso y certificados con QR.',
+        'raqueta' => 'Tenis, pádel, tenis de mesa y squash: clases por nivel, tests de saque y golpes, y clases particulares con paquetes.',
+        'natacion' => 'Escuelas de natación: de matronatación a competitivo, carril de cada alumno, niveles por estilo, tests de 25 y 50 m y festivales.',
+        'atletismo' => 'Escuelas de atletismo: velocidad, saltos y lanzamientos, con marcas y medallas.',
+        'bolos' => 'Escuelas de bolos con línea de tiro, spares y concentración.',
+        'ajedrez' => 'Escuelas de ajedrez: aperturas, táctica, finales y clases particulares.',
+        'pesas' => 'Escuelas de levantamiento de pesas: técnica de arranque y envión.',
+        'triatlon' => 'Escuelas de triatlón: natación, ciclismo, carrera y transiciones.',
+        'esports' => 'Escuelas de e-sports con táctica, concentración y juego limpio.',
+    ][$k] ?? '';
+}
+
 function es_familia_arte(string $fam): bool
 {
     return in_array($fam, ['baile', 'musica'], true);
@@ -1119,4 +1142,114 @@ function html_pagar_familia(?array $liga, ?array $fam): string
   </div>
     <?php
     return (string)ob_get_clean();
+}
+
+/* ============================================================
+ * 11) ACADEMIA DE DEMOSTRACIÓN (en el producto academia reemplaza a la liga y la escuela de demostración)
+ * Academia de baile y música con cursos, alumnos, niveles, un recital con coreografías, clases particulares,
+ * pensiones (algunas vencidas para «Mensajes de hoy») y una familia con dos hijas para el portal de padres.
+ * Se borra y se vuelve a crear cada madrugada (tareas.php → crear_demos()). Nombres y datos inventados.
+ * ============================================================ */
+function crear_academia_demo(): int
+{
+    return sin_auditoria(function (): int {
+        mt_srand(crc32('academia' . date('Y-m-d')));
+        q("DELETE FROM ligas WHERE es_demo = 1");
+        q("DELETE FROM usuarios WHERE email IN ('escuela@demo.tuacademia.tukanec.com', 'profesor@demo.tuacademia.tukanec.com', 'staff@demo.tuacademia.tukanec.com')");
+        $r = crear_liga_completa(['nombre' => 'Academia Demo ' . marca(), 'slug' => 'academia-demo', 'ciudad' => 'Quito', 'color' => '#7b3fb0', 'modalidad' => 'F7', 'tipo' => 'escuela',
+            'deporte_escuela' => 'ballet', 'admin_nombre' => 'Dueña de la academia', 'admin_email' => 'escuela@demo.tuacademia.tukanec.com', 'admin_clave' => bin2hex(random_bytes(12))]);
+        $lid = (int)$r['liga_id'];
+        $Y = (int)date('Y');
+        $hoy = date('Y-m-d');
+        q("UPDATE ligas SET es_demo = 1, vence = '', es_prueba = 0, color2 = '#f2b705', contacto_nombre = 'Academia Demo', contacto_telefono = '0990000000', esc_mensualidad = 40,
+           esc_matricula = 20, esc_dia_vence = 5, esc_desc_hermano = 10, esc_inscripcion = 1, deuna_celular = '0990000000', deuna_titular = 'Academia Demo',
+           esc_texto_inscripcion = 'Clases de lunes a sábado. Ballet: malla, medias y zapatillas. Música: traer su instrumento (piano en la academia).',
+           datos_pago = 'Banco de ejemplo · Cuenta de ahorros 0000000000 · A nombre de Academia Demo' WHERE id = ?", [$lid]);
+        $liga = fila('SELECT * FROM ligas WHERE id = ?', [$lid]);
+        preparar_escuela($lid);
+        $s1 = (int)valor('SELECT id FROM esc_sedes WHERE liga_id = ? ORDER BY id LIMIT 1', [$lid]);
+        q("UPDATE esc_sedes SET nombre = 'Sede Norte', direccion = 'Av. de los Shyris y Portugal' WHERE id = ?", [$s1]);
+        $prof = [];
+        foreach ([['Lucía Mena', 'Ballet y contemporáneo', 'clase', 15], ['Andrés Salazar', 'Salsa y bachata', 'clase', 12], ['María José Vera', 'Piano y teoría', 'clase', 14], ['Diego Paredes', 'Guitarra y canto', 'alumno', 8]] as [$n, $esp, $tp, $v]) {
+            q('INSERT INTO esc_profesores (liga_id, nombre, cedula, telefono, especialidad, tipo_pago, valor_pago) VALUES (?,?,?,?,?,?,?)', [$lid, $n, cedula_demo(), '099' . random_int(1000000, 9999999), $esp, $tp, $v]);
+            $prof[] = (int)db()->lastInsertId();
+        }
+        q('UPDATE esc_profesores SET usuario_id = ? WHERE id = ?', [usuario_demo('profesor@demo.tuacademia.tukanec.com', 'Lucía Mena', 'liga', $lid, ['perfil' => 'profesor']), $prof[0]]);
+        // [nombre, disciplina, desde, hasta, profesor, días, inicio, fin, lugar, pensión]
+        $cursos = [
+            ['Ballet infantil', 'ballet', $Y - 9, $Y - 5, 0, '2,4', '16:00', '17:00', 'Salón de espejos', 40.0],
+            ['Ballet juvenil', 'ballet', $Y - 16, $Y - 10, 0, '1,3,5', '17:00', '18:30', 'Salón de espejos', 50.0],
+            ['Salsa adultos', 'salsa', null, null, 1, '2,4', '19:30', '21:00', 'Salón 2', 35.0],
+            ['Piano nivel 1', 'piano', null, null, 2, '1,3', '15:00', '16:00', 'Aula 1 (piano)', 55.0],
+            ['Guitarra y canto', 'guitarra', null, null, 3, '6', '10:00', '11:30', 'Aula 2', 45.0],
+        ];
+        $gids = [];
+        foreach ($cursos as [$n, $d, $de, $ha, $p, $dias, $hi, $hf, $lugar, $pen]) {
+            q('INSERT INTO esc_grupos (liga_id, sede_id, nombre, categoria, anio_desde, anio_hasta, profesor_id, dias, hora_inicio, hora_fin, cancha, cupo, mensualidad, deporte) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                [$lid, $s1, $n, $de ? 'sub' : 'abierta', $de, $ha, $prof[$p], $dias, $hi, $hf, $lugar, 15, $pen, $d]);
+            $gids[] = ['id' => (int)db()->lastInsertId(), 'd' => $d, 'de' => $de, 'ha' => $ha];
+            preparar_deporte($lid, $d);
+        }
+        $nom_f = ['Sofía', 'Valentina', 'Isabella', 'Camila', 'Emilia', 'Luciana', 'Martina', 'Antonella', 'Renata', 'Victoria', 'Paula', 'Daniela'];
+        $nom_m = ['Mateo', 'Santiago', 'Sebastián', 'Nicolás', 'Martín', 'Joaquín', 'Lucas', 'Gabriel'];
+        $ape = ['Pérez', 'Andrade', 'Quishpe', 'Morales', 'Chiriboga', 'Vera', 'Mendoza', 'Zambrano', 'Cedeño', 'Paredes', 'Vaca', 'Salazar', 'Cevallos', 'Ortiz', 'Herrera'];
+        $fam_ced = cedula_demo();
+        $alumnos = [];
+        foreach ($gids as $gi => $g) {
+            $n = $g['d'] === 'piano' || $g['d'] === 'guitarra' ? 5 : 8;
+            for ($k = 0; $k < $n; $k++) {
+                $esFam = $gi === 0 && $k === 0 || $gi === 3 && $k === 0;
+                $mujer = in_array($g['d'], ['ballet'], true) || $k % 2 === 0;
+                $nombre = $esFam ? ($gi === 0 ? 'Emilia' : 'Renata') : ($mujer ? $nom_f[random_int(0, 11)] : $nom_m[random_int(0, 7)]);
+                $ap = $esFam ? 'Andrade Proaño' : $ape[random_int(0, 14)] . ' ' . $ape[random_int(0, 14)];
+                $anio = $g['de'] ? random_int((int)$g['de'], (int)$g['ha']) : ($g['d'] === 'salsa' ? random_int($Y - 45, $Y - 20) : random_int($Y - 15, $Y - 8));
+                if ($esFam) $anio = $gi === 0 ? $Y - 7 : $Y - 11;
+                $rep = $esFam ? 'Patricia Proaño' : ['María', 'Verónica', 'Gabriela', 'Diana', 'Paola'][random_int(0, 4)] . ' ' . explode(' ', $ap)[0];
+                q("INSERT INTO esc_alumnos (liga_id, grupo_id, nombres, apellidos, cedula, fecha_nac, genero, representante_nombre, representante_cedula, representante_telefono, parentesco, tipo_sangre,
+                   emergencia_nombre, emergencia_telefono, fecha_ingreso, estado, consentimiento, consentimiento_por, instrumento, talla_vestuario) VALUES (?,?,?,?,?,?,?,?,?,?, 'Madre', 'O+', ?,?,?, 'activo', ?, 'representante (demostración)', ?, ?)",
+                    [$lid, $g['id'], $nombre, $ap, cedula_demo(), sprintf('%04d-%02d-%02d', $anio, random_int(1, 12), random_int(1, 28)), $mujer ? 'F' : 'M', $rep, $esFam ? $fam_ced : cedula_demo(),
+                     '09' . random_int(80000000, 99999999), $rep, '09' . random_int(80000000, 99999999), date('Y-m-d', strtotime('-' . random_int(30, 300) . ' days')), date('Y-m-d H:i:s'),
+                     $g['d'] === 'piano' ? 'Piano' : ($g['d'] === 'guitarra' ? 'Guitarra acústica' : ''), $g['d'] === 'ballet' ? ['6', '8', '10', '12', 'S'][random_int(0, 4)] : '']);
+                $aid = (int)db()->lastInsertId();
+                $alumnos[$g['id']][] = $aid;
+                // Nivel de cada alumno (el primero o el segundo de su disciplina)
+                $niv = cinturones_escuela($lid, $g['d']);
+                if ($niv && random_int(0, 3)) {
+                    $n0 = $niv[min(count($niv) - 1, random_int(0, 2))];
+                    q('INSERT INTO esc_grados (alumno_id, fecha, grado, registrado_por, cinturon_id, disciplina, notas) VALUES (?,?,?,?,?,?,?)', [$aid, date('Y-m-d', strtotime('-' . random_int(60, 400) . ' days')), etiqueta_cinturon($n0), 'Demo', $n0['id'], $g['d'], 'Nivel de ingreso']);
+                }
+            }
+        }
+        codigo_familia($lid, $fam_ced);
+        q("UPDATE esc_familias SET pin = ? WHERE liga_id = ? AND cedula = ?", [password_hash(DEMO_CLAVE, PASSWORD_DEFAULT), $lid, $fam_ced]);
+        // Pensiones de este mes y del anterior: casi todas pagadas, algunas vencidas y otras por vencer (para «Mensajes de hoy»)
+        generar_mensualidades($liga, date('Y-m', strtotime('first day of last month')));
+        generar_mensualidades($liga);
+        $i = 0;
+        foreach (filas("SELECT id, vence FROM esc_cargos WHERE liga_id = ? AND tipo = 'mensualidad' AND estado = 'pendiente' ORDER BY id", [$lid]) as $c) {
+            $i++;
+            if ($c['vence'] < $hoy && $i % 6 !== 0) cobrar_cargos($liga, [(int)$c['id']], ['efectivo', 'transferencia', 'deuna'][$i % 3], 'Demo', $c['vence']);
+        }
+        q("UPDATE esc_cargos SET vence = ? WHERE liga_id = ? AND estado = 'pendiente' AND tipo = 'mensualidad' AND id IN (SELECT id FROM esc_cargos WHERE liga_id = ? AND estado = 'pendiente' AND vence >= ? ORDER BY id LIMIT 4)",
+            [date('Y-m-d', strtotime('+2 days')), $lid, $lid, $hoy]);
+        // Recital con 3 coreografías, ensayos y cobro de vestuario
+        q("INSERT INTO acad_eventos (liga_id, tipo, nombre, fecha, hora, lugar, descripcion, valor_inscripcion, valor_vestuario, publico, estado, registrado_por) VALUES (?, 'recital', ?, ?, '17:00', 'Teatro de la ciudad', ?, 10, 25, 1, 'preparacion', 'Demo')",
+            [$lid, 'Recital de fin de año ' . $Y, date('Y-m-d', strtotime('+35 days')), 'Llegar 1 hora antes. Peinado con moño alto y maquillaje natural.']);
+        $ev = fila('SELECT * FROM acad_eventos WHERE id = ?', [(int)db()->lastInsertId()]);
+        foreach ([[0, 'El lago de los cisnes', 'ballet', 'Chaikovski', 'Tutú blanco'], [1, 'Variación de Paquita', 'ballet', 'Minkus', 'Tutú rojo'], [2, 'Salsa caleña', 'salsa', 'Grupo Niche', 'Vestido de flecos']] as $k => [$gi, $t, $d, $au, $ve]) {
+            q('INSERT INTO acad_numeros (evento_id, orden, titulo, disciplina, grupo_id, profesor, autor, duracion, vestuario) VALUES (?,?,?,?,?,?,?,?,?)', [$ev['id'], $k + 1, $t, $d, $gids[$gi]['id'], '', $au, 4, $ve]);
+            agregar_participantes($ev, fila('SELECT * FROM acad_numeros WHERE id = ?', [(int)db()->lastInsertId()]), array_slice($alumnos[$gids[$gi]['id']], 0, 6), $lid);
+        }
+        q("INSERT INTO acad_ensayos (evento_id, fecha, hora_inicio, hora_fin, lugar, tipo, notas) VALUES (?,?, '15:00', '18:00', 'Teatro de la ciudad', 'general', 'Con vestuario completo')", [$ev['id'], date('Y-m-d', strtotime('+33 days'))]);
+        cobrar_evento($liga, $ev, 'Demo');
+        // Clases particulares de piano: paquetes, horario 1 a 1 y clases marcadas
+        preparar_paquetes($lid);
+        $p8 = (int)valor('SELECT id FROM acad_paquetes WHERE liga_id = ? AND clases = 8', [$lid]);
+        foreach (array_slice($alumnos[$gids[3]['id']], 0, 3) as $k => $aid) {
+            $pa = vender_paquete($liga, $aid, $p8, $prof[2], 'Demo');
+            q('INSERT INTO acad_horario (liga_id, alumno_id, profesor_id, dia, hora_inicio, hora_fin, lugar) VALUES (?,?,?,?,?,?,?)', [$lid, $aid, $prof[2], (int)date('N'), sprintf('%02d:00', 16 + $k), sprintf('%02d:45', 16 + $k), 'Aula 1 (piano)']);
+            for ($c = 1; $c <= 2 + $k * 2; $c++) marcar_clase_particular($liga, $aid, 'asistio', date('Y-m-d', strtotime('-' . ($c * 7) . ' days')), sprintf('%02d:00', 16 + $k), $prof[2], ['Escalas y arpegios', 'Lectura a primera vista', 'Para Elisa, primera parte'][$c % 3], 'Demo');
+        }
+        return $lid;
+    });
 }

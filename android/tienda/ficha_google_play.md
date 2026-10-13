@@ -1,9 +1,11 @@
-# TuAcademia — Textos para la ficha de Google Play (copiar y pegar)
+# TuAcademia — Textos para la ficha de Google Play (BORRADOR, todavía no se publica)
+
+> La app de Google Play está APAGADA hasta que se decida. Antes de publicar:
+> 1) elegir el nombre definitivo, 2) generar la llave de firma nueva (ver BLOC_DE_NOTAS.md → «Apps Android»),
+> 3) hacer las capturas de TuAcademia (las de TuVocalía se quitaron) con `pruebas/v38/capturas.py` adaptado, y el gráfico destacado.
 
 Imágenes de esta carpeta:
-- `icono_512.png` → Ícono de la app (512 × 512)
-- `grafico_destacado_1024x500.png` → Gráfico destacado
-- `captura_1.png` … `captura_5.png` → Capturas de pantalla del teléfono (mínimo 2)
+- `icono_512.png` → Ícono de la app (512 × 512) — PENDIENTE: el actual es el de ligas (pelota); hacer uno de academia.
 
 ## Nombre de la app (máx. 30)
 ```
@@ -12,62 +14,33 @@ TuAcademia
 
 ## Descripción breve (máx. 80)
 ```
-Ligas, campeonatos y escuelas deportivas: vocalía en vivo, tabla y finanzas.
+Academias de baile, música y natación: pensiones, asistencia y portal de padres.
 ```
 
 ## Descripción completa (máx. 4000)
 ```
-TuAcademia es el sistema para organizar ligas, campeonatos y escuelas deportivas desde el celular.
+TuAcademia es el sistema para administrar academias de baile, música, natación y escuelas deportivas desde el celular.
 
-⚽ CAMPEONATOS
-• Sorteo y fixture automático, llaves eliminatorias y programación de canchas.
-• Tabla de posiciones, goleadores, tarjetas y suspendidos al instante.
-• Fútbol, indor, básquet, vóley, ecuavóley, ciclismo, atletismo, natación, deportes de combate, raqueta y más.
+💃 BAILE · 🎹 MÚSICA · 🏊 NATACIÓN · ⚽ DEPORTES
+• Cursos por disciplina con su horario, salón, aula o piscina y su profesor.
+• Ficha del alumno con foto, ficha médica, representante, instrumento, talla de vestuario o carril.
 
-📱 VOCALÍA EN VIVO
-• El vocal registra goles, tarjetas, cambios y el reloj desde el celular.
-• Funciona aunque se caiga el internet: se sincroniza solo al volver.
-• El público ve el marcador en vivo.
+💵 PENSIONES SIN PERSEGUIR A NADIE
+• Las pensiones se generan solas cada mes, con becas y descuento por hermanos.
+• «Mensajes de hoy»: la lista de quién debe, con el mensaje de WhatsApp listo. Un toque y se envía.
+• Los padres pagan por DeUna o transferencia y suben la foto del comprobante; usted lo aprueba y sale el recibo.
+• También con tarjeta (Payphone).
 
-🪪 CARNETS CON QR
-• Carnet con foto y código QR para verificar a cada jugador en la cancha.
+🎖️ NIVELES CON CERTIFICADO
+• Niveles de fábrica para baile, música y natación, y cinturones para artes marciales.
+• Exámenes de promoción con cobro, acta y certificado con código QR.
 
-💵 FINANZAS
-• Inscripciones, arbitrajes y multas con recibo. Estado de cuenta de cada equipo.
+🎭 RECITALES
+• Coreografías u obras con sus alumnos, tallas, ensayos y cobro de vestuario.
 
-🎓 ESCUELAS DEPORTIVAS
-• Alumnos, asistencia, evaluaciones, mensualidades y portal para las familias.
+🎹 CLASES PARTICULARES
+• Paquetes de 4, 8 o 12 clases que se descuentan solos al marcar la asistencia.
 
-🏅 OLIMPIADAS
-• Juegos multideportivos con delegaciones, medallero y tabla de puntos.
-
-👥 PARA TODOS
-• Administradores, árbitros, delegados, jugadores, familias e hinchas: cada uno entra con su usuario y ve lo suyo.
-
-Pruebe la demostración en tuacademia.tukanec.com/demo.
-Soporte por WhatsApp: +593 98 683 3077.
+👨‍👩‍👧 PORTAL DE PADRES
+• Asistencia, pagos, recibos, nivel, recitales y clases de sus hijos en el celular.
 ```
-
-## Datos de la ficha
-- Categoría: **Deportes**
-- Correo de contacto: dimitryfierro@gmail.com (o el de soporte que prefiera)
-- Sitio web: https://tuacademia.tukanec.com
-- Política de privacidad: **https://tuacademia.tukanec.com/privacidad**
-
-## Contenido de la app (Play Console → Política → Contenido de la app)
-- **Acceso a la app:** «Toda la funcionalidad o parte de ella está restringida» → Agregar instrucciones:
-  - Nombre: `Demo`
-  - Usuario y contraseña: los de una cuenta de prueba que usted cree (por ejemplo una liga «Revisión Google» con un administrador `revision@tuacademia.tukanec.com`).
-  - Instrucciones: `Abra la app, toque "Ingresar" y use el usuario y la contraseña. También puede ver la demostración sin usuario en https://tuacademia.tukanec.com/demo`
-- **Anuncios:** No, la app no tiene anuncios.
-- **Clasificación de contenido:** Categoría «Utilidad, productividad, comunicación u otro» → responda **No** a violencia, sexo, drogas, apuestas, etc.
-- **Público objetivo:** **18 años o más** (la usan organizadores, árbitros y padres de familia).
-- **App de noticias:** No. **App de salud:** No. **Préstamos:** No.
-- **Seguridad de los datos:**
-  - ¿Recopila o comparte datos? **Sí recopila, No comparte.**
-  - ¿Cifrados en tránsito? **Sí** (https).
-  - ¿El usuario puede pedir que se borren? **Sí** (Mi cuenta / solicitud de protección de datos).
-  - Datos que recopila: **Información personal** (nombre, correo, teléfono, número de documento) → funcionalidad de la app y administración de la cuenta; **Fotos** → funcionalidad (fotos de jugadores y alumnos); **Información financiera → Historial de compras** → funcionalidad (pagos del plan).
-
-## Suscripciones
-Se crean solas desde TuAcademia: Súper → 📱 Google Play → «Crear los productos en Google Play».

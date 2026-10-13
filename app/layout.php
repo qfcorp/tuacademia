@@ -125,11 +125,11 @@ function cabecera_publica(string $titulo, ?array $liga = null): void
     <?php if ($liga): ?>
       <a class="portada-marca" href="index.php?l=<?= e($liga['slug']) ?>">
         <?= escudo($liga['logo'], $liga['nombre'], $liga['color'], 'logo-liga') ?>
-        <span><strong><?= e($liga['nombre']) ?></strong><small><?= e(es_federacion($liga) ? '🏛 Federación' : (es_escuela($liga) ? (count($dpl = deportes_de_escuela($liga)) > 1 ? 'Escuela deportiva: ' . texto_deportes($dpl) : 'Escuela de ' . mb_strtolower(nombre_deporte_corto($dpl[0]))) : nombre_modalidad($liga['modalidad']))) ?><?= $liga['ciudad'] !== '' ? ' · ' . e($liga['ciudad']) : '' ?><?= ($fdl = federacion_de($liga)) ? ' · 🏛 ' . e($fdl['nombre']) : '' // (v28) ?></small></span>
+        <span><strong><?= e($liga['nombre']) ?></strong><small><?= e(es_federacion($liga) ? '🏛 Federación' : (es_escuela($liga) ? (count($dpl = deportes_de_escuela($liga)) > 1 ? (PRODUCTO === 'academia' ? 'Academia: ' : 'Escuela deportiva: ') . texto_deportes($dpl) : (PRODUCTO === 'academia' ? 'Academia de ' : 'Escuela de ') . mb_strtolower(nombre_deporte_corto($dpl[0]))) : nombre_modalidad($liga['modalidad']))) ?><?= $liga['ciudad'] !== '' ? ' · ' . e($liga['ciudad']) : '' ?><?= ($fdl = federacion_de($liga)) ? ' · 🏛 ' . e($fdl['nombre']) : '' // (v28) ?></small></span>
       </a>
       <?= html_selector_idioma('idioma-pub') // (v28) ?>
     <?php else: ?>
-      <a class="portada-marca" href="index.php"><img class="logo-liga" src="assets/icono-192.png" alt=""><span><strong><?= e(marca()) ?></strong><small>Ligas y escuelas deportivas</small></span></a>
+      <a class="portada-marca" href="index.php"><img class="logo-liga" src="assets/icono-192.png" alt=""><span><strong><?= e(marca()) ?></strong><small><?= PRODUCTO === 'academia' ? 'Academias de baile, música y deportes' : 'Ligas y escuelas deportivas' ?></small></span></a>
       <?= html_menu_clientes() ?>
       <?= html_selector_idioma('idioma-pub idioma-der') // (v28) ?>
       <a class="btn btn-sec-blanco btn-chico" href="admin.php?p=login">Ingresar</a>

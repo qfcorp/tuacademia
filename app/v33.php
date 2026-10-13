@@ -31,7 +31,7 @@ function correo_html(string $titulo, array $parrafos, ?array $boton = null, stri
     $h = '<!doctype html><html><body style="margin:0;padding:0;background:#f3f4f2;font-family:Arial,Helvetica,sans-serif;color:#1f2a26">'
         . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f4f2;padding:24px 0"><tr><td align="center">'
         . '<table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden">'
-        . '<tr><td style="background:' . $color . ';padding:18px 24px;color:#fff;font-size:20px;font-weight:bold">' . e(marca()) . '<span style="font-size:13px;font-weight:normal;opacity:.85"> · Ligas y escuelas deportivas</span></td></tr>'
+        . '<tr><td style="background:' . $color . ';padding:18px 24px;color:#fff;font-size:20px;font-weight:bold">' . e(marca()) . '<span style="font-size:13px;font-weight:normal;opacity:.85"> · ' . (PRODUCTO === 'academia' ? 'Academias' : 'Ligas y escuelas deportivas') . '</span></td></tr>'
         . '<tr><td style="padding:24px 24px 8px"><h1 style="margin:0 0 12px;font-size:22px;color:#0f2a22">' . e($titulo) . '</h1>';
     foreach ($parrafos as $p) {
         if (is_array($p)) { // lista de pares [etiqueta, valor]

@@ -280,7 +280,7 @@ if ($nueva): ?>
     <?php if ($editar['dominio'] !== ''): ?>
       <div class="aviso aviso-info" style="margin-top:12px"><b>Para activar el dominio <?= e($editar['dominio']) ?>:</b><br>
         1. El dominio debe estar agregado en su cuenta de <b>Cloudflare</b> (los DNS del dominio apuntando a Cloudflare).<br>
-        2. En PuTTY, conectado al servidor, escriba (una sola línea):<br><code>sudo bash /var/www/ligas/app/dominio.sh <?= e($editar['dominio']) ?></code><br>
+        2. En PuTTY, conectado al servidor, escriba (una sola línea):<br><code>sudo bash /var/www/tuacademia/app/dominio.sh <?= e($editar['dominio']) ?></code><br>
         3. Si el instalador le indica un paso en el navegador, hágalo. Luego abra https://<?= e($editar['dominio']) ?></div>
     <?php endif; ?>
     <p class="suave" style="margin-bottom:0">Dirección corta: <a href="<?= e(url_base() . $editar['slug']) ?>" target="_blank"><?= e(url_base() . $editar['slug']) ?></a></p>

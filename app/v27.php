@@ -223,6 +223,7 @@ function ayuda_de_pagina(string $p, ?array $liga): array
             'asistencia' => 8, 'planificacion' => 9, 'cobros' => 10, 'esc_recibo' => 10, 'pagos_linea' => 10, 'profesores' => 11, 'evaluaciones' => 12,
             'formativas' => 13, 'tienda' => 14, 'esc_carnets' => 15, 'usuarios' => 16, 'bitacora' => 16, 'mi_plan' => 17, 'competencias' => 21, 'examenes' => 27, 'datos' => 22,
             'soporte' => 23, 'novedades' => 23, 'cargas' => 24, 'mis_datos' => 24, 'videos' => 25, 'indicadores' => 26, 'referidos' => 26, 'federacion' => 26, 'requisitos' => 29,
+            'mensajes' => 40, 'recitales' => 40, 'particulares' => 40, // (TuAcademia)
         ][$p] ?? 1;
         return ['escuelas', 's' . $s];
     }
@@ -285,7 +286,9 @@ function html_boton_ayuda(): string
 function novedades_para(?array $liga, int $limite = 50): array
 {
     $para = $liga ? (es_escuela($liga) ? 'escuelas' : 'ligas') : '';
-    $sql = 'SELECT * FROM novedades WHERE publicada = 1' . ($para !== '' && !es_super() ? " AND para IN ('todos', '" . $para . "')" : '') . ' ORDER BY fecha DESC, id DESC LIMIT ' . (int)$limite;
+    $sql = 'SELECT * FROM novedades WHERE publicada = 1' . ($para !== '' && !es_super() ? " AND para IN ('todos', '" . $para . "')" : '')
+        . (PRODUCTO === 'academia' ? " AND (version = 'academia' OR fecha >= '2026-10-13')" : '') // (TuAcademia) no se muestra el historial de TuVocalía
+        . ' ORDER BY fecha DESC, id DESC LIMIT ' . (int)$limite;
     return filas($sql);
 }
 

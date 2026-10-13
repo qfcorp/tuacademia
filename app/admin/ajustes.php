@@ -49,7 +49,7 @@ if (es_post()) {
     } elseif ($accion === 'videos') {
         // (v28) Dónde se guardan los videos de jugadores y alumnos
         $url = rtrim(trim(post('videos_url')), '/');
-        if ($url !== '' && !preg_match('#^https://[a-z0-9.\-]+(/[\w\-/]*)?$#i', $url)) throw new RuntimeException('La dirección debe empezar con https:// (ej: https://videos.tukanec.com)');
+        if ($url !== '' && !preg_match('#^https://[a-z0-9.\-]+(/[\w\-/]*)?$#i', $url)) throw new RuntimeException('La dirección debe empezar con https:// (ej: https://videos-tuacademia.tukanec.com)');
         guardar_ajuste('videos_url', $url);
         if (post('videos_clave') !== '') guardar_ajuste('videos_clave', mb_substr(trim(post('videos_clave')), 0, 200));
         if ($url === '') guardar_ajuste('videos_clave', '');
@@ -78,11 +78,11 @@ if (es_post()) {
         // (v10/v15) Liga y escuela de demostración con todos los portales
         guardar_ajuste('demo_activa', post('demo_activa') === '1' ? '1' : '0');
         guardar_ajuste('demo_guardar', post('demo_guardar') === '1' ? '1' : '0');
-        if (post('demo_activa') === '1' && (post('crear') === '1' || !liga_demo() || !escuela_demo())) {
+        if (post('demo_activa') === '1' && (post('crear') === '1' || (!es_academia() && !liga_demo()) || !escuela_demo())) {
             crear_demos();
             guardar_ajuste('demo_reinicio', date('Y-m-d'));
-            bitacora_evento('demo', 'Creó / reinició la liga y la escuela de demostración');
-            flash('Demostraciones listas (liga y escuela). El botón "Ver demo" ya aparece en la página de venta. Se reinician solas cada madrugada.');
+            bitacora_evento('demo', es_academia() ? 'Creó / reinició la academia de demostración' : 'Creó / reinició la liga y la escuela de demostración');
+            flash(es_academia() ? 'Academia de demostración lista. El botón "Ver demo" ya aparece en la página de venta. Se reinicia sola cada madrugada.' : 'Demostraciones listas (liga y escuela). El botón "Ver demo" ya aparece en la página de venta. Se reinician solas cada madrugada.');
         } elseif (post('demo_activa') !== '1') {
             sin_auditoria(fn() => q('DELETE FROM ligas WHERE es_demo = 1'));
             bitacora_evento('demo', 'Desactivó y borró las demostraciones');
@@ -229,10 +229,10 @@ cabecera_admin('Ajustes');
 <div class="tarjeta" id="videos">
   <h2 style="margin-top:0">🎬 Videos de jugadores y alumnos</h2>
   <p>Ahora se guardan en: <b><?= videos_modo() === 'laptop' ? e(ajuste('videos_url')) . ' (laptop)' : 'este servidor' ?></b> · Videos disponibles: <?= (int)$uv['n'] ?> (<?= texto_bytes((int)$uv['b']) ?>) · Se borran solos a los <?= VIDEO_DIAS ?> días.</p>
-  <p class="suave">Para guardarlos en la laptop (disco grande): instale el receptor con <code>sudo bash vps/laptop_videos.sh</code> en la laptop, publíquelo en el túnel de Cloudflare (ej: videos.tukanec.com) y escriba aquí la dirección y la clave que le mostró el instalador.</p>
+  <p class="suave">Para guardarlos en la laptop (disco grande): instale el receptor con <code>sudo bash vps/laptop_videos.sh</code> en la laptop, publíquelo en el túnel de Cloudflare (ej: videos-tuacademia.tukanec.com) y escriba aquí la dirección y la clave que le mostró el instalador.</p>
   <form method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="videos">
     <div class="campos">
-      <div><label>Dirección del receptor (vacío = este servidor)</label><input name="videos_url" value="<?= e(ajuste('videos_url')) ?>" placeholder="https://videos.tukanec.com"></div>
+      <div><label>Dirección del receptor (vacío = este servidor)</label><input name="videos_url" value="<?= e(ajuste('videos_url')) ?>" placeholder="https://videos-tuacademia.tukanec.com"></div>
       <div><label>Clave del receptor</label><input name="videos_clave" value="" autocomplete="off" placeholder="<?= ajuste('videos_clave') !== '' ? '•••••••• (guardada; escriba solo para cambiarla)' : 'la clave que mostró el instalador' ?>"></div>
     </div>
     <button class="btn btn-sec">Guardar</button></form>

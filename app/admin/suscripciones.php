@@ -22,20 +22,18 @@ if (es_post() && post('accion') === 'pago') {
     $meses = entero(post('meses'), 1, 36);
     $monto = max(0, round((float)str_replace(',', '.', post('monto')), 2));
     $plan = (int)post('plan_id') ?: ($l['plan_id'] ? (int)$l['plan_id'] : null);
-    $r = registrar_pago_suscripcion($l, $plan, $meses, $monto, post('forma_pago'), post('nota'),
+    // (Tukán Central v2) la misma función que usa el Panel Tukán Central (vigencia, comisión, referidos y correo al cliente)
+    $r = venta_registrar_pago($l, $plan, $meses, $monto, post('forma_pago'), post('nota'),
         post('fecha') !== '' && strtotime(post('fecha')) ? date('Y-m-d', strtotime(post('fecha'))) : date('Y-m-d'), $yo['nombre']);
-    [$hasta, $com_id] = [$r['hasta'], $r['comision_id']];
-    correo_pago_registrado(fila('SELECT * FROM ligas WHERE id = ?', [$l['id']]), fila('SELECT * FROM pagos_suscripcion WHERE id = ?', [$r['pago_id']]), $plan ? fila('SELECT * FROM planes WHERE id = ?', [$plan]) : null); // (v33)
-    $com = $com_id ? fila('SELECT c.*, v.nombre FROM comisiones c JOIN vendedores v ON v.id = c.vendedor_id WHERE c.id = ?', [$com_id]) : null;
+    [$hasta, $com] = [$r['hasta'], $r['comision']];
     flash('Pago registrado. ' . $l['nombre'] . ' queda activa hasta el ' . $hasta . '.' . ($com ? ' Comisión para ' . $com['nombre'] . ': ' . dinero($com['comision']) . '.' : ''));
     ir('admin.php?p=suscripciones');
 }
 if (es_post() && post('accion') === 'anular_pago') {
-    if (fila("SELECT id FROM comisiones WHERE pago_suscripcion_id = ? AND estado = 'pagada'", [(int)post('id')])) {
-        throw new RuntimeException('Ese pago ya tiene una comisión PAGADA al vendedor. Primero revise la comisión en Vendedores.');
-    }
-    q('DELETE FROM pagos_suscripcion WHERE id = ?', [(int)post('id')]);
-    flash('Pago eliminado del historial (la fecha de vencimiento de la liga no se cambia sola: ajústela en Ligas → Editar si hace falta).');
+    // (Tukán Central v2) si el pago era el que dejó la fecha de vencimiento, la fecha vuelve a la del pago anterior
+    $an = anular_pago_suscripcion((int)post('id'), null, 'Eliminado en Ventas');
+    flash('Pago eliminado del historial.' . ($an['cambio'] ? ' ' . ($an['liga']['nombre'] ?? '') . ' vuelve a vencer el ' . $an['vence'] . ' (la fecha del pago anterior).'
+        : ($an['sin_pagos'] && $an['liga'] ? ' No le quedan pagos: la fecha de vencimiento (' . ($an['vence'] ?: 'sin fecha') . ') no se cambió; ajústela en Ligas → Editar si hace falta.' : '')));
     ir('admin.php?p=suscripciones');
 }
 

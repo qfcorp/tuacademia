@@ -74,12 +74,14 @@ function estado_suscripcion(array $liga): array
 function liga_puede_editar(?array $liga): bool
 {
     if (!$liga || es_super()) return true;
+    if (liga_suspendida($liga)) return false; // (Tukán Central v2) cuenta suspendida por Tukán: no puede trabajar
     return estado_suscripcion($liga)['estado'] !== 'vencida';
 }
 
 /** Lanza error si la liga tiene la suscripción vencida (para vocalía, árbitro y delegado). */
 function exigir_suscripcion(array $liga): void
 {
+    if (liga_suspendida($liga)) throw new RuntimeException(texto_suspension($liga)); // (Tukán Central v2)
     if (estado_suscripcion($liga)['estado'] === 'vencida') {
         throw new RuntimeException('La suscripción de ' . $liga['nombre'] . ' está vencida: por ahora no se pueden guardar cambios. La liga debe renovar su plan.');
     }
@@ -190,6 +192,8 @@ function crear_liga_completa(array $d): array
         'tipo' => ($d['tipo'] ?? '') === 'escuela' ? 'escuela' : 'liga',
         'deporte_escuela' => array_key_exists($d['deporte_escuela'] ?? '', deportes_escuela()) ? $d['deporte_escuela'] : 'futbol',
         'deportes' => $deportes === null ? '*' : implode(',', $deportes),
+        // (Tukán Central v2) de dónde vino la cuenta: registro (prueba gratis), demo_pedida, super o central
+        'origen' => in_array($d['origen'] ?? '', ['registro', 'demo_pedida', 'super', 'central', 'google_play'], true) ? $d['origen'] : 'super',
     ], $reglas);
     $pdo = db();
     $pdo->beginTransaction();

@@ -305,13 +305,11 @@ function verificar_alumnos_plan(array $liga): void
 
 /**
  * Registra el pago de la suscripción de una liga o escuela (lo usan Ventas y el pago con tarjeta).
- * Suma la vigencia desde el vencimiento actual (si aún no vence) o desde hoy. Devuelve ['hasta', 'pago_id', 'comision_id'].
+ * Suma la vigencia desde el vencimiento actual (si aún no vence) o desde hoy (o desde $inicio). Devuelve ['hasta', 'pago_id', 'comision_id'].
  */
-function registrar_pago_suscripcion(array $l, ?int $plan, int $meses, float $monto, string $forma, string $nota, string $fecha, string $por, ?string $hasta_fijo = null): array
+function registrar_pago_suscripcion(array $l, ?int $plan, int $meses, float $monto, string $forma, string $nota, string $fecha, string $por, ?string $hasta_fijo = null, ?string $inicio = null): array
 {
-    $base = ($l['vence'] !== '' && $l['vence'] >= date('Y-m-d') && !$l['es_prueba']) ? $l['vence'] : date('Y-m-d');
-    $hasta = date('Y-m-d', strtotime($base . ' +' . $meses . ' months'));
-    $desde = date('Y-m-d', strtotime($base . ($base === date('Y-m-d') ? '' : ' +1 day')));
+    [$desde, $hasta] = vigencia_pago($l, $meses, $inicio); // (Tukán Central v2) la misma regla que usa «cotizar» (app/cuentas_super.php)
     if ($hasta_fijo !== null) { // (v38) Google Play: la fecha la pone Google
         $hasta = $hasta_fijo;
         $desde = date('Y-m-d');

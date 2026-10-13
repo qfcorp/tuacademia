@@ -36,21 +36,20 @@ if (es_post()) {
             'pagada' => post('vence') !== '' && strtotime(post('vence')) ? date('Y-m-d', strtotime(post('vence'))) : throw new RuntimeException('Escriba hasta qué fecha está pagada.'),
             default => '',
         };
-        $r = crear_liga_completa([
+        $r = crear_demo_cuenta([ // (Tukán Central v2) la misma función que usa el Panel Tukán Central para crear demos
             'nombre' => post('nombre'), 'ciudad' => post('ciudad'), 'slug' => post('slug'), 'modalidad' => post('modalidad'), 'color' => post('color'),
             'admin_nombre' => post('admin_nombre'), 'admin_email' => post('admin_email'), 'admin_clave' => post('admin_clave'), 'telefono' => post('telefono'),
             'plan_id' => (int)post('plan_id') ?: null, 'vence' => $vence, 'es_prueba' => $tipo === 'prueba', 'crear_campeonato' => post('crear_campeonato') === '1',
             'tipo' => post('tipo'), 'deporte_escuela' => post('deporte_escuela'), 'combo_con' => (int)post('combo_con'), 'deportes' => isset($_POST['deportes']) ? leer_deportes_post() : null,
             'max_campeonatos' => post('max_campeonatos'), 'max_equipos' => post('max_equipos'), 'modo_campeonatos' => post('modo_campeonatos'),
             'vendedor_id' => (int)post('vendedor_id') && fila('SELECT id FROM vendedores WHERE id = ?', [(int)post('vendedor_id')]) ? (int)post('vendedor_id') : null,
-        ]);
+            // (v14) Si viene de una solicitud de demo, queda marcada como creada (y la cuenta toma su referido, v28)
+            'solicitud_demo' => (int)post('solicitud_demo') ?: null, 'enviar_correo' => true,
+        ], usuario()['nombre']);
         if ($logo = subir_imagen('logo', 'ligas', 500)) q('UPDATE ligas SET logo = ? WHERE id = ?', [$logo, $r['liga_id']]);
-        // (v14) Si viene de una solicitud de demo, queda marcada como creada
-        if ((int)post('solicitud_demo') && ($rec = (int)valor('SELECT recomendado_por FROM solicitudes_demo WHERE id = ?', [(int)post('solicitud_demo')]))) anotar_referido((int)$r['liga_id'], $rec); // (v28)
-        if ((int)post('solicitud_demo')) q("UPDATE solicitudes_demo SET estado = 'creada', liga_id = ?, atendido_por = ?, atendido_en = ? WHERE id = ?", [$r['liga_id'], usuario()['nombre'], date('Y-m-d H:i'), (int)post('solicitud_demo')]);
         $_SESSION['liga_creada'] = ['id' => $r['liga_id'], 'email' => mb_strtolower(post('admin_email')), 'clave' => post('admin_clave'), 'telefono' => post('telefono'), 'admin' => post('admin_nombre')];
         // (v33) Correo de bienvenida con los accesos (si el correo saliente está configurado)
-        if ($r['usuario_id'] && correo_bienvenida(fila('SELECT * FROM ligas WHERE id = ?', [$r['liga_id']]), mb_strtolower(post('admin_email')), post('admin_clave'), post('admin_nombre'))) {
+        if ($r['correo_enviado']) {
             flash('Correo de bienvenida con los accesos enviado a ' . mb_strtolower(post('admin_email')) . '.');
         }
         // (v16) Combo sin administrador nuevo: el dueño entra con su mismo usuario
@@ -151,12 +150,7 @@ if (get('creada') !== '' && ($lc = fila('SELECT * FROM ligas WHERE id = ?', [(in
     unset($_SESSION['liga_creada']);
     $wa = telefono_wa((string)($dc['telefono'] ?? ''));
     $es_esc = ($lc['tipo'] ?? 'liga') === 'escuela';
-    $msg = !empty($dc['combo'])
-        ? "¡Hola " . ($dc['admin'] ?? '') . "! Su " . ($es_esc ? 'escuela' : 'liga') . " *" . $lc['nombre'] . "* ya está lista en " . marca() . " en COMBO con " . $dc['combo'] . " (" . (float)combo_descuento() . "% de descuento en los dos planes).\n\n"
-          . "🔐 Entre con su mismo usuario de siempre (" . ($dc['email'] ?? '') . ") en " . url_base() . "admin.php y toque arriba \"🔁 Ir a " . $lc['nombre'] . "\".\n🌐 Página pública: " . url_liga($lc)
-        : "¡Hola " . ($dc['admin'] ?? '') . "! Su " . ($es_esc ? 'escuela' : 'liga') . " *" . $lc['nombre'] . "* ya está lista en " . marca() . ".\n\n"
-        . "🌐 Página pública: " . url_liga($lc) . "\n🔐 Panel: " . url_base() . "admin.php\n👤 Usuario: " . ($dc['email'] ?? '') . "\n🔑 Contraseña: " . ($dc['clave'] ?? '')
-        . "\n\nLe recomendamos cambiar la contraseña al ingresar (Mi cuenta).";
+    $msg = mensaje_accesos_cuenta($lc, (string)($dc['admin'] ?? ''), (string)($dc['email'] ?? ''), (string)($dc['clave'] ?? ''), (string)($dc['combo'] ?? '')); // (Tukán Central v2) el mismo texto que manda el panel central
 ?>
   <div class="tarjeta" style="border:3px solid var(--acento)">
     <h1 style="margin-top:0">✅ <?= $es_esc ? 'Escuela creada' : 'Liga creada' ?>: <?= e($lc['nombre']) ?></h1>

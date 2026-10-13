@@ -30,7 +30,7 @@ if ($abierto && es_post()) {
                 'plan_id' => fila('SELECT id FROM planes WHERE id = ? AND activo = 1', [$plan]) ? $plan : null,
                 'vence' => date('Y-m-d', strtotime('+' . $dias . ' days')), 'es_prueba' => 1, 'crear_campeonato' => true,
                 'tipo' => es_academia() ? 'escuela' : post('tipo', get('tipo')), 'deporte_escuela' => post('deporte_escuela'), 'deportes' => isset($_POST['deportes']) ? leer_deportes_post() : null, // (v35) · (TuAcademia) siempre academia
-                'vendedor_id' => $vend ? (int)$vend['id'] : null,
+                'vendedor_id' => $vend ? (int)$vend['id'] : null, 'origen' => 'registro', // (Tukán Central v2)
             ]);
             registrar_consentimiento('registro', (int)$r['liga_id'], post('admin_nombre'), 'titular', ['ref_tabla' => 'usuarios', 'ref_id' => (int)$r['usuario_id'],
                 'texto' => 'Acepto las condiciones del servicio y la política de privacidad, incluido el almacenamiento de los datos en servidores fuera del Ecuador (' . txt_alojamiento() . '). Mi organización será responsable de los datos de sus participantes.']); // (v24)

@@ -80,8 +80,8 @@ function activar_auditoria(): void
         'consentimientos',
         // (v27) las conversaciones de soporte ya guardan quién escribió y cuándo
         'soporte_mensajes',
-        // (Tukán Central) nonces de un solo uso de los tokens del panel central
-        'tukan_nonces'];
+        // (Tukán Central) nonces de un solo uso de los tokens del panel central y respuestas guardadas de cada operación (v2)
+        'tukan_nonces', 'tukan_central_operaciones'];
     foreach ($tablas as $t) {
         if (!preg_match('/^[a-z_]+$/', $t) || in_array($t, $sin_auditoria, true)) continue;
         $cols = array_filter(array_column($pdo->query("PRAGMA table_info($t)")->fetchAll(PDO::FETCH_ASSOC), 'name'), fn($x) => !in_array($x, columnas_ocultas(), true));

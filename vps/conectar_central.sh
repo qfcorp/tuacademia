@@ -1,6 +1,6 @@
 #!/bin/bash
 # =====================================================================
-#  TuAcademia - CONECTAR CON EL PANEL TUKAN CENTRAL (protocolo v1)
+#  TuAcademia - CONECTAR CON EL PANEL TUKAN CENTRAL (protocolos v1 y v2)
 #  Se puede repetir las veces que haga falta (no duplica nada).
 #
 #  Uso (en el VPS):
@@ -95,6 +95,7 @@ probar() { # pide accion=estado con un token recien firmado, por el nginx intern
   if [ "$codigo" = "200" ] && printf '%s' "$cuerpo" | grep -q '"ok":true'; then
     verde "OK: $NOMBRE esta conectado al Panel Tukan Central (instancia $id)."
     echo "    Negocios: $(printf '%s' "$cuerpo" | grep -o '"total":[0-9]*' | head -n1 | cut -d: -f2)   Version: $(printf '%s' "$cuerpo" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)"
+    echo "    Protocolo v2: $(printf '%s' "$cuerpo" | grep -q '"protocolo_max":2' && echo si || echo no)   Solicitudes por atender: $(printf '%s' "$cuerpo" | grep -o '"solicitudes_abiertas":[0-9]*' | cut -d: -f2)"
     echo "    Solo desde el panel central (TUKAN_SOLO_CENTRAL): $(leer TUKAN_SOLO_CENTRAL)"
     return 0
   fi
@@ -102,6 +103,7 @@ probar() { # pide accion=estado con un token recien firmado, por el nginx intern
     404) rojo "ERROR: tukan_central.php responde 404: PHP no ve la configuracion. Revise que exista $ENV y que sea legible para $USUARIO_WEB." ;;
     401) rojo "ERROR: el programa rechazo el token de prueba: $(printf '%s' "$cuerpo" | grep -o '"error":"[^"]*"' | cut -d'"' -f4 | iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null)"
          echo "Revise que la hora del servidor este bien (date) y que el secreto este completo." ;;
+    429) rojo "ERROR: demasiados pedidos seguidos desde este servidor. Espere un minuto y repita: sudo bash $0 --probar" ;;
     000|"") rojo "ERROR: nginx no responde en 127.0.0.1:$PUERTO_WEB. Revise: sudo systemctl status nginx" ;;
     *)   rojo "ERROR: respuesta inesperada (codigo $codigo). Revise: sudo docker logs --tail 20 $CONTENEDOR" ;;
   esac

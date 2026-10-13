@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pruebas del conector con el Panel Tukán Central (protocolo v1) contra php -S. El mismo archivo sirve para TuVocalía y TuAcademia
+Pruebas del conector con el Panel Tukán Central (protocolo v1, con los cambios compatibles de v2) contra php -S. El mismo archivo sirve para TuVocalía y TuAcademia
 (en TuAcademia se corre en los dos modos: academia, que es el de verdad, y ligas).
 
 Antes (base nueva):
@@ -11,7 +11,7 @@ Correr:        TA_PUERTO=8221 python3 pruebas/tukan_central/prueba_central.py
 
 Prueba (protocolo §6 y más): sin configurar → 404; vps/conectar_central.sh (sin Docker) conecta, se prueba solo, se puede repetir,
 rechaza datos malos y sus mensajes no tienen tildes; token correcto entra; firma mala, otra instancia, tipo cambiado, vencido, futuro,
-demasiado largo, nonce repetido o malo, correo inválido, versión distinta y basura → rechazados (401); límite de 30 por minuto por IP;
+demasiado largo, nonce repetido o malo, correo inválido, versión distinta y basura → rechazados (401, con «codigo»); límite de 30 rechazados por minuto por IP (429);
 estado con todas las claves y las cifras exactas de los datos de prueba; SSO crea el super la primera vez y lo reutiliza después,
 cambia el id de sesión, deja constancia en la bitácora y muestra «← Panel Tukán»; un correo de cliente no se convierte en super;
 TUKAN_SOLO_CENTRAL=1 apaga el ingreso local del super con un mensaje claro y los clientes siguen entrando; el ingreso normal no cambia.
@@ -322,7 +322,8 @@ for nombre, t in malos.items():
         j = r.json()
     except Exception:
         pass
-    chk(r.status_code == 401 and j.get('ok') is False and isinstance(j.get('error'), str) and j['error'], 'estado rechaza: ' + nombre + ' (' + str(r.status_code) + ' ' + str(j.get('error')) + ')')
+    chk(r.status_code == 401 and j.get('ok') is False and isinstance(j.get('error'), str) and j['error'] and j.get('codigo') in ('firma', 'inst', 'tipo', 'version', 'vencido', 'futuro', 'nonce', 'invalido'),
+        'estado rechaza: ' + nombre + ' (' + str(r.status_code) + ' ' + str(j.get('codigo')) + ' ' + str(j.get('error')) + ')')
 chk(pedir('estado', token(tipo='sso')).status_code == 401, 'estado rechaza tipo «sso»')
 r = pedir('estado', token(iat=ahora - 80, exp=ahora - 25))
 chk(r.status_code == 200, 'estado acepta un token vencido hace 25 s (30 s de tolerancia)')
@@ -348,12 +349,15 @@ for nombre, t in [('vencido', token('sso', iat=ahora - 200, exp=ahora - 140)), (
                   ('correo inválido', token('sso', email='x@')), ('del futuro', token('sso', iat=ahora + 100, exp=ahora + 150))]:
     r = pedir('sso', t)
     chk(r.status_code == 401 and URL_CENTRAL in r.text and 'Location' not in r.headers, 'sso rechaza: ' + nombre)
-chk(pedir('nada', token()).status_code == 404 and requests.get(B + 'tukan_central.php').status_code == 404, 'acción desconocida o sin acción: 404')
-# Límite: 30 pedidos por minuto por IP (cuentan también los rechazados)
+# (protocolo v2 §3.1 paso 15) acción desconocida o sin acción: 403 «no_permitido» con motivo «no_disponible» (antes 404)
+r1, r2 = pedir('nada', token()), requests.get(B + 'tukan_central.php')
+chk(all(x.status_code == 403 and x.json().get('codigo') == 'no_permitido' and x.json().get('detalle', {}).get('motivo') == 'no_disponible' for x in (r1, r2)), 'acción desconocida o sin acción: 403 no_permitido')
+# Límite: 30 pedidos RECHAZADOS por minuto por IP (y 120 en total; v2 §3.1: 429 «limite» con Retry-After)
 fija = ip()
 codigos = [pedir('estado', 'basura', desde=fija).status_code for _ in range(30)]
 r = pedir('estado', token(), desde=fija)
-chk(all(c == 401 for c in codigos) and r.status_code == 401 and 'Demasiados' in r.json().get('error', ''), 'límite: el pedido 31 en un minuto desde la misma IP se rechaza aunque el token sea bueno')
+chk(all(c == 401 for c in codigos) and r.status_code == 429 and r.json().get('codigo') == 'limite' and 'Demasiados' in r.json().get('error', '') and r.headers.get('Retry-After') == '60',
+    'límite: después de 30 rechazados en un minuto desde la misma IP se rechaza (429) aunque el token sea bueno')
 chk(pedir('estado', token()).status_code == 200, 'límite: otra IP sigue entrando')
 
 # ---------- 6) SSO ----------

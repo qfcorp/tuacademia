@@ -14,14 +14,144 @@ function db(): PDO
     if (!is_dir($dir)) {
         mkdir($dir, 0770, true);
     }
-    $pdo = new PDO('sqlite:' . CFG['db']);
+    $pdo = new BdLigas('sqlite:' . CFG['db']); // (Tukán Central v2) PDO con transacciones anidadas
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     $pdo->exec('PRAGMA foreign_keys = ON');
     $pdo->exec('PRAGMA busy_timeout = 5000');
     $pdo->exec('PRAGMA journal_mode = WAL');
     crear_esquema($pdo);
+    esquema_tukan_central($pdo); // (Tukán Central v2) columnas y tablas propias, sin PRAGMA user_version
     return $pdo;
+}
+
+/**
+ * (Tukán Central v2) PDO que permite transacciones ANIDADAS: si ya hay una transacción abierta, beginTransaction()
+ * abre un SAVEPOINT (antes daba el error «There is already an active transaction»). Así el conector puede hacer
+ * toda una operación (crear demo, registrar pago…) en UNA transacción BEGIN IMMEDIATE aunque las funciones del programa
+ * abran la suya. Sin transacción exterior todo funciona exactamente igual que con PDO.
+ */
+class BdLigas extends PDO
+{
+    private int $nivel = 0;
+    private bool $manual = false;
+
+    public function beginTransaction(): bool
+    {
+        if ($this->nivel === 0) {
+            $ok = parent::beginTransaction();
+            $this->nivel = 1;
+            return $ok;
+        }
+        $this->nivel++;
+        $this->exec('SAVEPOINT bd_sp' . $this->nivel);
+        return true;
+    }
+
+    /** BEGIN IMMEDIATE: toma el permiso de escritura al empezar (espera hasta busy_timeout si otro está escribiendo). */
+    public function transaccionInmediata(): void
+    {
+        if ($this->nivel !== 0) throw new LogicException('Ya hay una transacción abierta.');
+        $this->exec('BEGIN IMMEDIATE');
+        $this->nivel = 1;
+        $this->manual = true;
+    }
+
+    public function commit(): bool
+    {
+        if ($this->nivel > 1) {
+            $this->exec('RELEASE SAVEPOINT bd_sp' . $this->nivel);
+            $this->nivel--;
+            return true;
+        }
+        $this->nivel = 0;
+        if ($this->manual) {
+            $this->manual = false;
+            $this->exec('COMMIT');
+            return true;
+        }
+        return parent::commit();
+    }
+
+    public function rollBack(): bool
+    {
+        if ($this->nivel > 1) {
+            $this->exec('ROLLBACK TO SAVEPOINT bd_sp' . $this->nivel);
+            $this->exec('RELEASE SAVEPOINT bd_sp' . $this->nivel);
+            $this->nivel--;
+            return true;
+        }
+        $this->nivel = 0;
+        if ($this->manual) {
+            $this->manual = false;
+            $this->exec('ROLLBACK');
+            return true;
+        }
+        return parent::rollBack();
+    }
+
+    public function inTransaction(): bool
+    {
+        return $this->nivel > 0;
+    }
+}
+
+/**
+ * (Tukán Central v2) Columnas y tablas del conector con el Panel Tukán Central. Se crean solas (no usan PRAGMA user_version
+ * para no chocar con otras ramas). Se revisa en cada conexión con una sola consulta.
+ *  - ligas.origen: de dónde vino la cuenta (registro, demo_pedida, super, central). Las viejas se llenan una vez.
+ *  - ligas.notas_admin: notas internas de Tukán (el cliente no las ve).
+ *  - ligas.suspendida_motivo: por qué se suspendió (activa = 0 → la cuenta no puede trabajar).
+ *  - tukan_central_operaciones: cada «ejecutar» del panel central (para no duplicar pagos ni días si se reintenta).
+ *  - tukan_central_atenciones: recordatorios y avisos ya atendidos desde el panel central.
+ */
+function esquema_tukan_central(PDO $pdo): void
+{
+    $cols = array_column($pdo->query('PRAGMA table_info(ligas)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+    if (!$cols) return;
+    $nuevas = ['origen' => "TEXT NOT NULL DEFAULT ''", 'notas_admin' => "TEXT NOT NULL DEFAULT ''", 'suspendida_motivo' => "TEXT NOT NULL DEFAULT ''"];
+    foreach ($nuevas as $c => $def) {
+        if (in_array($c, $cols, true)) continue;
+        try {
+            $pdo->exec("ALTER TABLE ligas ADD COLUMN $c $def");
+        } catch (PDOException $e) {
+            if (!str_contains($e->getMessage(), 'duplicate column')) throw $e; // otro pedido la agregó al mismo tiempo
+            continue;
+        }
+        if ($c === 'origen') {
+            // Cuentas que ya existían: registro (prueba gratis) si aceptó en el formulario de registro; pedido de demo si vino de una solicitud; si no, el súper
+            $pdo->exec("UPDATE ligas SET origen = CASE
+                WHEN EXISTS (SELECT 1 FROM consentimientos c WHERE c.formulario = 'registro' AND c.liga_id = ligas.id) THEN 'registro'
+                WHEN EXISTS (SELECT 1 FROM solicitudes_demo s WHERE s.liga_id = ligas.id) THEN 'demo_pedida'
+                ELSE 'super' END WHERE origen = ''");
+        }
+    }
+    $hay = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('tukan_central_operaciones', 'tukan_central_atenciones')")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('tukan_central_operaciones', $hay, true)) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS tukan_central_operaciones (
+            operacion_id TEXT PRIMARY KEY,
+            accion TEXT NOT NULL,
+            cliente_id TEXT,
+            cuerpo_hash TEXT NOT NULL,
+            estado TEXT NOT NULL,
+            http INTEGER,
+            respuesta TEXT,
+            email TEXT NOT NULL,
+            creado TEXT NOT NULL,
+            terminado TEXT
+        )");
+    }
+    if (!in_array('tukan_central_atenciones', $hay, true)) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS tukan_central_atenciones (
+            solicitud_id TEXT PRIMARY KEY,
+            tipo TEXT NOT NULL,
+            estado TEXT NOT NULL,
+            nota TEXT,
+            email TEXT NOT NULL,
+            nombre TEXT,
+            momento TEXT NOT NULL
+        )");
+    }
 }
 
 function crear_esquema(PDO $pdo): void

@@ -96,7 +96,7 @@ if (es_post() && !in_array($p, ['seguridad', 'clave'], true) && !puede_pagina($p
 }
 // Suscripción vencida: el panel de la liga queda en solo lectura
 if (es_post() && !in_array($p, ['seguridad', 'mi_plan', 'soporte', 'novedades'], true) && !liga_puede_editar(liga_trabajo())) { // (v12) con la suscripción vencida igual puede pagar en Mi plan
-    flash(estado_suscripcion(liga_trabajo())['texto'] . ' Comuníquese con ' . ajuste('empresa') . ' para renovar.', 'error');
+    flash(liga_suspendida(liga_trabajo()) ? texto_suspension(liga_trabajo()) : estado_suscripcion(liga_trabajo())['texto'] . ' Comuníquese con ' . ajuste('empresa') . ' para renovar.', 'error'); // (Tukán Central v2) suspendida
     ir($_SERVER['HTTP_REFERER'] ?? 'admin.php');
 }
 // (v35) Campeonato de un módulo deportivo que la cuenta no tiene (se lo quitaron o no lo renovó): se puede ver, no cambiar

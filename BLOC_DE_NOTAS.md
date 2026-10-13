@@ -118,9 +118,10 @@ Funcionan igual que en TuVocalía (grupos por categoría Sub-N, asistencia, eval
 | `app/publico/landing_academia.php` | Portada de venta para academias |
 | `app/db.php` → `esquema_v34()` | Tablas nuevas (`acad_*`) y campos nuevos; planes de TuAcademia |
 | `pruebas/academia/prueba_academia.py` | Pruebas de todo lo nuevo |
-| `app/tukan_central.php` + `public/tukan_central.php` | Conector con el Panel Tukán Central (§12) |
+| `app/tukan_central.php` + `public/tukan_central.php` | Conector con el Panel Tukán Central, protocolos v1 y v2 (§12) |
+| `app/cuentas_super.php` | Funciones de las cuentas (crear demo, pagos, anular, alargar, suspender…) que usan el súper panel y el conector (§12.1) |
 | `vps/conectar_central.sh` | Comando para conectar con el Panel Tukán Central en el VPS (§12) |
-| `pruebas/tukan_central/prueba_central.py` | Pruebas del conector |
+| `pruebas/tukan_central/prueba_central.py` y `prueba_central_v2.py` | Pruebas del conector (v1 y v2) |
 
 ## 6. Cómo correr las pruebas (en una computadora, nunca en el servidor)
 
@@ -134,13 +135,15 @@ TA_PRODUCTO=ligas bash pruebas/v38/reiniciar.sh  # modo ligas (como TuVocalía) 
 python3 pruebas/v38/prueba38.py                  # apps Android y cobro con Google Play (simulado)
 python3 pruebas/v38/navegador38.py               # Chromium de verdad con el cobro de Google simulado
 
-bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py   # conector del Panel Tukán Central (§12)
+bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py      # conector del Panel Tukán Central, v1 (§12)
+bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central_v2.py   # conector del Panel Tukán Central, v2 (§12.1)
 ```
 
 Resultados del 13 de octubre de 2026:
 - `prueba_academia.py`: **236/236**. `navegador_academia.py`: **19/19**.
 - `prueba38.py`: **100/100** (modo ligas). `navegador38.py`: **13/13** (Chromium 141).
-- `prueba_central.py` (Panel Tukán Central): **125/125** en modo academia y **121/121** en modo ligas.
+- `prueba_central.py` (Panel Tukán Central, v1): **125/125** en modo academia y **121/121** en modo ligas.
+- `prueba_central_v2.py` (Panel Tukán Central, v2): **262/262** en modo academia y **258/258** en modo ligas.
 - `recorrido.py`: **11.074 páginas, 0 con error de PHP**.
 
 ## 7. Cómo instalar en el servidor (VPS del ERP)
@@ -199,7 +202,8 @@ keytool -list -v -keystore android/firma/tuacademia.keystore -alias tuacademia
 | `pruebas/v38/prueba38.py` (apps Android y Google Play simulado) | ligas | **100/100** |
 | `pruebas/v38/navegador38.py` (Chromium con la Digital Goods API simulada) | ligas | **13/13** |
 | `pruebas/v38/recorrido.py` (abre todas las páginas: súper, liga, escuela, 3 academias, 2 portales de padres, público) | academia | **11.074 páginas, 0 errores de PHP** |
-| `pruebas/tukan_central/prueba_central.py` (conector del Panel Tukán Central, ver §12) | academia | **125/125** (en modo ligas: **121/121**) |
+| `pruebas/tukan_central/prueba_central.py` (conector del Panel Tukán Central v1, ver §12) | academia | **125/125** (en modo ligas: **121/121**) |
+| `pruebas/tukan_central/prueba_central_v2.py` (conector del Panel Tukán Central v2, ver §12.1) | academia | **262/262** (en modo ligas: **258/258**) |
 
 Las pruebas de la v38 (Google Play) se corren en modo **ligas** porque en TuAcademia la app de Google Play está apagada.
 Lo que **no** se pudo probar: Payphone con claves reales (no hay cuenta de prueba), compilar las apps Android (no hay llave ni SDK de Android aquí).
@@ -220,7 +224,8 @@ Todos siguen el estilo de la familia Tukán (TuPass, TuVocalía, TuSalón, TuGua
 ## 12. Conexión con el Panel Tukán Central (panel.tukanec.com)
 
 Desde el **Panel Tukán Central** se ven las cifras de TuAcademia y se entra como superadministrador con un clic, sin escribir la clave
-(protocolo v1, igual para todos los programas Tukán).
+(protocolo v1, igual para todos los programas Tukán). Con el **protocolo v2** (§12.1) el panel también ve y atiende las
+solicitudes, las academias, los pagos y las finanzas.
 
 - **Código**: `app/tukan_central.php` (toda la lógica, igual que en TuVocalía) y `public/tukan_central.php` (la dirección `/tukan_central.php`).
 - **Conectar** (PuTTY en el VPS). Primero actualizar el programa (trae el conector y deja el comando en `/var/www/tuacademia/vps/`):
@@ -230,7 +235,7 @@ Desde el **Panel Tukán Central** se ven las cifras de TuAcademia y se entra com
   ```
   (el segundo comando, con el ID y el SECRETO, lo muestra el panel central para copiar y pegar). Guarda la configuración en
   `/var/www/tuacademia/data/tukan_central.env` (no va a GitHub), se prueba solo y dice **OK** o el error. Se puede repetir sin problema.
-- Sin configurar, `/tukan_central.php` responde **404** y todo sigue igual.
+- Sin configurar, `/tukan_central.php` responde **404** (código `sin_configurar`) y todo sigue igual.
 - **Entrar desde el panel**: si ese correo no existe como superadministrador, se crea solo (con una clave al azar que nadie sabe).
   Si el correo ya es de una academia (cliente), **no** se convierte en super: se rechaza. Arriba en el panel aparece **← Panel Tukán**.
   Queda anotado en la bitácora: "Entró desde el Panel Tukán Central".
@@ -250,5 +255,36 @@ Desde el **Panel Tukán Central** se ven las cifras de TuAcademia y se entra com
   y entrar con correo y clave. Si ese super lo creó el panel central (no tiene clave), ponerle una:
   `sudo docker exec -it -u www-data tuacademia-php php /var/www/tuacademia/app/crear_admin.php`.
   Apagar todo el conector: `sudo bash /var/www/tuacademia/vps/conectar_central.sh --desconectar`.
-- **Pruebas**: `bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py` (**125/125**, modo academia).
-  En modo ligas: `TA_PRODUCTO=ligas bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py` (**121/121**).
+- **Pruebas** (cada una con la base nueva): `bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py`
+  (v1: **125/125**, modo academia) y `bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central_v2.py` (v2: **262/262**).
+  En modo ligas: `TA_PRODUCTO=ligas bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py` (**121/121**)
+  y lo mismo con `prueba_central_v2.py` (**258/258**).
+
+### 12.1 Protocolo v2: lo que el panel central ve y hace
+
+El contrato está en `tukan-central/docs/PROTOCOLO_V2.md`. El panel **pide** y TuAcademia **hace**, con las mismas funciones que usa
+el súper panel (`app/cuentas_super.php`). Todo lo que cambia algo queda en la **Bitácora** con «Panel Tukán Central · Dimitry <correo>».
+El mismo `app/tukan_central.php` sirve para TuVocalía; en modo academia solo cuentan las **academias**.
+
+- **Clientes**: todas las academias (sin la demo del sistema) con su estado: *prueba*, *por vencer* (pagada, vence en 0 a 7 días),
+  *activo* (más de 7 días o sin fecha), *vencido* (incluye los días de gracia) o *suspendido*; plan, fechas, dueño, pagos, alumnos y
+  cursos, vendedor y de dónde vino. Los números son los mismos del «estado».
+- **Ficha de la academia**: pagos, solicitudes abiertas, últimas acciones, notas internas, mensajes de WhatsApp listos y botones.
+- **Solicitudes** (la bandeja del panel): pedidos de demo, **registros nuevos** (la prueba gratis de 7 días), comprobantes de pago,
+  tickets de soporte, protección de datos (LOPDP), pagos automáticos (tarjeta, Google Play), seguimiento de pruebas (faltan 2 días,
+  vence hoy, terminó sin pagar), renovaciones (vence en 5 días o ya venció), dominio gratis por registrar, comisiones de vendedores
+  por pagar y cobros con tarjeta por transferir. Los recordatorios atendidos desde el panel se guardan en `tukan_central_atenciones`.
+- **Finanzas**: lo cobrado por mes (por plan, por tiempo y por forma de pago), lo devengado, la gestión de cobros con tarjeta y los
+  costos que el programa conoce (comisión de Plux, comisiones de vendedores y la comisión de Google Play, estimada en 15 %).
+- **Operaciones** desde el panel: crear demo (siempre academia), alargar prueba, registrar pago, anular pago, aprobar o rechazar
+  comprobante, suspender, reactivar, cambiar plan, clave nueva del dueño, nota interna, atender solicitud y responder ticket. Si el panel
+  repite una operación (por ejemplo porque se cortó la red), TuAcademia **no** la hace dos veces (tabla `tukan_central_operaciones`).
+- **Entrar a una pantalla exacta**: el panel puede abrir directo la ficha de una academia (`/admin.php?p=ligas&editar=12`).
+- **Arreglos que vinieron con el v2** (también en las pantallas del súper):
+  - **Suspender ya es de verdad**: la academia suspendida ve «Cuenta suspendida. Comuníquese con…», no puede guardar cambios y su página
+    pública se oculta. Sus datos se guardan. Reactivar la deja como estaba.
+  - **Eliminar un pago** (Ventas) devuelve la fecha de vencimiento a la del pago anterior.
+  - **Alargar la demo** (Embudo) ya no pone en demo a una academia que paga, y permite de 1 a 90 días.
+  - Cada cuenta guarda **de dónde vino** (`origen`: registro, pedido de demo, súper o panel central) y tiene **notas internas**.
+- **Límite**: 120 pedidos por minuto por conexión y 30 rechazados por minuto (después responde 429 «espere un minuto»).
+- **En el VPS** no hay que hacer nada nuevo: basta con actualizar el programa. `conectar_central.sh --probar` dice «Protocolo v2: si».

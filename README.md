@@ -22,7 +22,7 @@ encendido. Todo lo de ligas y campeonatos sigue en el código, apagado.
 | Migración de la base | `app/db.php` → `esquema_v34()` (user_version 34) |
 | Notas para Dimitry | **[BLOC_DE_NOTAS.md](BLOC_DE_NOTAS.md)** (qué se cambió, pendientes, nombres candidatos) |
 | Instalar en el VPS | [vps/vps/INSTRUCCIONES.txt](vps/vps/INSTRUCCIONES.txt) (carpeta `/var/www/tuacademia`, puerto 8096) |
-| Panel Tukán Central | `app/tukan_central.php` + `public/tukan_central.php`. Conectar en el VPS: `sudo bash /var/www/tuacademia/vps/conectar_central.sh ID SECRETO URL` (el panel central muestra el comando completo). El panel ve las academias por estado de suscripción y 8 cifras (alumnos, cursos, clases, asistencias, pensiones…). Ver BLOC_DE_NOTAS §12 |
+| Panel Tukán Central | `app/tukan_central.php` + `public/tukan_central.php`. Conectar en el VPS: `sudo bash /var/www/tuacademia/vps/conectar_central.sh ID SECRETO URL` (el panel central muestra el comando completo). El panel ve las academias por estado de suscripción y 8 cifras (alumnos, cursos, clases, asistencias, pensiones…) y, con el protocolo v2, las solicitudes, la ficha de cada academia, los pagos y las finanzas, y hace operaciones (crear demo, registrar pago, suspender…) con las funciones de `app/cuentas_super.php`. Ver BLOC_DE_NOTAS §12 y §12.1 |
 
 ## Probar en una computadora
 
@@ -36,7 +36,8 @@ TA_PRODUCTO=ligas bash pruebas/v38/reiniciar.sh  # modo ligas (como TuVocalía, 
 python3 pruebas/v38/prueba38.py                  # apps Android y Google Play (simulado)
 python3 pruebas/v38/navegador38.py               # Chromium real con la Digital Goods API simulada
 
-bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py   # conector del Panel Tukán Central (125/125; en modo ligas 121/121)
+bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py      # conector del Panel Tukán Central v1 (125/125; en modo ligas 121/121)
+bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central_v2.py   # conector v2 (262/262; en modo ligas 258/258)
 ```
 (Para otro puerto: `TA_PUERTO=8221 TA_SIM=8222`. Si se cambia `TA_SIM`, borrar antes `pruebas/v38/cuenta_servicio.json`
 y los `.pem` para que `reiniciar.sh` los cree con el puerto nuevo.)

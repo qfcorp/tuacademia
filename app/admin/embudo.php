@@ -8,11 +8,8 @@ if (!es_super()) ir('admin.php');
 if (es_post()) {
     $l = fila('SELECT * FROM ligas WHERE id = ? AND es_demo = 0', [(int)post('id')]) ?? throw new RuntimeException('Cuenta no encontrada.');
     if (post('accion') === 'alargar') {
-        $dias = entero(post('dias'), 1, 60);
-        $base = $l['vence'] !== '' && $l['vence'] >= date('Y-m-d') ? $l['vence'] : date('Y-m-d');
-        $hasta = date('Y-m-d', strtotime($base . ' +' . $dias . ' days'));
-        q("UPDATE ligas SET vence = ?, es_prueba = 1, demo_avisos = '' WHERE id = ?", [$hasta, $l['id']]);
-        bitacora_evento('suscripcion', 'Alargó la demo de ' . $l['nombre'] . ' hasta el ' . $hasta, (int)$l['id']);
+        // (Tukán Central v2) misma función que el panel central: 1 a 90 días y NO pone en demo a una cuenta que ya paga
+        $hasta = extender_prueba_cuenta($l, entero(post('dias'), 1, 90));
         flash('Demo de ' . $l['nombre'] . ' alargada hasta el ' . $hasta . '.');
     }
     ir('admin.php?p=embudo');

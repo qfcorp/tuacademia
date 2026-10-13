@@ -19,17 +19,7 @@ if (es_post()) {
     if ($accion === 'responder') {
         $sol = fila('SELECT * FROM solicitudes_derechos WHERE id = ? AND ' . $filtro_liga[0], array_merge([(int)post('id')], $filtro_liga[1])) ?? throw new RuntimeException('Solicitud no encontrada.');
         $estado = array_key_exists(post('estado'), estados_derecho()) ? post('estado') : $sol['estado'];
-        $resp = mb_substr(trim(post('respuesta')), 0, 2000);
-        if (in_array($estado, ['respondida', 'rechazada'], true) && mb_strlen($resp) < 5) throw new RuntimeException('Escriba la respuesta que se le dio a la persona (queda como prueba).');
-        $cerrar = in_array($estado, ['respondida', 'rechazada'], true);
-        q('UPDATE solicitudes_derechos SET estado = ?, respuesta = ?, respondido_por = ?, respondido_en = ? WHERE id = ?', [
-            $estado, $resp, $cerrar ? $u['nombre'] : $sol['respondido_por'], $cerrar ? date('Y-m-d H:i:s') : $sol['respondido_en'], $sol['id'],
-        ]);
-        // Si la persona retiró su autorización, se marca en sus autorizaciones registradas
-        if ($cerrar && $estado === 'respondida' && in_array($sol['tipo'], ['revocar', 'eliminacion'], true) && $sol['cedula'] !== '') {
-            q("UPDATE consentimientos SET revocado = ? WHERE revocado = '' AND documento = ? AND " . ($sol['liga_id'] ? 'liga_id = ?' : 'liga_id IS NULL'),
-                array_merge([date('Y-m-d H:i:s'), enmascarar_documento($sol['cedula'])], $sol['liga_id'] ? [(int)$sol['liga_id']] : []));
-        }
+        responder_solicitud_derecho($sol, $estado, post('respuesta'), $u['nombre']); // (Tukán Central v2) la misma función que usa el panel central
         flash('Solicitud N.º ' . $sol['id'] . ': ' . estados_derecho()[$estado] . '.');
         ir('admin.php?p=datos&estado=' . rawurlencode(get('estado', 'abiertas')));
     } elseif ($accion === 'revocar') {

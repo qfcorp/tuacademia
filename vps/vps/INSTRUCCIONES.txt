@@ -67,6 +67,13 @@ CONECTAR CON EL PANEL TUKAN CENTRAL (panel.tukanec.com)
        sudo docker exec -it -u www-data tuacademia-php php /var/www/tuacademia/app/crear_admin.php
   La configuracion (con el secreto) queda en /var/www/tuacademia/data/tukan_central.env: no va a GitHub
   y entra en el respaldo cifrado de cada noche.
+  PROTOCOLO V2 (el panel central ve y atiende solicitudes, clientes, pagos y finanzas):
+    Viene con el codigo: basta con actualizar el programa (vps_2_codigo.sh). NO hay que volver a conectar.
+    Comprobar:  sudo bash /var/www/tuacademia/vps/conectar_central.sh --probar
+      debe decir "Protocolo v2: si" y cuantas solicitudes hay por atender.
+    Si el panel central muestra "Solo cifras" para TuAcademia, el programa todavia es la version vieja: actualicelo.
+    Lo que se hace desde el panel queda en la Bitacora del programa como "Panel Tukan Central".
+    Suspender desde el panel es de verdad: Las academias suspendidas no pueden guardar cambios y su pagina publica se oculta.
   Que ve el panel central: las academias (sin la demo) en prueba, activas, por vencer, vencidas y suspendidas, lo cobrado
   por suscripciones, y alumnos activos, cursos, clases y asistencias del mes, pensiones cobradas del mes, profesores y usuarios.
   (vps_2_codigo.sh baja el programa de GitHub: el conector tiene que estar subido a GitHub antes del paso 1.)

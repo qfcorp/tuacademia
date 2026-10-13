@@ -48,7 +48,7 @@ portal de padres, cinturones de artes marciales). Sobre eso se hizo TuAcademia.
 
    - Básico: alumnos, cursos, asistencia, pensiones, portal de padres, avisos, DeUna, Mensajes de hoy y niveles con certificado.
    - Completo: todo (recitales, clases particulares, Payphone, profesores y rol de pago, evaluaciones, tienda, contabilidad, videos…).
-   - **Prueba gratis de 14 días** (registro abierto: la academia se crea sola desde la página).
+   - **Prueba gratis de 7 días** (registro abierto: la academia se crea sola desde la página).
    - Los planes de TuVocalía quedan guardados pero apagados.
 6. **App de Google Play: APAGADA** (como en TuSalón). Todo el código está, pero nadie ve precios ni botones de Google.
    Se enciende en `app/config.php` con `'google_play' => true` cuando se decida.

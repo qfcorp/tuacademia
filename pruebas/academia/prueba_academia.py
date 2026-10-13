@@ -100,7 +100,7 @@ chk('Academias de baile' in r.text and 'Escuelas de música' in r.text and 'Escu
 chk('$19.00' in r.text and '$29.00' in r.text, 'planes Básico $19 y Completo $29 en la portada')
 chk('$95.00' in r.text and '$290.00' in r.text, 'semestral $95 (paga 5) y anual $290 (paga 10)')
 chk('Vocalía' not in r.text and 'Árbitros' not in r.text and 'campeonato' not in r.text.lower(), 'portada sin ligas, campeonatos, árbitros ni vocalía')
-chk('14 días' in r.text, 'prueba gratis de 14 días')
+chk('7 días' in r.text, 'prueba gratis de 7 días')
 planes = pj('filas("SELECT slug, precio_mensual, precio_semestral, precio_anual, dominio_anual FROM planes WHERE activo = 1 ORDER BY orden")')
 chk([p['slug'] for p in planes] == ['academia-basico', 'academia-completo'], 'solo los 2 planes de academia activos (%s)' % [p['slug'] for p in planes])
 chk(planes[1]['dominio_anual'] == 1 and float(planes[1]['precio_anual']) == 290, 'Completo anual con dominio')
@@ -119,7 +119,7 @@ r = anon.get(B + 'index.php?v=ligas')
 limpio(r, 'directorio')
 chk('Academias que usan' in r.text, 'directorio muestra academias, no ligas')
 
-# Registro abierto (prueba gratis de 14 días): la cuenta nueva es academia
+# Registro abierto (prueba gratis de 7 días): la cuenta nueva es academia
 r = anon.get(B + 'index.php?v=registro')
 limpio(r, 'registro')
 chk('Tipo de cuenta' not in r.text and 'Disciplina principal' in r.text and 'Liga (campeonatos)' not in r.text, 'registro sin elegir liga: siempre academia')
@@ -129,7 +129,7 @@ r = anon.post(B + 'index.php?v=registro', data={'csrf': csrf(r.text), 'sitio': '
 limpio(r, 'crear academia por el registro')
 l_baile = pj('fila("SELECT * FROM ligas WHERE contacto_email = \'baile@prueba.com\'")')
 chk(l_baile and l_baile['tipo'] == 'escuela' and l_baile['deporte_escuela'] == 'ballet' and l_baile['deportes'] == 'baile', 'academia de baile creada como escuela (aunque mandó tipo=liga)')
-chk(l_baile and l_baile['vence'] == str(HOY + timedelta(days=14)) and int(l_baile['es_prueba']) == 1, 'con 14 días de prueba')
+chk(l_baile and l_baile['vence'] == str(HOY + timedelta(days=7)) and int(l_baile['es_prueba']) == 1, 'con 7 días de prueba')
 chk(int(pj('valor("SELECT COUNT(*) FROM torneos WHERE liga_id = ?", [' + str(l_baile['id']) + '])')) == 0, 'sin campeonato creado')
 LB = int(l_baile['id'])
 
@@ -417,7 +417,7 @@ limpio(r, 'súper: nueva academia')
 chk('Nueva academia' in r.text and 'Crear también su primer campeonato' not in r.text and 'Tipo de cuenta' not in r.text, 'súper: formulario solo de academia')
 r = post(su, 'admin.php?p=ligas&nueva=1', {'accion': 'crear', 'nombre': 'Escuela de Música Do Re Mi', 'ciudad': 'Cuenca', 'tipo': 'escuela', 'modalidad': 'F7', 'deporte_escuela': 'piano',
                                              'deportes[]': ['musica'], 'color': '#2563c9', 'slug': '', 'admin_nombre': 'Jorge Vélez', 'admin_email': 'musica@prueba.com', 'admin_clave': 'clave12345',
-                                             'telefono': '0990001122', 'plan_id': '8', 'vigencia': 'pagada', 'vence': str(HOY + timedelta(days=30)), 'dias_prueba': '14'})
+                                             'telefono': '0990001122', 'plan_id': '8', 'vigencia': 'pagada', 'vence': str(HOY + timedelta(days=30)), 'dias_prueba': '7'})
 limpio(r, 'súper crea academia de música')
 lm = pj('fila("SELECT * FROM ligas WHERE contacto_email = \'musica@prueba.com\'")')
 chk(lm and lm['tipo'] == 'escuela' and lm['deporte_escuela'] == 'piano' and lm['deportes'] == 'musica', 'academia de música creada')
@@ -497,7 +497,7 @@ chk('Pagar con tarjeta' not in r.text, 'sin Payphone configurado no aparece la t
 # =====================================================================
 r = post(su, 'admin.php?p=ligas&nueva=1', {'accion': 'crear', 'nombre': 'Escuela de Natación Delfines', 'ciudad': 'Guayaquil', 'tipo': 'escuela', 'modalidad': 'F7', 'deporte_escuela': 'natacion',
                                              'deportes[]': ['natacion'], 'color': '#0ea5e9', 'slug': '', 'admin_nombre': 'Pedro Mora', 'admin_email': 'natacion@prueba.com', 'admin_clave': 'clave12345',
-                                             'telefono': '0990003344', 'plan_id': '7', 'vigencia': 'prueba', 'dias_prueba': '14'})
+                                             'telefono': '0990003344', 'plan_id': '7', 'vigencia': 'prueba', 'dias_prueba': '7'})
 ln = pj('fila("SELECT * FROM ligas WHERE contacto_email = \'natacion@prueba.com\'")')
 chk(ln and ln['deporte_escuela'] == 'natacion', 'academia de natación creada')
 LN = int(ln['id'])

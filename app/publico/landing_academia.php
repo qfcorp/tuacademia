@@ -5,7 +5,7 @@ $planes = filas("SELECT * FROM planes WHERE activo = 1 AND tipo_cuenta IN ('escu
 $planes_vista = array_values(array_filter($planes, fn($pl) => opciones_precio($pl)));
 $wa = telefono_wa((string)ajuste('ventas_whatsapp'));
 $registro = prueba_automatica();
-$dias = (int)ajuste('dias_prueba', 14);
+$dias = (int)ajuste('dias_prueba', 7);
 $enlace_wa = $wa ? 'https://wa.me/' . $wa . '?text=' . rawurlencode('Hola, quiero información de ' . marca() . ' para mi academia') : '';
 $mods_vista = modulos_sistema('escuela');
 cabecera_publica(marca() . ' · Sistema para academias de baile, música, natación y deportes');

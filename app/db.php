@@ -405,7 +405,7 @@ function crear_esquema(PDO $pdo): void
  *  - acad_paquetes, acad_paquetes_alumno, acad_horario, acad_clases: clases particulares con paquetes de clases.
  *  - acad_mensajes: recordatorios de pensiones por WhatsApp marcados como enviados.
  *  - acad_payphone: pagos con tarjeta de las familias (Payphone).
- *  - Planes de TuAcademia (Básico $19 y Completo $29) y ajustes (prueba gratis de 14 días).
+ *  - Planes de TuAcademia (Básico $19 y Completo $29) y ajustes (prueba gratis de 7 días).
  */
 function esquema_v34(PDO $pdo): void
 {
@@ -593,7 +593,7 @@ SQL);
         // En TuAcademia solo se venden los planes de academia (los de ligas y escuelas de TuVocalía quedan guardados, apagados)
         $pdo->exec("UPDATE planes SET activo = 0, destacado = 0 WHERE slug NOT IN ('academia-basico', 'academia-completo')");
         $aj = $pdo->prepare('INSERT OR REPLACE INTO ajustes (clave, valor) VALUES (?, ?)');
-        foreach (['marca' => 'TuAcademia', 'empresa' => 'Tukán Software', 'responsable_nombre' => 'Tukán Software', 'dias_prueba' => '14', 'dias_demo' => '14', 'registro_abierto' => '1',
+        foreach (['marca' => 'TuAcademia', 'empresa' => 'Tukán Software', 'responsable_nombre' => 'Tukán Software', 'dias_prueba' => '7', 'dias_demo' => '7', 'registro_abierto' => '1',
             'combo_descuento' => '0', 'landing_titulo' => 'El sistema para su academia', 'landing_subtitulo' => 'Baile, música, natación y deportes: alumnos, pensiones, asistencia, niveles con certificado, recitales y portal de padres.',
             'nota_dominio' => 'El dominio gratis se da al pagar el plan por 1 año. La academia lo usa mientras mantenga su plan al día.'] as $k => $v) $aj->execute([$k, $v]);
     }

@@ -1,0 +1,5 @@
+Fuente Poppins (Indian Type Foundry) - SIL Open Font License 1.1 - https://openfontlicense.org
+Se puede usar, incluir y distribuir libremente junto con este sistema.
+
+public/assets/js/qrcode.js  - qrcode-generator (Kazuhiko Arase) - Licencia MIT
+public/assets/js/jsQR.js    - jsQR (Cosmo Wolfe) - Licencia Apache 2.0

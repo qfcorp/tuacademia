@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /admin.php
+Disallow: /vocal.php
+Disallow: /arbitro.php
+Disallow: /delegado.php
+Disallow: /vendedor.php
+Disallow: /mi.php
+Disallow: /familia.php
+Disallow: /puerta.php
+Disallow: /pagar.php
+Disallow: /carnet.php
+Disallow: /uploads/
+Sitemap: https://tuvocalia.com/sitemap.php

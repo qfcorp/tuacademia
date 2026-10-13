@@ -1,0 +1,45 @@
+# Datos (base SQLite, sesiones, fotos subidas, respaldos) — nunca al repositorio
+data/
+public/uploads/
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.db
+*.bak
+*.log
+respaldos/
+*_respaldos/
+*.tar.gz
+
+# Secretos y configuración del servidor
+app/config.php
+public/.user.ini
+.env
+*.pem
+*.key
+cuenta_servicio*.json
+google_play_cuenta.json
+
+# Llave de firma de Android (se guarda aparte, NUNCA en GitHub)
+android/firma/*.keystore
+android/firma/*.jks
+android/salida/
+android/node_modules/
+android/*/local.properties
+android/*/.gradle/
+android/*/app/build/
+android/*/build/
+
+# APK compilado (lo deja GitHub Actions o compilar.sh; se sube a mano al servidor)
+public/descargas/*.apk
+
+# Pruebas (archivos que se generan al correrlas)
+pruebas/**/sim_estado.json
+pruebas/**/web.log
+pruebas/**/sim.log
+pruebas/**/capturas_salida/
+__pycache__/
+
+# Sistema
+.DS_Store
+Thumbs.db

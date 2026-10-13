@@ -1,0 +1,70 @@
+TUVOCALIA EN EL VPS DEL ERP - QF PRODUCCIONES (version 23.1)
+=====================================================================
+COMO QUEDA
+  - TuVocalia corre con PHP 8.5 dentro de Docker (contenedor "tuvocalia-php").
+    El ERP sigue con su PHP 8.3: no se instala ni se actualiza nada del ERP.
+  - LIMITES para no afectar al ERP ni al SRT / Restreamer:
+      * maximo 1,5 de los 6 nucleos
+      * maximo 1,5 GB de los 12 GB de RAM (sin usar swap)
+      * prioridad BAJA: si el servidor esta ocupado, el ERP y el SRT van primero
+      * maximo 20 paginas por segundo por visitante
+  - nginx (el mismo del ERP) atiende TuVocalia SOLO dentro del servidor (127.0.0.1:8095).
+    No se tocan los puertos 80/443 del ERP ni los del SRT. Lo publica un tunel de Cloudflare.
+  - Datos en /var/www/ligas y respaldos en /var/www/ligas_respaldos: los dos entran solos
+    en el respaldo cifrado de cada noche (restic, 2:00 am) que ya copia /var/www.
+
+SI ALGO SALE MAL (apaga TuVocalia en el VPS; el ERP sigue igual), una linea a la vez:
+  sudo docker stop tuvocalia-php
+  sudo rm -f /etc/nginx/sites-enabled/tuvocalia
+  sudo systemctl reload nginx
+
+FASE 1 - Subir y revisar (NO cambia nada)
+  Windows (CMD):
+    scp C:\Users\qfpro\Downloads\tuvocalia_v23.1.tar.gz ubuntu@149.56.111.193:/home/ubuntu/
+  PuTTY en el VPS:
+    cd ~
+    tar -xzf tuvocalia_v23.1.tar.gz
+    sudo bash tuvocalia/vps/vps_0_revisar.sh
+  -> Envie a Claude todo lo que salio.
+
+FASE 2 - Preparar el VPS (hacerlo cuando NO haya transmision)
+    sudo /usr/local/bin/git_backup_erp_qf.sh
+    sudo bash tuvocalia/vps/vps_1_preparar.sh
+    sudo bash tuvocalia/vps/vps_2_codigo.sh /home/ubuntu/tuvocalia_v23.1.tar.gz
+
+FASE 3 - Copia de los datos de la laptop (la laptop sigue funcionando normal)
+  Windows: subir el mismo paquete a la laptop
+    scp C:\Users\qfpro\Downloads\tuvocalia_v23.1.tar.gz qf@192.168.90.38:/home/qf/
+  PuTTY en la laptop qfcorp:
+    cd ~
+    tar -xzf tuvocalia_v23.1.tar.gz
+    sudo bash tuvocalia/vps/laptop_1_sacar_datos.sh
+  Windows: bajar la copia y subirla al VPS (cambie XXXX por el nombre que mostro la laptop)
+    scp qf@192.168.90.38:/home/qf/tuvocalia_datos_XXXX.tar.gz C:\Users\qfpro\Downloads\
+    scp C:\Users\qfpro\Downloads\tuvocalia_datos_XXXX.tar.gz ubuntu@149.56.111.193:/home/ubuntu/
+  PuTTY en el VPS:
+    sudo bash tuvocalia/vps/vps_3_datos.sh
+  (Modo PRUEBA: no manda avisos ni hace respaldos, para no repetir mensajes; la oficial sigue en la laptop.)
+
+FASE 4 - Publicar https://prueba.tuvocalia.com (navegador)
+  1. https://one.dash.cloudflare.com > Networks (Redes) > Tunnels > Create a tunnel > Cloudflared
+  2. Nombre: vps-erp > Save tunnel
+  3. Elija Debian, 64-bit. Copie SOLO la linea que empieza con  sudo cloudflared service install
+     y peguela en PuTTY del VPS. Espere que el panel diga "Connected" > Next
+  4. Public hostname:  Subdomain: prueba   Domain: tuvocalia.com   Type: HTTP   URL: 127.0.0.1:8095
+     > Save hostname
+  5. Abra https://prueba.tuvocalia.com y entre con su usuario de siempre.
+  (Si la Fase 1 mostro que el VPS ya tiene un tunel, Claude le dira como agregar el nombre a ese tunel.)
+
+FASE 5 - Cambio DEFINITIVO (otro dia, cuando la prueba este bien; Claude le guia paso a paso)
+  a. Laptop:  sudo bash tuvocalia/vps/laptop_2_cerrar.sh   (aviso de mantenimiento + copia final)
+  b. Windows: pasar la copia final al VPS (como en la Fase 3)
+  c. VPS:     sudo bash tuvocalia/vps/vps_3_datos.sh /home/ubuntu/tuvocalia_datos_XXXX.tar.gz produccion
+  d. Cloudflare: mover tuvocalia.com y www.tuvocalia.com del tunel de la laptop al tunel vps-erp
+  e. Si hay que volver atras: laptop  sudo bash tuvocalia/vps/laptop_3_reabrir.sh  y devolver los nombres en Cloudflare
+
+DIA A DIA EN EL VPS
+  Ver como esta:          sudo bash tuvocalia/vps/vps_estado.sh
+  Actualizar a otra version (ej. v24), sin tocar datos:
+    sudo bash tuvocalia/vps/vps_2_codigo.sh /home/ubuntu/tuvocalia_v24.tar.gz
+  (En el VPS NO se usa instalar.sh: ese es solo para la laptop.)

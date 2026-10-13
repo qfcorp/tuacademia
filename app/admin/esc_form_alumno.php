@@ -7,11 +7,16 @@ $v = fn(string $k, $def = '') => e((string)($a[$k] ?? $def));
       <div><label>Nombres *</label><input type="text" name="nombres" required maxlength="60" value="<?= $v('nombres') ?>"></div>
       <div><label>Apellidos</label><input type="text" name="apellidos" maxlength="60" value="<?= $v('apellidos') ?>"></div>
       <div><label>Cédula</label><input type="text" name="cedula" maxlength="20" value="<?= $v('cedula') ?>"></div>
-      <div><label>Fecha de nacimiento *</label><input type="date" name="fecha_nac" required value="<?= $v('fecha_nac') ?>"><div class="ayuda">Define la categoría Sub.</div></div>
+      <div><label>Fecha de nacimiento *</label><input type="date" name="fecha_nac" required value="<?= $v('fecha_nac') ?>"><div class="ayuda"><?= es_academia() ? 'Sirve para la edad y el curso que le corresponde.' : 'Define la categoría Sub.' ?></div></div>
       <div><label>Género</label><select name="genero"><option value="">—</option><?php foreach (['M' => 'Masculino', 'F' => 'Femenino'] as $k => $t): ?><option value="<?= $k ?>" <?= ($a['genero'] ?? '') === $k ? 'selected' : '' ?>><?= $t ?></option><?php endforeach; ?></select></div>
       <div><label>Grupo</label><select name="grupo_id"><?= opciones_grupos($grupos, isset($a['grupo_id']) ? (int)$a['grupo_id'] : null) ?></select><div class="ayuda">Vacío = se asigna por la edad.</div></div>
+      <?php $liga_f = $liga ?? liga_trabajo(); // (TuAcademia) posición y pie hábil solo si hay deportes de equipo; campos de baile, música y natación
+      if (acad_muestra_posicion($liga_f)): ?>
       <div><label>Posición</label><input type="text" name="posicion" maxlength="30" value="<?= $v('posicion') ?>"></div>
       <div><label>Pie hábil</label><select name="pie"><option value="">—</option><?php foreach (['derecho', 'izquierdo', 'ambos'] as $t): ?><option value="<?= $t ?>" <?= ($a['pie'] ?? '') === $t ? 'selected' : '' ?>><?= ucfirst($t) ?></option><?php endforeach; ?></select></div>
+      <?php else: ?><input type="hidden" name="posicion" value="<?= $v('posicion') ?>"><input type="hidden" name="pie" value="<?= $v('pie') ?>"><?php endif; ?>
+      <?= html_campos_academia_alumno($a, $liga_f) ?>
+      <div><label>Nivel actual</label><?= html_nivel_inicial_alumno($a, $liga_f) ?></div>
       <div><label>Colegio</label><input type="text" name="colegio" maxlength="100" value="<?= $v('colegio') ?>"></div>
       <div class="campo-ancho"><label>Dirección</label><input type="text" name="direccion" maxlength="160" value="<?= $v('direccion') ?>"></div>
       <div><label>Foto</label><input type="file" name="foto" accept="image/*" capture="environment"></div>

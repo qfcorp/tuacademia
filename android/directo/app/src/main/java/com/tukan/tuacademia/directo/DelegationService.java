@@ -1,4 +1,4 @@
-package com.tuvocalia.directo;
+package com.tukan.tuacademia.directo;
 
 
 

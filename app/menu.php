@@ -40,22 +40,28 @@ function menu_panel(): array
     if ($liga && es_escuela($liga)) {
         $lid = (int)$liga['id'];
         $al = [];
+        $va = vocab_academia($liga); // (TuAcademia) cursos / grupos, clases / entrenamientos
         if (puede('alumnos')) {
             $al[] = $it('admin.php?p=alumnos', 'Alumnos', '🧒', ['alumnos', 'alumno', 'esc_carnets'], 'Fichas, fotos, carnets e inscripciones', (int)valor("SELECT COUNT(*) FROM esc_alumnos WHERE liga_id = ? AND estado = 'pendiente'", [$lid]), true);
-            $al[] = $it('admin.php?p=grupos', 'Grupos y horarios', '🗓', ['grupos'], 'Categorías, sedes, días y horas');
+            $al[] = $it('admin.php?p=grupos', $va['cursos'] . ' y horarios', '🗓', ['grupos'], es_academia() ? 'Disciplinas, niveles, sedes, días y horas' : 'Categorías, sedes, días y horas');
         }
         if (puede('clases')) $al[] = $it('admin.php?p=asistencia', 'Asistencia', '✅', ['asistencia'], 'Tomar lista de la clase de hoy', 0, true);
-        if (puede('clases') && modulo_menu($liga, 'esc_entrenamientos')) $al[] = $it('admin.php?p=planificacion', 'Entrenamientos', '🏃', ['planificacion'], 'Planificar clases y ejercicios');
+        if (puede('clases') && modulo_menu($liga, 'acad_particulares')) $al[] = $it('admin.php?p=particulares', 'Clases particulares', '🎹', ['particulares'], 'Paquetes de clases, horario 1 a 1 y saldo de clases'); // (TuAcademia)
+        if (puede('clases') && modulo_menu($liga, 'esc_entrenamientos')) $al[] = $it('admin.php?p=planificacion', acad_estilo($liga) === 'deporte' ? 'Entrenamientos' : 'Planificar clases', acad_estilo($liga) === 'deporte' ? '🏃' : '📝', ['planificacion'], 'Planificar clases y ejercicios');
         if (puede('evaluaciones') && modulo_menu($liga, 'esc_evaluaciones')) $al[] = $it('admin.php?p=evaluaciones', 'Evaluaciones', '📊', ['evaluaciones'], 'Tests, medidas y técnica');
         if ((puede('alumnos') || puede('clases')) && modulo_menu($liga, 'videos')) $al[] = $it('admin.php?p=videos', 'Videos', '🎬', ['videos'], 'Videos para cada alumno (se borran a los 10 días)'); // (v28)
         if (puede('formativas') && formativas_activas($liga)) $al[] = $it('admin.php?p=formativas', 'Club', '🏆', ['formativas'], 'Divisiones formativas y partidos');
         // (v21) Multideporte: combates, partidos de tenis, cinturones y pruebas con medallas
         if (puede('evaluaciones') && (escuela_tiene_tipo($liga, 'combate') || escuela_tiene_tipo($liga, 'marcas'))) $al[] = $it('admin.php?p=competencias', 'Competencias', '🥇', ['competencias'], 'Combates, cinturones, marcas y medallas');
-        // (v31) Taekwondo, karate y judo: exámenes de grado, cinturones y poomsae / kata
-        if (puede('evaluaciones') && disciplinas_de_escuela($liga)) $al[] = $it('admin.php?p=examenes', 'Exámenes de grado', '🥋', ['examenes'], 'Cinturones, ' . mb_strtolower(vocabulario_escuela($liga)['formas']) . ' y certificados');
+        // (v31) Taekwondo, karate y judo: exámenes de grado, cinturones y poomsae / kata · (TuAcademia) niveles de cualquier disciplina
+        $sist_n = sistemas_nivel_escuela($liga);
+        $solo_marc = $sist_n && !array_filter($sist_n, fn($x) => !es_clave_marcial($x));
+        if (puede('evaluaciones') && $sist_n && (es_academia() || $solo_marc || disciplinas_de_escuela($liga)) && (!es_academia() || modulo_menu($liga, 'acad_niveles'))) $al[] = $it('admin.php?p=examenes', $solo_marc ? 'Exámenes de grado' : 'Niveles y exámenes', $solo_marc ? '🥋' : '🎖️', ['examenes'], $solo_marc ? 'Cinturones, ' . mb_strtolower(vocabulario_escuela($liga)['formas']) . ' y certificados' : 'Niveles de cada alumno, exámenes y certificados con QR');
+        if (puede('alumnos') && modulo_menu($liga, 'acad_recitales')) $al[] = $it('admin.php?p=recitales', $va['eventos'], '🎭', ['recitales'], 'Recitales, presentaciones, ensayos y cobro de vestuario'); // (TuAcademia)
         if ($al) $g['alumnos'] = ['titulo' => 'Alumnos', 'ico' => '🎓', 'items' => $al];
         $di = [];
-        if (puede('cobros')) $di[] = $it('admin.php?p=cobros', 'Pagos', '💵', ['cobros', 'esc_recibo'], 'Mensualidades, cobros y recibos', (int)valor("SELECT COUNT(*) FROM esc_cargos WHERE liga_id = ? AND estado = 'pendiente' AND comprobante_estado = 'pendiente'", [$lid]), true);
+        if (puede('cobros')) $di[] = $it('admin.php?p=cobros', 'Pagos', '💵', ['cobros', 'esc_recibo'], es_academia() ? 'Pensiones, cobros, comprobantes y recibos' : 'Mensualidades, cobros y recibos', (int)valor("SELECT COUNT(*) FROM esc_cargos WHERE liga_id = ? AND estado = 'pendiente' AND comprobante_estado = 'pendiente'", [$lid]), true);
+        if (puede('cobros')) $di[] = $it('admin.php?p=mensajes', 'Mensajes de hoy', '📲', ['mensajes'], 'Recordatorios de pensiones por WhatsApp', acad_mensajes_pendientes($liga), true); // (TuAcademia)
         if (puede('cobros') && modulo_menu($liga, 'contabilidad')) $di[] = $it('admin.php?p=contabilidad', 'Contabilidad', '📒', ['contabilidad'], 'Ingresos, gastos y facturas del SRI');
         if (puede('profesores') && modulo_menu($liga, 'esc_profesores')) $di[] = $it('admin.php?p=profesores', 'Profesores', '🧑‍🏫', ['profesores'], 'Entrenadores y su rol de pago');
         if (puede('tienda') && modulo_menu($liga, 'esc_tienda')) $di[] = $it('admin.php?p=tienda', 'Tienda', '🛒', ['tienda'], 'Uniformes y productos');
@@ -112,10 +118,10 @@ function menu_panel(): array
         if (!$liga) $s[] = $it('admin.php?p=bitacora&amp;todas=1', 'Bitácora', '📜', ['bitacora'], 'Todos los cambios del sistema');
         if (!$liga) $s[] = $it('admin.php?p=datos', 'Protección de datos', '🔒', ['datos'], 'Autorizaciones y solicitudes de todo el sistema', solicitudes_derechos_pendientes(null));
         $s[] = $it('admin.php?p=negocio', 'Negocio', '📈', ['negocio'], 'Ingresos y clientes', 0, true);
-        $s[] = $it('admin.php?p=ligas', 'Ligas y escuelas', '🏆', ['ligas'], 'Clientes, entrar a su panel', 0, true);
+        $s[] = $it('admin.php?p=ligas', es_academia() ? 'Academias' : 'Ligas y escuelas', es_academia() ? '🎓' : '🏆', ['ligas'], 'Clientes, entrar a su panel', 0, true);
         $s[] = $it('admin.php?p=suscripciones', 'Ventas', '🧾', ['suscripciones', 'planes'], 'Suscripciones, planes y comprobantes', pagos_por_revisar(), true); // (v33) comprobantes por revisar
         $s[] = $it('admin.php?p=vendedores', 'Vendedores', '🤝', ['vendedores'], 'Comisiones');
-        $s[] = $it('admin.php?p=modulos', 'Módulos deportivos', '🧩', ['modulos'], 'Precios, requisitos, reglas y demos por deporte', 0, true); // (v35)
+        $s[] = $it('admin.php?p=modulos', es_academia() ? 'Disciplinas' : 'Módulos deportivos', '🧩', ['modulos'], es_academia() ? 'Precios y requisitos de baile, música, natación y deportes' : 'Precios, requisitos, reglas y demos por deporte', 0, true); // (v35)
         $s[] = $it('admin.php?p=demos', 'Demos', '📝', ['demos'], 'Solicitudes de demo', solicitudes_demo_nuevas(), true);
         $s[] = $it('admin.php?p=embudo', 'Embudo de demos', '📈', ['embudo'], 'Seguimiento: uso, días y WhatsApp');
         $s[] = $it('admin.php?p=soporte', 'Soporte', '🎫', ['soporte'], 'Tickets y pedidos de funcionalidad', tickets_pendientes_super(), true);

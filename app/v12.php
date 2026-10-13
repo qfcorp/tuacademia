@@ -4,9 +4,9 @@
  *   1) Planes por MÓDULOS: cada plan dice qué módulos trae, cuántos torneos, equipos por torneo y alumnos,
  *      y tiene precio por mes, trimestre, semestre y año. El sistema oculta y bloquea lo que el plan no incluye.
  *   2) Cobros con TARJETA (Plux) en los dos sentidos:
- *        - la liga o escuela paga su suscripción a TuVocalía;
- *        - los equipos (delegados) y las familias pagan a su liga o escuela, con TuVocalía de intermediario
- *          (comisión de la tarjeta + IVA + gestión administrativa de TuVocalía), con liquidaciones a cada organización.
+ *        - la liga o escuela paga su suscripción a TuAcademia;
+ *        - los equipos (delegados) y las familias pagan a su liga o escuela, con TuAcademia de intermediario
+ *          (comisión de la tarjeta + IVA + gestión administrativa de TuAcademia), con liquidaciones a cada organización.
  *   3) Rol de pago de los profesores (ingresos, bonos, IESS, anticipos, otros descuentos y neto).
  */
 
@@ -28,7 +28,7 @@ function modulos_sistema(string $tipo = ''): array
             'carnets' => ['Carnets con QR del alumno', 'Carnet del alumno con foto y código QR, carnet digital en el celular de los padres e imagen para redes.'],
             'avisos' => ['Avisos por Telegram', 'Mensualidades por vencer, pagos, asistencia y novedades llegan solos al celular de los padres, profesores y directivos.'],
             'pagos_tarjeta' => ['Cobros con tarjeta', 'Los padres pagan las mensualidades con tarjeta de crédito o débito desde su celular; el recibo sale solo y usted ve cada pago en su reporte.'],
-            'dominio' => ['Dominio propio', 'La página de su escuela con su propia dirección (www.suescuela.com) en vez de tuvocalia.com/su-escuela.'],
+            'dominio' => ['Dominio propio', 'La página de su escuela con su propia dirección (www.suescuela.com) en vez de tuacademia.tukanec.com/su-escuela.'],
         ];
         foreach ($esc as $k => [$n, $d]) if (isset($r[$k])) { $r[$k][1] = $n; $r[$k][3] = $d; }
     }
@@ -50,7 +50,7 @@ function modulos_sistema_base(): array
         'reservas' => ['🏟', 'Reserva de canchas', 'liga', 'El público reserva sus canchas por horas desde el celular y el cobro entra a finanzas.'],
         'avisos' => ['📲', 'Avisos por Telegram', 'ambos', 'Programación, resultados, suspensiones, pagos y vencimientos llegan solos al celular de delegados, árbitros, profesores y directivos.'],
         'pagos_tarjeta' => ['💳', 'Cobros con tarjeta', 'ambos', 'Sus equipos y familias le pagan con tarjeta de crédito o débito desde su celular; el sistema aplica el pago, emite el recibo y usted ve todo en su reporte de pagos.'],
-        'dominio' => ['🌐', 'Dominio propio', 'ambos', 'Su página con su propia dirección (www.suliga.com) en vez de tuvocalia.com/su-liga.'],
+        'dominio' => ['🌐', 'Dominio propio', 'ambos', 'Su página con su propia dirección (www.suliga.com) en vez de tuacademia.tukanec.com/su-liga.'],
         'esc_familias' => ['👨‍👩‍👦', 'Portal de padres e inscripción en línea', 'escuela', 'Los padres inscriben a sus hijos por internet y ven asistencia, pagos, recibos, evaluaciones y libreta desde el celular.'],
         'esc_profesores' => ['🧑‍🏫', 'Profesores y rol de pago', 'escuela', 'Grupos, días que dictaron clase, pago mensual, por clase o por alumno, liquidación y rol de pago que cada profesor ve en su celular.'],
         'esc_entrenamientos' => ['📅', 'Planificación de entrenamientos', 'escuela', 'El profesor planifica las clases por adelantado con la biblioteca de ejercicios de la escuela; cada clase guarda ejercicios, minutos, intensidad, fotos y una nota para cada alumno, y los padres ven el diario de entrenamientos de su hijo.'],
@@ -61,6 +61,11 @@ function modulos_sistema_base(): array
         // (v27) Solo en cuentas pagadas de los planes completos (no en la demo ni en la prueba gratis)
         // (v28)
         'entradas' => ['🎟', 'Venta de entradas con QR', 'liga', 'Venda las entradas de sus partidos por internet (tarjeta o transferencia), en taquilla y cortesías, con parqueadero opcional. Cada entrada tiene su QR y en la puerta se valida con el celular, aunque no haya internet.'],
+        // (TuAcademia)
+        'acad_niveles' => ['🎖️', 'Niveles, exámenes y certificados', 'escuela', 'Niveles de fábrica para baile, música y natación (y cinturones de artes marciales), exámenes de promoción con cobro, acta y certificado con código QR que cualquiera puede verificar.'],
+        'acad_recitales' => ['🎭', 'Recitales y presentaciones', 'escuela', 'Arme el recital por coreografías u obras, con los alumnos de cada una, la talla de vestuario, los ensayos y el cobro del vestuario y la inscripción, que llega al portal de los padres.'],
+        'acad_particulares' => ['🎹', 'Clases particulares con paquetes', 'escuela', 'Paquetes de 4, 8 o 12 clases, horario 1 a 1 con el profesor y el saldo de clases que baja solo al marcar la asistencia.'],
+        'pago_payphone' => ['💳', 'Pago con tarjeta por Payphone', 'escuela', 'Los padres pagan la pensión con tarjeta desde su portal con Payphone; el pago se confirma solo y sale el recibo.'],
         'videos' => ['🎬', 'Videos del jugador y del alumno', 'ambos', 'Suba videos cortos (hasta 2 minutos) de cada jugador o alumno: su gol, una jugada, su técnica. Le llegan a su portal para verlos y descargarlos; se borran solos a los 10 días.'],
         'carga_masiva' => ['📥', 'Subida masiva desde Excel', 'ambos', 'Plantillas de Excel para subir de una sola vez equipos, jugadores, árbitros, canchas y competidores (ligas) o sedes, profesores, grupos y alumnos (escuelas).'],
         'contabilidad' => ['📒', 'Contabilidad con importador del SRI', 'ambos', 'Gastos con o sin factura, facturas recibidas importadas del SRI (XML, TXT o clave de acceso) que usted elige incluir, resumen de ingresos y gastos por mes y por campeonato, y reportes en PDF y Excel para su contador.'],
@@ -90,7 +95,8 @@ function modulo_de_pagina(string $p): string
         'planificacion' => 'esc_entrenamientos', 'formativas' => 'esc_formativas', 'contabilidad' => 'contabilidad',
         'cargas' => 'carga_masiva', 'importar' => 'carga_masiva', // (v27)
         'videos' => 'videos', 'entradas' => 'entradas', // (v28)
-    ][$p] ?? '';
+        'recitales' => 'acad_recitales', 'particulares' => 'acad_particulares', // (TuAcademia)
+    ][$p] ?? ($p === 'examenes' && es_academia() ? 'acad_niveles' : '');
 }
 
 function nombre_modulo(string $m): string
@@ -338,7 +344,7 @@ function registrar_pago_suscripcion(array $l, ?int $plan, int $meses, float $mon
 }
 
 /* ============================================================
- * 2) COBROS CON TARJETA (Plux) — TuVocalía de intermediario
+ * 2) COBROS CON TARJETA (Plux) — TuAcademia de intermediario
  * ============================================================ */
 
 function pasarela_modo(): string
@@ -360,7 +366,7 @@ function tasas_pasarela(): array
     return ['credito' => $n('comision_credito', 4.02), 'debito' => $n('comision_debito', 2.00), 'iva' => $n('iva_pct', 15), 'tuvocalia' => $n('comision_tuvocalia', 1.00)];
 }
 
-/** Texto para explicar el costo: "Crédito 4,02% + IVA · Débito 2% + IVA · Gestión TuVocalía 1%". */
+/** Texto para explicar el costo: "Crédito 4,02% + IVA · Débito 2% + IVA · Gestión TuAcademia 1%". */
 function texto_tasas(): string
 {
     $t = tasas_pasarela();
@@ -376,7 +382,7 @@ function org_cobra_con_tarjeta(?array $liga): bool
 
 /**
  * Cuánto se cobra a la tarjeta. Si la comisión la paga el cliente, se le suma lo necesario para que la organización reciba
- * completo el valor con la tarifa más alta (crédito). Para la suscripción (destino TuVocalía) no hay gestión administrativa.
+ * completo el valor con la tarifa más alta (crédito). Para la suscripción (destino TuAcademia) no hay gestión administrativa.
  */
 function calcular_cobro(float $base, string $quien, string $destino = 'organizacion'): array
 {
@@ -521,7 +527,7 @@ function nombre_concepto_pago(string $c): string
     return ['suscripcion' => 'Suscripción ' . marca(), 'equipo' => 'Pago de equipo', 'escuela' => 'Pago de alumno', 'inscripcion' => 'Inscripción', 'entradas' => 'Entradas'][$c] ?? $c;
 }
 
-/** Totales de cobros con tarjeta de una organización (lo que TuVocalía le debe transferir). */
+/** Totales de cobros con tarjeta de una organización (lo que TuAcademia le debe transferir). */
 function resumen_cobros_org(int $liga_id): array
 {
     $r = fila("SELECT COUNT(*) AS n, COALESCE(SUM(total), 0) AS cobrado, COALESCE(SUM(comision_pasarela + comision_tuvocalia), 0) AS comisiones, COALESCE(SUM(neto), 0) AS neto,

@@ -1,5 +1,5 @@
 #!/bin/bash
-# TuVocalia - PASO 1 en el VPS: PHP 8.5 aislado en Docker (con limites) + sitio de nginx solo interno.
+# TuAcademia - PASO 1 en el VPS: PHP 8.5 aislado en Docker (con limites) + sitio de nginx solo interno.
 # No toca el ERP, su PHP 8.3, ni los puertos 80/443. Uso: sudo bash vps_1_preparar.sh
 DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$DIR/comun.sh"
@@ -16,9 +16,9 @@ cp "$DIR"/docker/* "$OPT"/
 if docker image inspect "$IMAGEN" >/dev/null 2>&1 && [ "$1" != "--rehacer" ]; then
   verde "La imagen $IMAGEN ya existe (para rehacerla: sudo bash $0 --rehacer)"
 else
-  if ! DOCKER_BUILDKIT=0 docker build --cpuset-cpus=0 --cpu-shares=128 --memory=1g -t "$IMAGEN" "$OPT" >/tmp/tuvocalia_build.log 2>&1; then
+  if ! DOCKER_BUILDKIT=0 docker build --cpuset-cpus=0 --cpu-shares=128 --memory=1g -t "$IMAGEN" "$OPT" >/tmp/tuacademia_build.log 2>&1; then
     amarillo "Reintentando con el constructor normal de Docker..."
-    docker build -t "$IMAGEN" "$OPT" >>/tmp/tuvocalia_build.log 2>&1 || { rojo "No se pudo crear la imagen. Envie a Claude: tail -n 30 /tmp/tuvocalia_build.log"; exit 1; }
+    docker build -t "$IMAGEN" "$OPT" >>/tmp/tuacademia_build.log 2>&1 || { rojo "No se pudo crear la imagen. Envie a Claude: tail -n 30 /tmp/tuacademia_build.log"; exit 1; }
   fi
   verde "Imagen creada."
 fi
@@ -36,28 +36,28 @@ docker run -d --name "$CONTENEDOR" --restart unless-stopped \
 sleep 3
 docker ps --filter "name=^${CONTENEDOR}$" --format '{{.Status}}' | grep -q Up && verde "Contenedor $CONTENEDOR funcionando." || { rojo "El contenedor no arranco:"; docker logs --tail 20 "$CONTENEDOR"; exit 1; }
 
-paso "4/5 nginx: sitio de TuVocalia SOLO en 127.0.0.1:$PUERTO_WEB (el ERP no se toca)"
-cp -a /etc/nginx /root/respaldo_nginx_antes_tuvocalia_$(date +%Y%m%d_%H%M%S) 2>/dev/null
+paso "4/5 nginx: sitio de TuAcademia SOLO en 127.0.0.1:$PUERTO_WEB (el ERP no se toca)"
+cp -a /etc/nginx /root/respaldo_nginx_antes_tuacademia_$(date +%Y%m%d_%H%M%S) 2>/dev/null
 if grep -q "include /etc/nginx/conf.d/\*.conf" /etc/nginx/nginx.conf; then
-  cat > /etc/nginx/conf.d/tuvocalia_limite.conf <<'NGX'
-# TuVocalia: maximo 20 paginas por segundo por visitante (protege al ERP de abusos)
-limit_req_zone $http_cf_connecting_ip zone=tuvocalia:10m rate=20r/s;
+  cat > /etc/nginx/conf.d/tuacademia_limite.conf <<'NGX'
+# TuAcademia: maximo 20 paginas por segundo por visitante (protege al ERP de abusos)
+limit_req_zone $http_cf_connecting_ip zone=tuacademia:10m rate=20r/s;
 NGX
-  LIMITE="limit_req zone=tuvocalia burst=60 nodelay;"
+  LIMITE="limit_req zone=tuacademia burst=60 nodelay;"
 else
   LIMITE=""
 fi
-cat > /etc/nginx/sites-available/tuvocalia <<NGX
-# TuVocalia (sistema de ligas) - solo dentro del servidor; lo publica el tunel de Cloudflare
+cat > /etc/nginx/sites-available/tuacademia <<NGX
+# TuAcademia (sistema de ligas) - solo dentro del servidor; lo publica el tunel de Cloudflare
 server {
     listen 127.0.0.1:$PUERTO_WEB default_server;
     server_name _;
-    if (\$host = www.tuvocalia.com) { return 301 https://tuvocalia.com\$request_uri; }
+    if (\$host = tuacademia.tukanec.com) { return 301 https://tuacademia.tukanec.com\$request_uri; }
     root $DESTINO/public;
     index index.php;
     client_max_body_size 15M;
-    access_log /var/log/nginx/tuvocalia_access.log;
-    error_log  /var/log/nginx/tuvocalia_error.log;
+    access_log /var/log/nginx/tuacademia_access.log;
+    error_log  /var/log/nginx/tuacademia_error.log;
     location / { try_files \$uri \$uri/ /index.php?\$query_string; }
     location ^~ /uploads/ {
         location ~ \.php\$ { deny all; }
@@ -73,21 +73,21 @@ server {
     }
 }
 NGX
-ln -sf /etc/nginx/sites-available/tuvocalia /etc/nginx/sites-enabled/tuvocalia
-if nginx -t >/tmp/tuvocalia_nginx.log 2>&1; then
+ln -sf /etc/nginx/sites-available/tuacademia /etc/nginx/sites-enabled/tuacademia
+if nginx -t >/tmp/tuacademia_nginx.log 2>&1; then
   systemctl reload nginx && verde "nginx recargado (sin cortar al ERP)."
 else
-  rojo "nginx dio un error: se quita el sitio nuevo para no afectar al ERP:"; cat /tmp/tuvocalia_nginx.log
-  rm -f /etc/nginx/sites-enabled/tuvocalia /etc/nginx/conf.d/tuvocalia_limite.conf
+  rojo "nginx dio un error: se quita el sitio nuevo para no afectar al ERP:"; cat /tmp/tuacademia_nginx.log
+  rm -f /etc/nginx/sites-enabled/tuacademia /etc/nginx/conf.d/tuacademia_limite.conf
   exit 1
 fi
 echo "$PUERTO_WEB" > "$DESTINO/data/puerto_nginx"; chown www-data:www-data "$DESTINO/data/puerto_nginx"
 
 paso "5/5 Prueba"
-echo '<?php echo "TUVOCALIA-OK PHP " . PHP_VERSION;' > "$DESTINO/public/zz_prueba_vps.php"; chown www-data "$DESTINO/public/zz_prueba_vps.php"
-R="$(curl -s -H 'Host: prueba.tuvocalia.com' http://127.0.0.1:$PUERTO_WEB/zz_prueba_vps.php)"
+echo '<?php echo "TUACADEMIA-OK PHP " . PHP_VERSION;' > "$DESTINO/public/zz_prueba_vps.php"; chown www-data "$DESTINO/public/zz_prueba_vps.php"
+R="$(curl -s -H 'Host: prueba-tuacademia.tukanec.com' http://127.0.0.1:$PUERTO_WEB/zz_prueba_vps.php)"
 rm -f "$DESTINO/public/zz_prueba_vps.php"
-if echo "$R" | grep -q TUVOCALIA-OK; then verde "Funciona: $R"; else rojo "La prueba fallo: $R"; echo "Revise: sudo tail -n 20 /var/log/nginx/tuvocalia_error.log"; exit 1; fi
+if echo "$R" | grep -q TUACADEMIA-OK; then verde "Funciona: $R"; else rojo "La prueba fallo: $R"; echo "Revise: sudo tail -n 20 /var/log/nginx/tuacademia_error.log"; exit 1; fi
 ERP="$(curl -s -o /dev/null -w '%{http_code}' --resolve erp.tupassec.com:443:127.0.0.1 https://erp.tupassec.com/ -k)"
 echo "El ERP sigue respondiendo (codigo $ERP; 200 o 302 es normal)."
 echo; verde "PASO 1 TERMINADO. Siga con el paso 2 de las instrucciones."

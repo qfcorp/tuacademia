@@ -42,7 +42,7 @@ if (es_post()) {
         }
         if ($accion === 'salir') { unset($_SESSION['familia']); ir('familia.php'); }
         if ($accion === 'pagar_tarjeta' && $fam) {
-            // (v12) La familia paga con tarjeta las mensualidades marcadas (TuVocalía cobra y transfiere a la escuela)
+            // (v12) La familia paga con tarjeta las mensualidades marcadas (TuAcademia cobra y transfiere a la escuela)
             if (!org_cobra_con_tarjeta($liga)) throw new RuntimeException('La escuela no recibe pagos con tarjeta por ahora.');
             $ids = array_map('intval', (array)($_POST['cargos'] ?? []));
             $cs = $ids ? filas("SELECT c.*, a.nombres, a.apellidos FROM esc_cargos c JOIN esc_alumnos a ON a.id = c.alumno_id WHERE c.id IN (" . implode(',', $ids) . ") AND a.liga_id = ? AND a.representante_cedula = ? AND c.estado = 'pendiente'", [$fam['liga_id'], $fam['cedula']]) : [];
@@ -56,11 +56,22 @@ if (es_post()) {
             ]);
             ir(url_pago($token));
         }
+        // (TuAcademia) Un comprobante (DeUna o transferencia) para uno o varios valores
+        if ($accion === 'comprobante_varios' && $fam) {
+            acad_subir_comprobante_familia($liga, $fam, (array)($_POST['cargos'] ?? []), post('forma'), post('referencia'));
+            flash(post('forma') === 'deuna' ? 'Recibimos su pago por DeUna. La academia lo revisará y le emitirá el recibo.' : 'Comprobante enviado. La academia lo revisará y le emitirá el recibo.');
+            ir('familia.php#pagar');
+        }
+        // (TuAcademia) Pago con tarjeta por Payphone: se prepara la transacción y se muestra la cajita de Payphone
+        if ($accion === 'payphone' && $fam) {
+            $_SESSION['payphone_caja'] = acad_payphone_preparar($liga, $fam, (array)($_POST['cargos'] ?? []));
+            ir('familia.php?pagar=tarjeta#pagar');
+        }
         if ($accion === 'comprobante' && $fam) {
             $c = fila("SELECT c.* FROM esc_cargos c JOIN esc_alumnos a ON a.id = c.alumno_id WHERE c.id = ? AND a.liga_id = ? AND a.representante_cedula = ? AND c.estado = 'pendiente'", [(int)post('cargo_id'), $fam['liga_id'], $fam['cedula']])
                 ?? throw new RuntimeException('Ese valor ya no está pendiente.');
             $ruta = subir_comprobante('foto');
-            q("UPDATE esc_cargos SET comprobante = ?, comprobante_estado = 'pendiente' WHERE id = ?", [$ruta, $c['id']]);
+            q("UPDATE esc_cargos SET comprobante = ?, comprobante_estado = 'pendiente', comprobante_forma = ?, comprobante_fecha = ? WHERE id = ?", [$ruta, post('forma') === 'deuna' ? 'deuna' : 'transferencia', date('Y-m-d H:i'), $c['id']]);
             aviso_admins($liga, '📤 <b>Comprobante de pago</b> de una familia: ' . e($c['descripcion']) . ' · ' . dinero($c['monto'] - $c['descuento']), 'escomp:' . (int)$c['id']);
             flash('Comprobante enviado. La escuela lo revisará y le emitirá el recibo.');
             ir('familia.php#pagos');
@@ -124,7 +135,8 @@ $pend_todos = org_cobra_con_tarjeta($liga) ? filas("SELECT c.*, a.nombres FROM e
     <?= aviso_comision_cliente($liga, $tot_p) ?>
   </div>
 <?php endif; ?>
-<?php if (!$hijos): ?><div class="tarjeta">No encontramos alumnos a su nombre. Comuníquese con la escuela.</div><?php endif; ?>
+<?php if (!$hijos): ?><div class="tarjeta">No encontramos alumnos a su nombre. Comuníquese con la <?= es_academia() ? 'academia' : 'escuela' ?>.</div><?php endif; ?>
+<?= html_pagar_familia($liga, $fam) // (TuAcademia) pagar por DeUna, transferencia o tarjeta (Payphone) ?>
 <?php
 // (v17) Vista de un hijo: diario de entrenamientos, desarrollo con gráficos o partidos
 $hv = (int)get('h');
@@ -153,7 +165,7 @@ if ($hijo):
       <?php if (count($items) === 15): ?><a class="btn btn-sec btn-chico" href="familia.php?h=<?= $aid ?>&amp;v=diario&amp;pag=<?= $pag + 1 ?>">Clases anteriores →</a><?php endif; ?></div>
   <?php elseif ($vista === 'desarrollo'): ?>
     <?php foreach (jornadas_nuevas_alumno($aid) as $jn): ?><div class="aviso aviso-info">🆕 <b>Nuevos resultados:</b> <?= e($jn['nombre']) ?> (<?= e(fecha_corta($jn['fecha'])) ?>).</div><?php endforeach; ?>
-    <?= panel_desarrollo($a, $liga, true) ?><?= html_cinturon_alumno($a, $liga) ?><?= html_competencias_alumno($a) ?>
+    <?= panel_desarrollo($a, $liga, true) ?><?= html_cinturon_alumno($a, $liga) ?><?= html_niveles_alumno($a, $liga) ?><?= html_competencias_alumno($a) ?>
     <p><a class="btn btn-sec" target="_blank" href="familia.php?libreta=<?= $aid ?>">📘 Informe completo para imprimir o guardar en PDF</a></p>
   <?php elseif ($vista === 'partidos' && $con_club):
       $rp = resumen_partidos_alumno($aid, date('Y-01-01'));
@@ -186,6 +198,7 @@ if ($hijo):
     </div></div>
     <?php foreach ($nuevas as $jn): ?><div class="aviso aviso-info" style="margin-top:10px">🆕 Ya están los resultados de <b><?= e($jn['nombre']) ?></b>. <a href="familia.php?h=<?= (int)$a['id'] ?>&amp;v=desarrollo">Ver con gráficos →</a></div><?php endforeach; ?>
     <?php if ($ins): ?><div style="margin-top:10px"><?= html_insignias(array_slice($ins, 0, 3)) ?></div><?php endif; ?>
+    <?php if ($a['estado'] === 'activo'): ?><?= html_eventos_alumno($a) ?><?= html_particulares_familia($a) ?><?php endif; // (TuAcademia) ?>
     <?php if ($ult): ?><h3>📖 Última clase</h3><?= html_diario($ult, true) ?><?php endif; ?>
 
     <h3 id="pagos">💵 Pagos</h3>
@@ -195,6 +208,7 @@ if ($hijo):
         <?php if ($c['comprobante_estado'] === 'pendiente'): ?><span class="estado-chip chip-pend">Comprobante en revisión</span>
         <?php else: ?><?= $c['comprobante_estado'] === 'rechazado' ? '<span class="estado-chip chip-mal">Comprobante rechazado: envíe otro</span>' : '' ?>
           <form method="post" enctype="multipart/form-data" class="acciones" style="margin-top:6px"><?= csrf_campo() ?><input type="hidden" name="accion" value="comprobante"><input type="hidden" name="cargo_id" value="<?= (int)$c['id'] ?>">
+            <?php if (acad_tiene_deuna($liga)): ?><select name="forma" style="max-width:150px"><option value="deuna">📱 DeUna</option><option value="transferencia">🏦 Transferencia</option></select><?php endif; ?>
             <input type="file" name="foto" accept="image/*" required><button class="btn btn-sec btn-chico">📤 Enviar comprobante</button></form>
         <?php endif; ?></div>
     <?php endforeach; ?>

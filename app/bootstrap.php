@@ -1,7 +1,7 @@
 <?php
 /*
- * Sistema de Ligas de Fútbol - QF Producciones
- * Archivo de arranque: se incluye al inicio de cada página.
+ * TuAcademia (Tukán Software) — sistema para academias de baile, música, natación y deportes.
+ * Sale de TuVocalía v38 (ligas, campeonatos y escuelas deportivas). Archivo de arranque: se incluye al inicio de cada página.
  */
 declare(strict_types=1);
 
@@ -11,14 +11,21 @@ define('PUBLIC_DIR', RAIZ . '/public');
 define('UPLOADS_DIR', PUBLIC_DIR . '/uploads');
 
 $cfg = [
-    'nombre_sitio' => 'TuVocalía',
+    'nombre_sitio' => 'TuAcademia',
     'db'           => RAIZ . '/data/ligas.sqlite',
     'zona'         => 'America/Guayaquil',
+    // PRODUCTO: 'academia' = TuAcademia (solo academias y escuelas; ligas, campeonatos, árbitros y vocales APAGADOS)
+    //           'ligas'    = como TuVocalía (todo encendido). Se cambia en app/config.php: return ['producto' => 'ligas'];
+    'producto'     => 'academia',
+    // App de Google Play: APAGADA hasta que se decida publicarla (como en TuSalón). Se enciende en app/config.php: 'google_play' => true
+    'google_play'  => false,
 ];
 if (is_file(APP_DIR . '/config.php')) {
     $cfg = array_merge($cfg, require APP_DIR . '/config.php');
 }
 define('CFG', $cfg);
+/** Producto que se está ejecutando: 'academia' (TuAcademia) o 'ligas' (todo lo de TuVocalía encendido). */
+define('PRODUCTO', in_array($cfg['producto'] ?? 'academia', ['academia', 'ligas'], true) ? $cfg['producto'] : 'academia');
 date_default_timezone_set($cfg['zona']);
 
 if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE) {
@@ -32,7 +39,7 @@ if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE) {
         ini_set('session.gc_divisor', '200');
     }
     ini_set('session.gc_maxlifetime', '43200');
-    session_name('ligasqf');
+    session_name('tuacademia');
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/',
@@ -96,11 +103,13 @@ require APP_DIR . '/v31.php'; // (v31) escuelas de taekwondo, karate y judo: cin
 require APP_DIR . '/v33.php'; // (v33) correos automáticos, contratar por transferencia, demo sin gracia, SEO, cabeceras
 require APP_DIR . '/olimpiadas.php'; // (v37) olimpiadas y juegos multideportivos
 require APP_DIR . '/play.php'; // (v38) apps Android y cobro con Google Play
+require APP_DIR . '/academia.php'; // (TuAcademia) baile, música, natación, niveles, recitales, clases particulares, DeUna, Payphone y mensajes de pensiones
 require APP_DIR . '/demo_v28.php';
 require APP_DIR . '/menu.php';
 require APP_DIR . '/directorio.php';
 require APP_DIR . '/vista_previa.php';
 require APP_DIR . '/idioma.php'; // (v28) idiomas: inglés, francés, portugués e italiano
 cabeceras_seguridad(); // (v33)
+acad_cortar_portales_liga(); // (TuAcademia) vocal, árbitro, delegado, jugador y entradas: solo en el producto de ligas
 vigilar_vista_previa();
 iniciar_traduccion(); // (v28) si el visitante eligió otro idioma, la página se traduce al final

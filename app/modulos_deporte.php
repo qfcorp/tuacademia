@@ -51,6 +51,11 @@ function modulos_deporte_base(): array
             ['TRIAT'], ['triatlon'], 10],
         'esports' => ['E-sports', '🎮', 'Torneos de videojuegos 1 vs 1 o 2 vs 2 (eFootball, FIFA/FC y otros): grupos, llaves con penales, tabla por goles y ranking.',
             ['ESPOR'], ['esports'], 10],
+        // (TuAcademia) academias de baile y de música
+        'baile' => ['Baile y danza', '💃', 'Ballet, contemporáneo, jazz, salsa, bachata, ritmos latinos, urbano, folclor, tap y danza árabe: cursos por nivel, niveles con certificado, recitales con coreografías y cobro de vestuario.',
+            [], ['ballet', 'danza_contemporanea', 'jazz', 'salsa', 'bachata', 'ritmos_latinos', 'baile_urbano', 'folclor', 'tap', 'danza_arabe', 'baile'], 10],
+        'musica' => ['Música', '🎹', 'Piano, guitarra, canto, violín, batería, bajo, ukelele y teoría: cursos y clases particulares con paquetes, niveles 1 a 6 con certificado y recitales.',
+            [], ['piano', 'guitarra', 'canto', 'violin', 'bateria', 'bajo', 'ukelele', 'teoria_musical', 'musica'], 10],
         // (v37) no es un deporte: junta campeonatos de varios deportes en un mismo evento (olimpiadas interempresas, intercolegiales…)
         'olimpiadas' => ['Olimpiadas y juegos multideportivos', '🏅', 'Olimpiadas interempresas, interbancarias o intercolegiales: varios deportes a la vez, delegaciones que inscriben a su gente con su propio enlace, una ficha por deportista, medallero general, tabla de puntos configurable y administradores por evento.',
             [], [], 15],
@@ -72,6 +77,7 @@ function modulos_deporte(bool $solo_activos = false): array
         $i = 0;
         foreach (modulos_deporte_base() as $k => [$nom, $ico, $desc, $mods, $deps, $precio]) {
             $r = $db[$k] ?? [];
+            if (PRODUCTO === 'academia' && !$deps) $r['activo'] = 0; // (TuAcademia) automovilismo y olimpiadas son solo de ligas
             $cache[$k] = ['clave' => $k, 'nombre' => $nom, 'icono' => $ico, 'descripcion' => trim((string)($r['descripcion'] ?? '')) !== '' ? (string)$r['descripcion'] : $desc,
                 'modalidades' => $mods, 'deportes' => $deps, 'precio' => isset($r['precio_mensual']) ? (float)$r['precio_mensual'] : (float)$precio,
                 'activo' => isset($r['activo']) ? (int)$r['activo'] === 1 : true, 'orden' => isset($r['orden']) ? (int)$r['orden'] : ++$i,
@@ -298,6 +304,10 @@ function requisitos_fabrica(string $k): array
             'docs' => [$d('medico', 'Certificado médico', 0, 1), $d('autorizacion', 'Autorización del representante (menores)', 0)]],
         'atletismo' => ['campos' => ['emergencia_nombre' => 1, 'emergencia_tel' => 1, 'sangre' => 1, 'licencia' => 1, 'club_federado' => 1, 'alergias' => 1, 'talla' => 1, 'marca_personal' => 1],
             'docs' => [$d('medico', 'Certificado médico', 0, 1), $d('autorizacion', 'Autorización del representante (menores)', 0)]],
+        'baile' => ['campos' => ['emergencia_nombre' => 1, 'emergencia_tel' => 1, 'sangre' => 1, 'alergias' => 1, 'representante' => 1],
+            'docs' => [$d('autorizacion', 'Autorización del representante (menores)', 0), $d('fotos', 'Autorización de fotos y videos del recital', 0)]],
+        'musica' => ['campos' => ['emergencia_tel' => 1, 'representante' => 1],
+            'docs' => [$d('autorizacion', 'Autorización del representante (menores)', 0)]],
         'natacion' => ['campos' => ['emergencia_nombre' => 1, 'emergencia_tel' => 1, 'sangre' => 1, 'licencia' => 1, 'club_federado' => 1, 'alergias' => 1],
             'docs' => [$d('medico', 'Certificado médico', 0, 1), $d('autorizacion', 'Autorización del representante (menores)', 0)]],
         'combate' => ['campos' => ['peso' => 2, 'estatura' => 1, 'grado' => 2, 'sangre' => 2, 'emergencia_nombre' => 2, 'emergencia_tel' => 2, 'alergias' => 1, 'representante' => 1],

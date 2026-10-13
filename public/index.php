@@ -65,6 +65,8 @@ if ($slug === '' && $liga_dom && !in_array($v_global, ['privacidad', 'derechos',
     $slug = $liga_dom['slug'];
 }
 
+// (TuAcademia) el directorio de ligas no existe: se muestra el de academias
+if (PRODUCTO === 'academia' && $v_global === 'ligas') $_GET['tipo'] = 'escuela';
 if ($slug === '') {
     if ($v_global === 'privacidad') {
         require APP_DIR . '/publico/privacidad.php';
@@ -87,7 +89,7 @@ if ($slug === '') {
     } elseif ($v_global === 'manual') {
         require APP_DIR . '/publico/manual.php'; // (v27) manuales en la web y en PDF
     } else {
-        require APP_DIR . '/publico/landing.php';
+        require APP_DIR . '/publico/' . (PRODUCTO === 'academia' ? 'landing_academia.php' : 'landing.php'); // (TuAcademia)
     }
     exit;
 }
@@ -100,6 +102,13 @@ if (!$liga) {
     exit;
 }
 $lid = (int)$liga['id'];
+if (PRODUCTO === 'academia' && !es_escuela($liga)) { // (TuAcademia) solo hay páginas de academias
+    http_response_code(404);
+    cabecera_publica('No encontrada');
+    echo '<div class="tarjeta"><h1>Página no encontrada</h1><p><a href="nuestras-escuelas">Ver las academias</a></p></div>';
+    pie_publico();
+    exit;
+}
 aplicar_idioma_liga($liga); // (v28) idioma por defecto de la página de la liga
 $base = 'index.php?l=' . rawurlencode($liga['slug']);
 

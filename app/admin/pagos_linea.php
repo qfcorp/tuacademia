@@ -1,6 +1,6 @@
 <?php
 /* (v12) COBROS CON TARJETA de la liga o escuela: activar, quién paga la comisión, cuenta para las transferencias,
- * reporte de sus pagos (solo los suyos) y liquidaciones recibidas de TuVocalía. */
+ * reporte de sus pagos (solo los suyos) y liquidaciones recibidas de TuAcademia. */
 $liga = requiere_liga();
 $lid = (int)$liga['id'];
 

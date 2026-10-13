@@ -138,7 +138,8 @@ function verificar_limite_plan(array $liga, string $que): void
 function crear_liga_completa(array $d): array
 {
     $nombre = trim($d['nombre'] ?? '');
-    if (mb_strlen($nombre) < 3) throw new RuntimeException('Escriba el nombre de la liga.');
+    if (PRODUCTO === 'academia') { $d['tipo'] = 'escuela'; $d['crear_campeonato'] = false; } // (TuAcademia) toda cuenta nueva es una academia
+    if (mb_strlen($nombre) < 3) throw new RuntimeException(PRODUCTO === 'academia' ? 'Escriba el nombre de la academia.' : 'Escriba el nombre de la liga.');
     $email = mb_strtolower(trim($d['admin_email'] ?? ''), 'UTF-8');
     // (v16) Combo liga + escuela: si no se escribe administrador, el dueño entra con el mismo usuario de la otra cuenta
     $combo = !empty($d['combo_con']) ? fila('SELECT * FROM ligas WHERE id = ?', [(int)$d['combo_con']]) : null;
@@ -148,7 +149,7 @@ function crear_liga_completa(array $d): array
         $email = mb_strtolower((string)$combo['contacto_email']);
         $d['telefono'] = ($d['telefono'] ?? '') !== '' ? $d['telefono'] : $combo['contacto_telefono'];
     } else {
-    if (mb_strlen(trim($d['admin_nombre'] ?? '')) < 3) throw new RuntimeException('Escriba el nombre del administrador de la liga.');
+    if (mb_strlen(trim($d['admin_nombre'] ?? '')) < 3) throw new RuntimeException(PRODUCTO === 'academia' ? 'Escriba el nombre del administrador de la academia.' : 'Escriba el nombre del administrador de la liga.');
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('Escriba un correo válido para el administrador (será su usuario).');
     if (strlen($d['admin_clave'] ?? '') < 8) throw new RuntimeException('La contraseña del administrador debe tener al menos 8 caracteres.');
     if (fila('SELECT id FROM usuarios WHERE lower(email) = ?', [$email])) throw new RuntimeException('Ese correo ya tiene una cuenta en el sistema. Use otro.');
@@ -156,11 +157,13 @@ function crear_liga_completa(array $d): array
     $modalidad = in_array($d['modalidad'] ?? 'F7', modalidades(), true) ? $d['modalidad'] : 'F7';
     // (v35) Módulos deportivos de la cuenta (null = todos). La modalidad y el deporte principal deben ser de un módulo elegido.
     $deportes = isset($d['deportes']) && is_array($d['deportes']) ? array_values(array_intersect(array_keys(modulos_deporte_base()), $d['deportes'])) : null;
-    if ($deportes !== null && !$deportes) throw new RuntimeException('Elija al menos un módulo deportivo (fútbol, ciclismo, combate…).');
+    if ($deportes !== null && !$deportes) throw new RuntimeException(PRODUCTO === 'academia' ? 'Elija al menos una disciplina (baile, música, natación, fútbol…).' : 'Elija al menos un módulo deportivo (fútbol, ciclismo, combate…).');
+    // (TuAcademia) si eligió la disciplina principal pero no marcó su módulo, se agrega solo
+    if ($deportes !== null && ($d['tipo'] ?? '') === 'escuela' && ($kd = modulo_de_deporte_escuela((string)($d['deporte_escuela'] ?? ''))) !== '' && !in_array($kd, $deportes, true) && PRODUCTO === 'academia') $deportes[] = $kd;
     if ($deportes !== null) {
         $tmp = ['deportes' => implode(',', $deportes)];
         if (($d['tipo'] ?? '') === 'escuela') {
-            if (!deporte_escuela_permitido($tmp, (string)($d['deporte_escuela'] ?? 'futbol'))) throw new RuntimeException('El deporte principal de la escuela debe ser de uno de los módulos elegidos.');
+            if (!deporte_escuela_permitido(['deportes' => implode(',', $deportes)], (string)($d['deporte_escuela'] ?? 'futbol'))) throw new RuntimeException('La disciplina principal debe ser de una de las elegidas.');
         } elseif (!modalidad_permitida($tmp, $modalidad)) {
             $equipo = filtrar_modalidades($tmp, modalidades());
             $modalidad = $equipo[0] ?? $modalidad; // sin deportes de equipo: la modalidad por defecto no se usa
@@ -213,13 +216,13 @@ function crear_liga_completa(array $d): array
     return ['liga_id' => $lid, 'usuario_id' => $uid, 'slug' => $slug];
 }
 
-/** Direcciones que no pueden usarse como nombre corto de una liga (tuvocalia.com/NOMBRE). */
+/** Direcciones que no pueden usarse como nombre corto de una liga (tuacademia.tukanec.com/NOMBRE). */
 function rutas_reservadas(): array
 {
     return ['admin', 'app', 'vocal', 'arbitro', 'delegado', 'carnet', 'foto', 'imagen', 'index', 'assets', 'uploads', 'telegram', 'sw', 'manifest', 'ligas', 'planes', 'registro', 'privacidad', 'precios', 'mi', 'widget', 'calendario', 'reservas', 'reservar', 'vendedor', 'vendedores', 'demo', 'push', 'olvide', 'familia', 'escuelas', 'comparar', 'pagar', 'solicitar-demo', 'solicitar', 'nuestras-escuelas', 'directorio'];
 }
 
-/** Dirección pública bonita de la liga: https://tuvocalia.com/nombre-liga (o su dominio propio). */
+/** Dirección pública bonita de la liga: https://tuacademia.tukanec.com/nombre-liga (o su dominio propio). */
 function url_liga(array $liga): string
 {
     if (($liga['dominio'] ?? '') !== '') return 'https://' . $liga['dominio'] . '/';

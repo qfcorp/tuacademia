@@ -1,16 +1,16 @@
 #!/bin/bash
-# TuVocalia - Instala o ACTUALIZA el programa en el VPS desde un paquete tuvocalia_vXX.tar.gz
+# TuAcademia - Instala o ACTUALIZA el programa en el VPS desde un paquete tuacademia_vXX.tar.gz
 # (en el VPS NO se usa instalar.sh: ese es para la laptop). No toca la base de datos ni las fotos.
-# Uso: sudo bash vps_2_codigo.sh /home/ubuntu/tuvocalia_v23.tar.gz
+# Uso: sudo bash vps_2_codigo.sh /home/ubuntu/tuacademia_v23.tar.gz
 DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$DIR/comun.sh"
-[ "$(id -u)" = "0" ] || { rojo "Ejecute con sudo: sudo bash $0 /home/ubuntu/tuvocalia_vXX.tar.gz"; exit 1; }
+[ "$(id -u)" = "0" ] || { rojo "Ejecute con sudo: sudo bash $0 /home/ubuntu/tuacademia_vXX.tar.gz"; exit 1; }
 PAQ="$1"
-[ -z "$PAQ" ] && PAQ="$(ls -t /home/*/tuvocalia_v*.tar.gz 2>/dev/null | head -n1)"
-[ -f "$PAQ" ] || { rojo "No encuentro el paquete. Uso: sudo bash $0 /home/ubuntu/tuvocalia_vXX.tar.gz"; exit 1; }
+[ -z "$PAQ" ] && PAQ="$(ls -t /home/*/tuacademia_v*.tar.gz 2>/dev/null | head -n1)"
+[ -f "$PAQ" ] || { rojo "No encuentro el paquete. Uso: sudo bash $0 /home/ubuntu/tuacademia_vXX.tar.gz"; exit 1; }
 docker ps --format '{{.Names}}' | grep -qx "$CONTENEDOR" || { rojo "Primero haga el paso 1 (sudo bash vps_1_preparar.sh)."; exit 1; }
 paso "1/3 Abriendo $PAQ"
-T="/tmp/tuvocalia_paquete"; rm -rf "$T"; mkdir -p "$T"
+T="/tmp/tuacademia_paquete"; rm -rf "$T"; mkdir -p "$T"
 tar -xzf "$PAQ" -C "$T" || { rojo "El paquete esta danado."; exit 1; }
 ORIGEN="$(dirname "$(find "$T" -maxdepth 3 -type d -name app -path '*/sistema/app' | head -n1)")"
 [ -d "$ORIGEN/app" ] && [ -d "$ORIGEN/public" ] || { rojo "El paquete no tiene la carpeta sistema/app."; exit 1; }
@@ -38,21 +38,21 @@ echo "$PUERTO_WEB" > "$DESTINO/data/puerto_nginx"; chown www-data:www-data "$DES
 docker exec "$CONTENEDOR" kill -USR2 1 >/dev/null 2>&1   # PHP toma el programa nuevo al instante
 verde "Programa copiado."
 # (v38) Apps de Android: /.well-known/assetlinks.json lo responde assetlinks.php (una sola vez; si nginx no lo acepta, se deja como estaba)
-NG=/etc/nginx/sites-available/tuvocalia
+NG=/etc/nginx/sites-available/tuacademia
 if [ -f "$NG" ] && ! grep -q "assetlinks" "$NG"; then
-  cp -a "$NG" /root/tuvocalia_nginx_antes_v38
+  cp -a "$NG" /root/tuacademia_nginx_antes_v38
   perl -0pi -e 's{\n([ \t]*)location ~ /\\\. \{ deny all; \}}{\n$1location = /.well-known/assetlinks.json { rewrite ^ /assetlinks.php last; } # (v38) apps de Android\n$1location ~ /\\. { deny all; }}' "$NG"
-  if grep -q "assetlinks" "$NG" && nginx -t >/tmp/tuvocalia_nginx.log 2>&1; then
+  if grep -q "assetlinks" "$NG" && nginx -t >/tmp/tuacademia_nginx.log 2>&1; then
     systemctl reload nginx && verde "nginx: /.well-known/assetlinks.json listo (apps de Android)."
   else
-    cp -a /root/tuvocalia_nginx_antes_v38 "$NG"; nginx -t >/dev/null 2>&1 && systemctl reload nginx
-    amarillo "No se pudo agregar /.well-known/assetlinks.json a nginx (se dejó como estaba). Envie a Claude: cat /tmp/tuvocalia_nginx.log"
+    cp -a /root/tuacademia_nginx_antes_v38 "$NG"; nginx -t >/dev/null 2>&1 && systemctl reload nginx
+    amarillo "No se pudo agregar /.well-known/assetlinks.json a nginx (se dejó como estaba). Envie a Claude: cat /tmp/tuacademia_nginx.log"
   fi
 fi
 paso "3/3 Base de datos y prueba"
 R="$(php_tv -r 'require "/var/www/ligas/app/bootstrap.php"; db(); echo "ok ", db()->query("PRAGMA user_version")->fetchColumn();' 2>&1)"
 echo "$R" | grep -q "^ok" && verde "Base de datos al dia (version ${R#ok })" || { rojo "Error con la base de datos:"; echo "$R"; exit 1; }
-C="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: prueba.tuvocalia.com' http://127.0.0.1:$PUERTO_WEB/index.php)"
-[ "$C" = "200" ] && verde "La pagina responde (200)." || amarillo "La pagina respondio $C. Revise: sudo tail -n 20 /var/log/nginx/tuvocalia_error.log ; sudo docker logs --tail 20 $CONTENEDOR"
+C="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: prueba-tuacademia.tukanec.com' http://127.0.0.1:$PUERTO_WEB/index.php)"
+[ "$C" = "200" ] && verde "La pagina responde (200)." || amarillo "La pagina respondio $C. Revise: sudo tail -n 20 /var/log/nginx/tuacademia_error.log ; sudo docker logs --tail 20 $CONTENEDOR"
 rm -rf "$T"
 echo; verde "PROGRAMA INSTALADO ${VERSION:+($VERSION)}."

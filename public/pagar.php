@@ -1,7 +1,7 @@
 <?php
 /*
  * (v12) PAGO CON TARJETA: pagar.php?t=CÓDIGO
- * Lo abren: la liga o escuela (su suscripción a TuVocalía), el delegado (estado de cuenta del equipo) y la familia (mensualidades).
+ * Lo abren: la liga o escuela (su suscripción a TuAcademia), el delegado (estado de cuenta del equipo) y la familia (mensualidades).
  * Modo "prueba": solo el superadministrador puede aprobar o rechazar el pago simulado. Modo "plux": formulario de Plux.
  */
 require __DIR__ . '/../app/bootstrap.php';

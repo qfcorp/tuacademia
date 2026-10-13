@@ -1,7 +1,7 @@
 <?php
 /*
  * (v38) /.well-known/assetlinks.json — Digital Asset Links.
- * Le dice a Android que las apps com.tuvocalia.app (Google Play) y com.tuvocalia.directo (APK) son de este sitio,
+ * Le dice a Android que las apps com.tukan.tuacademia (Google Play) y com.tukan.tuacademia.directo (APK) son de este sitio,
  * para que se abran a pantalla completa (sin la barra de direcciones de Chrome).
  * nginx manda /.well-known/assetlinks.json a este archivo (lo agrega vps_2_codigo.sh).
  */

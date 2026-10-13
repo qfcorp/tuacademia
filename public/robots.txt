@@ -11,4 +11,4 @@ Disallow: /puerta.php
 Disallow: /pagar.php
 Disallow: /carnet.php
 Disallow: /uploads/
-Sitemap: https://tuvocalia.com/sitemap.php
+Sitemap: https://tuacademia.tukanec.com/sitemap.php

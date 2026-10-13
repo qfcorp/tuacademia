@@ -3,12 +3,12 @@
  * (v28) RECEPTOR DE VIDEOS — sin dependencias del resto del sistema.
  *
  * El mismo archivo sirve en dos lugares:
- *   1. En el servidor de TuVocalía (public/video.php), cuando los videos se guardan en el mismo servidor.
- *   2. En la LAPTOP (disco grande), copiado como /var/www/tuvocalia-videos/index.php con su config.php,
- *      publicado por el túnel de Cloudflare (ej: https://videos.tuvocalia.com).
+ *   1. En el servidor de TuAcademia (public/video.php), cuando los videos se guardan en el mismo servidor.
+ *   2. En la LAPTOP (disco grande), copiado como /var/www/tuacademia-videos/index.php con su config.php,
+ *      publicado por el túnel de Cloudflare (ej: https://videos.tukanec.com).
  *
  * Todo pedido va firmado con HMAC-SHA256 (clave compartida) y con hora de vencimiento, así nadie puede subir,
- * ver ni borrar sin un enlace generado por TuVocalía.
+ * ver ni borrar sin un enlace generado por TuAcademia.
  *
  *   a=subir  → recibe un pedazo (8 MB) del video: f, n (número), exp, sig("subir|f|exp")      cuerpo: bytes del pedazo
  *   a=fin    → une los pedazos, mide la duración (ffprobe si existe) y devuelve la firma "listo"  (f, total, exp, sig)
@@ -69,7 +69,7 @@ function vr_atender(array $cfg): void
     $dir = rtrim($cfg['dir'], '/');
     $clave = (string)$cfg['clave'];
     if ($clave === '') vr_json(['ok' => false, 'error' => 'Receptor sin clave configurada.'], 500);
-    // Los envíos vienen del navegador desde otra dirección (tuvocalia.com): se permite porque todo va firmado
+    // Los envíos vienen del navegador desde otra dirección (tuacademia.tukanec.com): se permite porque todo va firmado
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type');

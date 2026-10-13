@@ -1,5 +1,5 @@
 <?php
-/* (v12) COBROS CON TARJETA — superadministrador: todo lo que entró por Plux, lo que se gana TuVocalía,
+/* (v12) COBROS CON TARJETA — superadministrador: todo lo que entró por Plux, lo que se gana TuAcademia,
  * lo que hay que transferir a cada liga o escuela (liquidaciones) y las suscripciones pagadas con tarjeta. */
 if (!es_super()) ir('admin.php');
 $yo = usuario();

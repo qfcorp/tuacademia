@@ -139,7 +139,7 @@ function cinturones_fabrica(string $disc): array
 function cargar_cinturones_fabrica(int $lid, string $disc, bool $reemplazar = false): void
 {
     if ($reemplazar) q('DELETE FROM esc_cinturones WHERE liga_id = ? AND disciplina = ?', [$lid, $disc]);
-    foreach (cinturones_fabrica($disc) as $i => [$grado, $nombre, $color, $punta, $forma]) {
+    foreach (niveles_fabrica($disc) as $i => [$grado, $nombre, $color, $punta, $forma]) { // (TuAcademia) niveles de baile, música, natación y deportes
         q('INSERT INTO esc_cinturones (liga_id, disciplina, orden, grado, nombre, color, punta, forma) VALUES (?,?,?,?,?,?,?,?)', [$lid, $disc, $i + 1, $grado, $nombre, $color, $punta, $forma]);
     }
 }
@@ -147,7 +147,7 @@ function cargar_cinturones_fabrica(int $lid, string $disc, bool $reemplazar = fa
 /** Cinturones de la escuela para una disciplina, en orden (si no tiene, carga los de fábrica). */
 function cinturones_escuela(int $lid, string $disc, bool $solo_activos = true): array
 {
-    $disc = disciplina_de($disc);
+    $disc = es_clave_marcial($disc) ? $disc : nivel_clave($disc); // (TuAcademia) cada disciplina tiene su lista de niveles
     $sql = 'SELECT * FROM esc_cinturones WHERE liga_id = ? AND disciplina = ?' . ($solo_activos ? ' AND activo = 1' : '') . ' ORDER BY orden, id';
     $r = filas($sql, [$lid, $disc]);
     if (!$r && !valor('SELECT COUNT(*) FROM esc_cinturones WHERE liga_id = ? AND disciplina = ?', [$lid, $disc])) {
@@ -194,8 +194,14 @@ function disciplina_alumno(array $a, ?array $liga = null): string
 /** Cinturón actual del alumno: [fila de esc_grados|null, cinturón de la lista|null, siguiente cinturón|null]. */
 function cinturon_alumno(array $a, ?array $liga = null): array
 {
-    $gr = grado_actual((int)$a['id']);
-    $lista = cinturones_escuela((int)$a['liga_id'], disciplina_alumno($a, $liga));
+    return nivel_alumno($a, disciplina_alumno($a, $liga));
+}
+
+/** (TuAcademia) Nivel del alumno en una disciplina (cualquiera: ballet, piano, natación, karate…): [grado|null, nivel de la lista|null, siguiente|null]. */
+function nivel_alumno(array $a, string $clave): array
+{
+    $gr = nivel_actual((int)$a['id'], $clave);
+    $lista = cinturones_escuela((int)$a['liga_id'], $clave);
     $act = null;
     if ($gr) {
         if (!empty($gr['cinturon_id'])) foreach ($lista as $c) if ((int)$c['id'] === (int)$gr['cinturon_id']) $act = $c;
@@ -359,9 +365,9 @@ function cerrar_examen(array $ex, string $por): int
     foreach (inscritos_examen((int)$ex['id']) as $i) {
         if ($i['resultado'] === 'aprobado') {
             if (!valor('SELECT COUNT(*) FROM esc_grados WHERE alumno_id = ? AND examen_id = ?', [$i['alumno_id'], $ex['id']])) {
-                q('INSERT INTO esc_grados (alumno_id, fecha, grado, examinador, notas, registrado_por, cinturon_id, examen_id) VALUES (?,?,?,?,?,?,?,?)', [
-                    $i['alumno_id'], $ex['fecha'], mb_substr($i['grado_aspira'], 0, 60), $ex['examinador'], trim('Examen de grado del ' . fecha_corta($ex['fecha']) . ($i['nota'] !== '' ? ' · Nota: ' . $i['nota'] : '')), $por,
-                    $i['cinturon_id'] ?: null, $ex['id']]);
+                q('INSERT INTO esc_grados (alumno_id, fecha, grado, examinador, notas, registrado_por, cinturon_id, examen_id, disciplina) VALUES (?,?,?,?,?,?,?,?,?)', [
+                    $i['alumno_id'], $ex['fecha'], mb_substr($i['grado_aspira'], 0, 60), $ex['examinador'], trim(vocabulario_nivel($ex['disciplina'])['examen'] . ' del ' . fecha_corta($ex['fecha']) . ($i['nota'] !== '' ? ' · Nota: ' . $i['nota'] : '')), $por,
+                    $i['cinturon_id'] ?: null, $ex['id'], $ex['disciplina']]);
                 $n++;
             }
             if ($i['certificado'] === '') q('UPDATE esc_examen_inscritos SET certificado = ? WHERE id = ?', [nuevo_codigo_certificado(), $i['id']]);
@@ -379,9 +385,9 @@ function cerrar_examen(array $ex, string $por): int
 function doc_acta_examen(array $ex, array $liga, string $volver): void
 {
     $ins = inscritos_examen((int)$ex['id']);
-    $voc = vocabulario_marcial($ex['disciplina']);
-    doc_inicio('Acta del examen de grado ' . fecha_corta($ex['fecha']), $volver);
-    doc_cabecera_financiera($liga, 'ACTA DEL EXAMEN DE GRADO · ' . mb_strtoupper(disciplinas_marciales()[$ex['disciplina']] ?? ''));
+    $voc = vocabulario_nivel($ex['disciplina']);
+    doc_inicio('Acta del ' . mb_strtolower($voc['examen']) . ' ' . fecha_corta($ex['fecha']), $volver);
+    doc_cabecera_financiera($liga, 'ACTA DEL ' . mb_strtoupper($voc['examen']) . ' · ' . mb_strtoupper(nombre_disciplina_nivel($ex['disciplina'])));
     ?>
   <div class="meta">
     <div><b>Fecha:</b> <?= e(fecha_larga($ex['fecha'])) ?><?= $ex['hora'] ? ' · ' . e($ex['hora']) : '' ?></div>
@@ -389,12 +395,12 @@ function doc_acta_examen(array $ex, array $liga, string $volver): void
     <div><b>Examinador:</b> <?= e($ex['examinador'] ?: '—') ?></div>
     <div><b>Inscritos:</b> <?= count($ins) ?> · <b>Aprobados:</b> <?= count(array_filter($ins, fn($i) => $i['resultado'] === 'aprobado')) ?></div>
   </div>
-  <table class="pl"><tr><th>#</th><th>Alumno</th><th>Cédula</th><th>Grado actual</th><th>Aspira a</th><th><?= e($voc['forma']) ?></th><th>Nota</th><th>Resultado</th><th>Firma</th></tr>
+  <table class="pl"><tr><th>#</th><th>Alumno</th><th>Cédula</th><th><?= e($voc['nivel']) ?> actual</th><th>Aspira a</th><th><?= e($voc['forma']) ?></th><th>Nota</th><th>Resultado</th><th>Firma</th></tr>
     <?php foreach ($ins as $k => $i): ?><tr><td><?= $k + 1 ?></td><td><?= e(nombre_alumno($i)) ?></td><td><?= e($i['cedula']) ?></td><td><?= e($i['grado_actual'] ?: '—') ?></td><td><b><?= e($i['grado_aspira']) ?></b></td>
       <td><?= e($i['forma']) ?><?= $i['forma_ok'] ? ' ✓' : '' ?></td><td><?= e($i['nota']) ?></td><td><?= e(strip_tags(resultados_examen()[$i['resultado']][0] ?? '')) ?></td><td style="width:90px"></td></tr><?php endforeach; ?>
   </table>
   <?php if ($ex['notas'] !== ''): ?><p><b>Observaciones:</b> <?= nl2br(e($ex['notas'])) ?></p><?php endif; ?>
-  <div class="firmas" style="grid-template-columns:1fr 1fr 1fr"><div>Examinador</div><div>Director de la escuela</div><div>Secretaría</div></div>
+  <div class="firmas" style="grid-template-columns:1fr 1fr 1fr"><div>Examinador</div><div>Director(a) de la <?= es_academia() ? 'academia' : 'escuela' ?></div><div>Secretaría</div></div>
   <p style="font-size:11px;color:#555">Generado el <?= date('d/m/Y H:i') ?> con <?= e(marca()) ?>.</p>
     <?php
     doc_fin();
@@ -404,9 +410,10 @@ function doc_acta_examen(array $ex, array $liga, string $volver): void
 function doc_certificados(array $ex, array $liga, string $volver, int $solo = 0): void
 {
     $ins = array_values(array_filter(inscritos_examen((int)$ex['id']), fn($i) => $i['resultado'] === 'aprobado' && $i['certificado'] !== '' && (!$solo || (int)$i['id'] === $solo)));
-    $disc = disciplinas_marciales()[$ex['disciplina']] ?? 'Artes marciales';
+    $disc = nombre_disciplina_nivel($ex['disciplina']);
+    $vn = vocabulario_nivel($ex['disciplina']);
     $col = colores_cinturon();
-    doc_inicio('Certificados de grado ' . fecha_corta($ex['fecha']), $volver);
+    doc_inicio('Certificados ' . fecha_corta($ex['fecha']), $volver);
     ?>
 <style>
   @page { size: A4 landscape; margin: 8mm; }
@@ -425,7 +432,7 @@ function doc_certificados(array $ex, array $liga, string $volver, int $solo = 0)
   .contenedor.doc { max-width: 1120px; }
   @media print { .contenedor.doc { max-width: none; width: auto; padding: 0; margin: 0; } .cert { max-width: none; width: 100%; height: 192mm; min-height: 0; margin: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; } .cert .pie-cert { width: 100%; } .cert > * { margin-top: 0; margin-bottom: 0; } }
 </style>
-<?php if (!$ins): ?><p>No hay certificados: primero marque a los aprobados y toque <b>Cerrar examen y entregar cinturones</b>.</p><?php endif; ?>
+<?php if (!$ins): ?><p>No hay certificados: primero marque a los aprobados y toque <b>Cerrar examen</b>.</p><?php endif; ?>
 <?php foreach ($ins as $i):
     $c = $i['cinturon_id'] ? fila('SELECT * FROM esc_cinturones WHERE id = ?', [$i['cinturon_id']]) : null;
     $c1 = $c ? ($col[$c['color']][1] ?? '#ccc') : '#ccc';
@@ -433,15 +440,15 @@ function doc_certificados(array $ex, array $liga, string $volver, int $solo = 0)
     $fondo = $c2 !== '' ? 'linear-gradient(90deg,' . $c1 . ' 0 72%,' . $c2 . ' 72% 100%)' : $c1; ?>
   <div class="cert">
     <div class="cab-cert"><?= escudo($liga['logo'], $liga['nombre'], $liga['color'], 'escudo-grande') ?><div style="text-align:left"><div style="font-size:22px;font-weight:800"><?= e($liga['nombre']) ?></div><div><?= e($disc) ?><?= $liga['ciudad'] !== '' ? ' · ' . e($liga['ciudad']) : '' ?></div></div></div>
-    <h1>CERTIFICADO DE GRADO</h1>
+    <h1><?= e($vn['certificado']) ?></h1>
     <p class="sub">Se certifica que</p>
     <div class="nombre"><?= e(nombre_alumno($i)) ?></div>
-    <p class="sub"><?php if ($i['cedula'] !== ''): ?><span>con cédula</span> <span><?= e(cedula_oculta($i['cedula'])) ?></span>, <?php endif; ?><span>aprobó el examen de grado rendido el</span> <span><?= e(fecha_larga($ex['fecha'])) ?></span><?php if ($ex['lugar'] !== ''): ?> (<span><?= e($ex['lugar']) ?></span>)<?php endif; ?>, <span>y se le otorga el</span></p>
+    <p class="sub"><?php if ($i['cedula'] !== ''): ?><span>con cédula</span> <span><?= e(cedula_oculta($i['cedula'])) ?></span>, <?php endif; ?><span><?= e($vn['otorga']) ?> rendido el</span> <span><?= e(fecha_larga($ex['fecha'])) ?></span><?php if ($ex['lugar'] !== ''): ?> (<span><?= e($ex['lugar']) ?></span>)<?php endif; ?>, <span>y se le otorga el</span></p>
     <div class="grado"><span class="tira" style="background:<?= $fondo ?>"></span><br><b><?= e($i['grado_aspira']) ?></b></div>
     <div class="pie-cert">
       <div class="firma"><?= e($ex['examinador'] ?: 'Examinador') ?><br><small>Examinador</small></div>
       <div><div class="qr" data-url="<?= e(url_certificado($i['certificado'])) ?>"></div><div class="codigo">Código: <b><?= e($i['certificado']) ?></b><br><span>Verificar en</span> <span><?= e(preg_replace(['#^https?://#', '#\?.*$#'], '', url_certificado($i['certificado']))) ?></span></div></div>
-      <div class="firma"><?= e($liga['contacto_nombre'] ?: 'Director') ?><br><small>Director de la escuela</small></div>
+      <div class="firma"><?= e($liga['contacto_nombre'] ?: 'Director') ?><br><small>Director(a) de la <?= es_academia() ? 'academia' : 'escuela' ?></small></div>
     </div>
   </div>
 <?php endforeach; ?>

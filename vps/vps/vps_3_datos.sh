@@ -1,18 +1,18 @@
 #!/bin/bash
-# TuVocalia - Carga en el VPS los DATOS que se sacaron de la laptop (base de datos, fotos, facturas).
-#   Prueba:      sudo bash vps_3_datos.sh /home/ubuntu/tuvocalia_datos_XXXX.tar.gz
-#   Produccion:  sudo bash vps_3_datos.sh /home/ubuntu/tuvocalia_datos_XXXX.tar.gz produccion
+# TuAcademia - Carga en el VPS los DATOS que se sacaron de la laptop (base de datos, fotos, facturas).
+#   Prueba:      sudo bash vps_3_datos.sh /home/ubuntu/tuacademia_datos_XXXX.tar.gz
+#   Produccion:  sudo bash vps_3_datos.sh /home/ubuntu/tuacademia_datos_XXXX.tar.gz produccion
 # En PRUEBA no se activan los avisos (Telegram, notificaciones) ni los respaldos, para no mandar
 # mensajes repetidos a la gente: la laptop sigue siendo la oficial.
 DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$DIR/comun.sh"
 [ "$(id -u)" = "0" ] || { rojo "Ejecute con sudo."; exit 1; }
 ARCH="$1"; MODO="${2:-prueba}"
-[ -z "$ARCH" ] && ARCH="$(ls -t /home/*/tuvocalia_datos_*.tar.gz 2>/dev/null | head -n1)"
-[ -f "$ARCH" ] || { rojo "No encuentro el archivo de datos. Uso: sudo bash $0 /home/ubuntu/tuvocalia_datos_XXXX.tar.gz"; exit 1; }
+[ -z "$ARCH" ] && ARCH="$(ls -t /home/*/tuacademia_datos_*.tar.gz 2>/dev/null | head -n1)"
+[ -f "$ARCH" ] || { rojo "No encuentro el archivo de datos. Uso: sudo bash $0 /home/ubuntu/tuacademia_datos_XXXX.tar.gz"; exit 1; }
 [ -d "$DESTINO/app" ] || { rojo "Primero instale el programa (paso vps_2_codigo.sh)."; exit 1; }
 paso "1/4 Abriendo $ARCH"
-T="/tmp/tuvocalia_datos_carga"; rm -rf "$T"; mkdir -p "$T"
+T="/tmp/tuacademia_datos_carga"; rm -rf "$T"; mkdir -p "$T"
 tar -xzf "$ARCH" -C "$T" || { rojo "El archivo esta danado."; exit 1; }
 BASE="$(dirname "$(find "$T" -maxdepth 3 -type f -path '*/datos/ligas.sqlite' | head -n1)")"
 BASE="$(dirname "$BASE")"
@@ -41,18 +41,18 @@ R="$(php_tv -r 'require "/var/www/ligas/app/bootstrap.php"; db(); echo "ok versi
 echo "$R" | grep -q "^ok" && verde "Datos cargados: ${R#ok }" || { rojo "Error al abrir la base:"; echo "$R"; exit 1; }
 paso "4/4 Tareas automaticas"
 if [ "$MODO" = "produccion" ]; then
-  cat > /etc/cron.d/tuvocalia <<CRON
-# TuVocalia en el VPS: avisos cada minuto y respaldo diario a la 1:30 (antes del respaldo general de las 2:00)
+  cat > /etc/cron.d/tuacademia <<CRON
+# TuAcademia en el VPS: avisos cada minuto y respaldo diario a la 1:30 (antes del respaldo general de las 2:00)
 * * * * * root docker exec -u www-data $CONTENEDOR php $DESTINO/app/tareas.php >/dev/null 2>&1
 30 1 * * * root docker exec -u www-data $CONTENEDOR php $DESTINO/app/respaldo.php $RESPALDOS >/dev/null 2>&1
 CRON
-  chmod 644 /etc/cron.d/tuvocalia
+  chmod 644 /etc/cron.d/tuacademia
   verde "MODO PRODUCCION: avisos cada minuto y respaldo diario (1:30 am) ACTIVADOS."
 else
-  rm -f /etc/cron.d/tuvocalia
+  rm -f /etc/cron.d/tuacademia
   amarillo "MODO PRUEBA: avisos y respaldos APAGADOS (la oficial sigue siendo la laptop)."
 fi
-C="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: prueba.tuvocalia.com' http://127.0.0.1:$PUERTO_WEB/index.php)"
+C="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: prueba-tuacademia.tukanec.com' http://127.0.0.1:$PUERTO_WEB/index.php)"
 [ "$C" = "200" ] && verde "La pagina responde (200)." || amarillo "La pagina respondio $C"
 rm -rf "$T"
 echo; verde "DATOS CARGADOS ($MODO)."

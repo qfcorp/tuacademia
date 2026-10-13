@@ -382,6 +382,227 @@ function crear_esquema(PDO $pdo): void
         }
         $pdo->exec('PRAGMA user_version = 33');
     }
+    if ($version < 34) {
+        $pdo->beginTransaction();
+        try {
+            esquema_v34($pdo);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+        $pdo->exec('PRAGMA user_version = 34');
+    }
+}
+
+/*
+ * Versión 34 (TuAcademia, oct-2026): ACADEMIAS de baile, música, natación y deportes.
+ *  - esc_alumnos: instrumento (música), talla de vestuario (baile), carril (natación).
+ *  - esc_grados.disciplina: el nivel (o cinturón) es de una disciplina (un alumno puede tener nivel en ballet y en piano).
+ *  - esc_cargos: comprobante_forma (transferencia / deuna), comprobante_grupo (un comprobante para varios valores), referencia.
+ *  - ligas: DeUna (celular y titular) y Payphone (token y Store ID) de cada academia.
+ *  - acad_eventos, acad_numeros, acad_participantes, acad_inscritos, acad_ensayos: recitales y presentaciones.
+ *  - acad_paquetes, acad_paquetes_alumno, acad_horario, acad_clases: clases particulares con paquetes de clases.
+ *  - acad_mensajes: recordatorios de pensiones por WhatsApp marcados como enviados.
+ *  - acad_payphone: pagos con tarjeta de las familias (Payphone).
+ *  - Planes de TuAcademia (Básico $19 y Completo $29) y ajustes (prueba gratis de 14 días).
+ */
+function esquema_v34(PDO $pdo): void
+{
+    $cols = fn(string $t) => array_column($pdo->query("PRAGMA table_info($t)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+    $agregar = function (string $tabla, array $nuevas) use ($pdo, $cols) {
+        $ya = $cols($tabla);
+        foreach ($nuevas as $c => $def) if (!in_array($c, $ya, true)) $pdo->exec("ALTER TABLE $tabla ADD COLUMN $c $def");
+    };
+    $agregar('esc_alumnos', ['instrumento' => "TEXT NOT NULL DEFAULT ''", 'talla_vestuario' => "TEXT NOT NULL DEFAULT ''", 'carril' => "TEXT NOT NULL DEFAULT ''"]);
+    $agregar('esc_grados', ['disciplina' => "TEXT NOT NULL DEFAULT ''"]);
+    $agregar('esc_cargos', ['comprobante_forma' => "TEXT NOT NULL DEFAULT ''", 'comprobante_grupo' => "TEXT NOT NULL DEFAULT ''", 'comprobante_ref' => "TEXT NOT NULL DEFAULT ''", 'comprobante_fecha' => "TEXT NOT NULL DEFAULT ''"]);
+    $agregar('ligas', ['deuna_celular' => "TEXT NOT NULL DEFAULT ''", 'deuna_titular' => "TEXT NOT NULL DEFAULT ''",
+        'payphone_token' => "TEXT NOT NULL DEFAULT ''", 'payphone_store_id' => "TEXT NOT NULL DEFAULT ''",
+        'acad_dias_aviso' => 'INTEGER NOT NULL DEFAULT 3', 'acad_falta_descuenta' => 'INTEGER NOT NULL DEFAULT 1']);
+    $pdo->exec(<<<SQL
+CREATE INDEX IF NOT EXISTS idx_esc_grados_disc ON esc_grados(alumno_id, disciplina, fecha);
+CREATE INDEX IF NOT EXISTS idx_esc_cargos_grupo_comp ON esc_cargos(comprobante_grupo);
+CREATE TABLE IF NOT EXISTS acad_eventos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    liga_id INTEGER NOT NULL REFERENCES ligas(id) ON DELETE CASCADE,
+    tipo TEXT NOT NULL DEFAULT 'recital',
+    nombre TEXT NOT NULL,
+    fecha TEXT NOT NULL,
+    hora TEXT NOT NULL DEFAULT '',
+    lugar TEXT NOT NULL DEFAULT '',
+    direccion TEXT NOT NULL DEFAULT '',
+    descripcion TEXT NOT NULL DEFAULT '',
+    valor_inscripcion REAL NOT NULL DEFAULT 0,
+    valor_vestuario REAL NOT NULL DEFAULT 0,
+    vence_cobro TEXT NOT NULL DEFAULT '',
+    publico INTEGER NOT NULL DEFAULT 1,
+    estado TEXT NOT NULL DEFAULT 'preparacion',
+    registrado_por TEXT NOT NULL DEFAULT '',
+    creado TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_acad_eventos ON acad_eventos(liga_id, fecha);
+CREATE TABLE IF NOT EXISTS acad_numeros (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    evento_id INTEGER NOT NULL REFERENCES acad_eventos(id) ON DELETE CASCADE,
+    orden INTEGER NOT NULL DEFAULT 0,
+    titulo TEXT NOT NULL,
+    disciplina TEXT NOT NULL DEFAULT '',
+    grupo_id INTEGER REFERENCES esc_grupos(id) ON DELETE SET NULL,
+    profesor TEXT NOT NULL DEFAULT '',
+    autor TEXT NOT NULL DEFAULT '',
+    duracion INTEGER NOT NULL DEFAULT 0,
+    vestuario TEXT NOT NULL DEFAULT '',
+    valor_vestuario REAL,
+    notas TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_acad_numeros ON acad_numeros(evento_id, orden);
+CREATE TABLE IF NOT EXISTS acad_participantes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    numero_id INTEGER NOT NULL REFERENCES acad_numeros(id) ON DELETE CASCADE,
+    alumno_id INTEGER NOT NULL REFERENCES esc_alumnos(id) ON DELETE CASCADE,
+    rol TEXT NOT NULL DEFAULT '',
+    talla TEXT NOT NULL DEFAULT '',
+    cargo_id INTEGER,
+    UNIQUE (numero_id, alumno_id)
+);
+CREATE TABLE IF NOT EXISTS acad_inscritos (
+    evento_id INTEGER NOT NULL REFERENCES acad_eventos(id) ON DELETE CASCADE,
+    alumno_id INTEGER NOT NULL REFERENCES esc_alumnos(id) ON DELETE CASCADE,
+    cargo_id INTEGER,
+    PRIMARY KEY (evento_id, alumno_id)
+);
+CREATE TABLE IF NOT EXISTS acad_ensayos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    evento_id INTEGER NOT NULL REFERENCES acad_eventos(id) ON DELETE CASCADE,
+    numero_id INTEGER REFERENCES acad_numeros(id) ON DELETE CASCADE,
+    fecha TEXT NOT NULL,
+    hora_inicio TEXT NOT NULL DEFAULT '',
+    hora_fin TEXT NOT NULL DEFAULT '',
+    lugar TEXT NOT NULL DEFAULT '',
+    tipo TEXT NOT NULL DEFAULT 'ensayo',
+    notas TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_acad_ensayos ON acad_ensayos(evento_id, fecha);
+CREATE TABLE IF NOT EXISTS acad_paquetes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    liga_id INTEGER NOT NULL REFERENCES ligas(id) ON DELETE CASCADE,
+    nombre TEXT NOT NULL,
+    clases INTEGER NOT NULL DEFAULT 4,
+    precio REAL NOT NULL DEFAULT 0,
+    vigencia_dias INTEGER NOT NULL DEFAULT 45,
+    minutos INTEGER NOT NULL DEFAULT 60,
+    disciplina TEXT NOT NULL DEFAULT '',
+    uso TEXT NOT NULL DEFAULT 'particular',
+    activo INTEGER NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS acad_paquetes_alumno (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    liga_id INTEGER NOT NULL REFERENCES ligas(id) ON DELETE CASCADE,
+    alumno_id INTEGER NOT NULL REFERENCES esc_alumnos(id) ON DELETE CASCADE,
+    paquete_id INTEGER REFERENCES acad_paquetes(id) ON DELETE SET NULL,
+    profesor_id INTEGER REFERENCES esc_profesores(id) ON DELETE SET NULL,
+    nombre TEXT NOT NULL DEFAULT '',
+    disciplina TEXT NOT NULL DEFAULT '',
+    clases_total INTEGER NOT NULL DEFAULT 0,
+    clases_usadas INTEGER NOT NULL DEFAULT 0,
+    precio REAL NOT NULL DEFAULT 0,
+    uso TEXT NOT NULL DEFAULT 'particular',
+    desde TEXT NOT NULL DEFAULT '',
+    vence TEXT NOT NULL DEFAULT '',
+    cargo_id INTEGER,
+    estado TEXT NOT NULL DEFAULT 'activo',
+    registrado_por TEXT NOT NULL DEFAULT '',
+    creado TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_acad_paq_al ON acad_paquetes_alumno(alumno_id, estado);
+CREATE TABLE IF NOT EXISTS acad_horario (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    liga_id INTEGER NOT NULL REFERENCES ligas(id) ON DELETE CASCADE,
+    alumno_id INTEGER NOT NULL REFERENCES esc_alumnos(id) ON DELETE CASCADE,
+    profesor_id INTEGER REFERENCES esc_profesores(id) ON DELETE SET NULL,
+    dia INTEGER NOT NULL,
+    hora_inicio TEXT NOT NULL,
+    hora_fin TEXT NOT NULL DEFAULT '',
+    lugar TEXT NOT NULL DEFAULT '',
+    disciplina TEXT NOT NULL DEFAULT '',
+    activo INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_acad_horario ON acad_horario(liga_id, dia, activo);
+CREATE TABLE IF NOT EXISTS acad_clases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    liga_id INTEGER NOT NULL REFERENCES ligas(id) ON DELETE CASCADE,
+    alumno_id INTEGER NOT NULL REFERENCES esc_alumnos(id) ON DELETE CASCADE,
+    profesor_id INTEGER REFERENCES esc_profesores(id) ON DELETE SET NULL,
+    paquete_alumno_id INTEGER REFERENCES acad_paquetes_alumno(id) ON DELETE SET NULL,
+    sesion_id INTEGER REFERENCES esc_sesiones(id) ON DELETE CASCADE,
+    fecha TEXT NOT NULL,
+    hora TEXT NOT NULL DEFAULT '',
+    estado TEXT NOT NULL DEFAULT 'asistio',
+    descuenta INTEGER NOT NULL DEFAULT 1,
+    tema TEXT NOT NULL DEFAULT '',
+    notas TEXT NOT NULL DEFAULT '',
+    registrado_por TEXT NOT NULL DEFAULT '',
+    creado TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (alumno_id, fecha, hora)
+);
+CREATE INDEX IF NOT EXISTS idx_acad_clases ON acad_clases(liga_id, fecha);
+CREATE TABLE IF NOT EXISTS acad_mensajes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    liga_id INTEGER NOT NULL REFERENCES ligas(id) ON DELETE CASCADE,
+    clave TEXT NOT NULL,
+    tipo TEXT NOT NULL DEFAULT 'pension',
+    destinatario TEXT NOT NULL DEFAULT '',
+    telefono TEXT NOT NULL DEFAULT '',
+    texto TEXT NOT NULL DEFAULT '',
+    cargos TEXT NOT NULL DEFAULT '',
+    fecha TEXT NOT NULL,
+    enviado_por TEXT NOT NULL DEFAULT '',
+    creado TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_acad_mensajes ON acad_mensajes(liga_id, fecha, clave);
+CREATE TABLE IF NOT EXISTS acad_payphone (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    liga_id INTEGER NOT NULL REFERENCES ligas(id) ON DELETE CASCADE,
+    familia_cedula TEXT NOT NULL DEFAULT '',
+    cargos TEXT NOT NULL DEFAULT '',
+    monto REAL NOT NULL DEFAULT 0,
+    cliente_tx TEXT NOT NULL UNIQUE,
+    payphone_id TEXT NOT NULL DEFAULT '',
+    estado TEXT NOT NULL DEFAULT 'pendiente',
+    recibo INTEGER,
+    respuesta TEXT NOT NULL DEFAULT '',
+    creado TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+SQL);
+    // Planes de TuAcademia (provisionales, se editan en Ventas → Planes). Semestral: paga 5 y recibe 6. Anual: paga 10 y recibe 12 + dominio.
+    $academia = (defined('PRODUCTO') ? PRODUCTO : 'academia') === 'academia';
+    $existe = fn(string $slug) => (int)$pdo->query('SELECT COUNT(*) FROM planes WHERE slug = ' . $pdo->quote($slug))->fetchColumn() > 0;
+    $ins = $pdo->prepare('INSERT INTO planes (nombre, slug, tipo_cuenta, precio_mensual, precio_trimestral, precio_semestral, precio_anual, max_campeonatos,
+                          max_equipos, max_equipos_torneo, max_alumnos, modulos, eslogan, descripcion, destacado, activo, orden, dominio_anual)
+                          VALUES (?,?,?,?,0,?,?,0,0,0,0,?,?,?,?,?,?,1)');
+    foreach ([
+        ['Básico', 'academia-basico', 19, 95, 190, 'carnets,esc_familias,avisos,acad_niveles', 'Alumnos, cursos, asistencia, pensiones y portal de padres',
+            "Mensajes de cobro por WhatsApp\nDeUna y transferencia con comprobante\nNiveles con certificado QR", 0, 10],
+        ['Completo', 'academia-completo', 29, 145, 290, '*', 'Toda la academia: recitales, clases particulares, profesores y más',
+            "Recitales y presentaciones con cobro de vestuario\nClases particulares con paquetes\nPago con tarjeta (Payphone)\nSoporte prioritario por WhatsApp", 1, 11],
+    ] as [$nom, $slug, $pm, $ps, $pa, $mods, $esl, $desc, $dest, $ord]) {
+        if (!$existe($slug)) $ins->execute([$nom, $slug, 'escuela', $pm, $ps, $pa, $mods, $esl, $desc, $dest, $academia ? 1 : 0, $ord]);
+    }
+    if ($academia) {
+        // En TuAcademia solo se venden los planes de academia (los de ligas y escuelas de TuVocalía quedan guardados, apagados)
+        $pdo->exec("UPDATE planes SET activo = 0, destacado = 0 WHERE slug NOT IN ('academia-basico', 'academia-completo')");
+        $aj = $pdo->prepare('INSERT OR REPLACE INTO ajustes (clave, valor) VALUES (?, ?)');
+        foreach (['marca' => 'TuAcademia', 'empresa' => 'Tukán Software', 'responsable_nombre' => 'Tukán Software', 'dias_prueba' => '14', 'dias_demo' => '14', 'registro_abierto' => '1',
+            'combo_descuento' => '0', 'landing_titulo' => 'El sistema para su academia', 'landing_subtitulo' => 'Baile, música, natación y deportes: alumnos, pensiones, asistencia, niveles con certificado, recitales y portal de padres.',
+            'nota_dominio' => 'El dominio gratis se da al pagar el plan por 1 año. La academia lo usa mientras mantenga su plan al día.'] as $k => $v) $aj->execute([$k, $v]);
+    }
+    $n = $pdo->prepare('INSERT INTO novedades (titulo, texto, para, enlace, version, fecha) SELECT ?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM novedades WHERE titulo = ?)');
+    foreach ([
+        ['💃🎹🏊 Academias de baile, música y natación', 'Cree cursos de ballet, salsa, piano, guitarra, canto, natación y más. Cada disciplina trae sus niveles, sus palabras y sus campos (instrumento, talla de vestuario, carril).', 'escuelas', 'admin.php?p=grupos', 'academia', '2026-10-13'],
+        ['📲 Mensajes de hoy', 'Cada día, la lista de pensiones por vencer y vencidas con el mensaje de WhatsApp listo para cada padre. Un toque para abrir WhatsApp y otro para marcarlo como enviado.', 'escuelas', 'admin.php?p=mensajes', 'academia', '2026-10-13'],
+        ['🎭 Recitales y presentaciones', 'Arme el recital por coreografías u obras, con los alumnos de cada una, los ensayos y el cobro del vestuario y la inscripción.', 'escuelas', 'admin.php?p=recitales', 'academia', '2026-10-13'],
+    ] as $x) $n->execute(array_merge($x, [$x[0]]));
 }
 
 /*
@@ -1398,8 +1619,8 @@ function esquema_v13(PDO $pdo): void
 
 /*
  * Versión 12: planes por módulos (precio por mes, trimestre, semestre y año; módulos activos; torneos, equipos por torneo,
- * alumnos), plan "Torneo", cobros con tarjeta (Plux) de las organizaciones hacia TuVocalía y de sus equipos/familias hacia
- * ellas con TuVocalía de intermediario, liquidaciones, y rol de pago de los profesores.
+ * alumnos), plan "Torneo", cobros con tarjeta (Plux) de las organizaciones hacia TuAcademia y de sus equipos/familias hacia
+ * ellas con TuAcademia de intermediario, liquidaciones, y rol de pago de los profesores.
  */
 function esquema_v12(PDO $pdo): void
 {
@@ -1876,7 +2097,7 @@ SQL);
 }
 
 /*
- * Versión 9: vendedores con comisión (venden TuVocalía con su propio código) y copiar campeonato para la nueva temporada.
+ * Versión 9: vendedores con comisión (venden TuAcademia con su propio código) y copiar campeonato para la nueva temporada.
  */
 function esquema_v9(PDO $pdo): void
 {
@@ -2281,8 +2502,8 @@ SQL);
 function ajustes_por_defecto(): array
 {
     return [
-        'marca' => 'TuVocalía',
-        'empresa' => 'QF Producciones',
+        'marca' => 'TuAcademia',
+        'empresa' => 'Tukán Software',
         'dias_prueba' => 30,
         'dias_gracia' => 7,
         'dias_gracia_demo' => 0, // (v33) la demo se bloquea al vencer

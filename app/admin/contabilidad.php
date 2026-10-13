@@ -376,7 +376,7 @@ $form_filtro = function (string $v) use ($desde, $hasta, $tid, $torneos, $escuel
     <?php endif; ?>
   </form>
   <?php endif; ?>
-  <p class="suave" style="font-size:.85rem">Los comprobantes de <b>retención</b> no se importan (no son gastos). Si el mismo comprobante se sube dos veces, el sistema lo reconoce por su clave de acceso y no lo repite. TuVocalía solo registra las facturas que usted recibe; no emite facturas electrónicas.</p>
+  <p class="suave" style="font-size:.85rem">Los comprobantes de <b>retención</b> no se importan (no son gastos). Si el mismo comprobante se sube dos veces, el sistema lo reconoce por su clave de acceso y no lo repite. TuAcademia solo registra las facturas que usted recibe; no emite facturas electrónicas.</p>
 
 <?php else: // Para el contador
     $D = datos_contables($liga, $desde, $hasta, $tid);

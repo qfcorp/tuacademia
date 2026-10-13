@@ -72,6 +72,8 @@ function area_pagina(string $p): string
         'federacion' => 'config', 'videos' => 'equipos', 'indicadores' => 'config', 'referidos' => 'config', 'entradas' => 'finanzas',
         // (v37)
         'olimpiadas' => 'olimpiadas',
+        // (TuAcademia)
+        'mensajes' => 'cobros', 'recitales' => 'alumnos', 'particulares' => 'clases',
     ][$p] ?? 'config';
 }
 

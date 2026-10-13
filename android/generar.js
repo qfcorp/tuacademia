@@ -1,7 +1,7 @@
 /*
- * TuVocalía (v38) — Genera los 2 proyectos Android (Trusted Web Activity) con Bubblewrap:
- *   android/play     → app de Google Play (com.tuvocalia.app), con cobro de Google Play (Digital Goods API)
- *   android/directo  → APK para descargar desde tuvocalia.com (com.tuvocalia.directo), sin cobro de Google
+ * TuAcademia (v38) — Genera los 2 proyectos Android (Trusted Web Activity) con Bubblewrap:
+ *   android/play     → app de Google Play (com.tukan.tuacademia), con cobro de Google Play (Digital Goods API)
+ *   android/directo  → APK para descargar desde tuacademia.tukanec.com (com.tukan.tuacademia.directo), sin cobro de Google
  * Uso (lo corre compilar.sh, o a mano):  cd android && npm install && node generar.js
  * Para una versión nueva de la app: subir VERSION_CODIGO (y VERSION_NOMBRE) aquí abajo.
  */
@@ -11,13 +11,13 @@ const {TwaManifest, TwaGenerator, ConsoleLog} = require('@bubblewrap/core');
 
 const VERSION_CODIGO = 1;          // súbalo en 1 cada vez que suba una versión nueva a Google Play
 const VERSION_NOMBRE = '1.0.0';
-const SITIO = 'tuvocalia.com';
-const ICONO = 'https://tuvocalia.com/assets/icono-512.png';
+const SITIO = 'tuacademia.tukanec.com';
+const ICONO = 'https://tuacademia.tukanec.com/assets/icono-512.png';
 
 const comun = {
   host: SITIO,
-  name: 'TuVocalía',
-  launcherName: 'TuVocalía',
+  name: 'TuAcademia',
+  launcherName: 'TuAcademia',
   display: 'standalone',
   orientation: 'portrait',
   themeColor: '#0f1614',
@@ -35,14 +35,14 @@ const comun = {
   fallbackType: 'customtabs',
   enableSiteSettingsShortcut: false,
   minSdkVersion: 24,   // Android 7 o superior (lo exigen las librerías de Google)
-  signingKey: {path: '../firma/tuvocalia.keystore', alias: 'tuvocalia'},
-  webManifestUrl: 'https://tuvocalia.com/manifest.php',
-  generatorApp: 'tuvocalia-v38',
+  signingKey: {path: '../firma/tuacademia.keystore', alias: 'tuacademia'},
+  webManifestUrl: 'https://tuacademia.tukanec.com/manifest.php',
+  generatorApp: 'tuacademia-v38',
 };
 
 const variantes = {
-  play: {packageId: 'com.tuvocalia.app', startUrl: '/app.php?origen=play', features: {playBilling: {enabled: true}}},
-  directo: {packageId: 'com.tuvocalia.directo', startUrl: '/app.php?origen=apk', features: {}},
+  play: {packageId: 'com.tukan.tuacademia', startUrl: '/app.php?origen=play', features: {playBilling: {enabled: true}}},
+  directo: {packageId: 'com.tukan.tuacademia.directo', startUrl: '/app.php?origen=apk', features: {}},
 };
 
 (async () => {

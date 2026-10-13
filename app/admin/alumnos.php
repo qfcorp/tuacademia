@@ -19,6 +19,7 @@ if (es_post()) {
         q('INSERT INTO esc_alumnos (' . implode(', ', array_keys($d)) . ') VALUES (' . implode(', ', array_map(fn($k) => ":$k", array_keys($d))) . ')', $d);
         $aid = (int)db()->lastInsertId();
         registrar_consentimiento_alumno($lid, $d, $aid, false, $liga['nombre']); // (v24)
+        guardar_nivel_inicial($aid, $lid, $por); // (TuAcademia)
         if (post('cobrar_matricula') === '1' && (float)$liga['esc_matricula'] > 0) crear_cargo_escuela($liga, $aid, 'matricula', 'Matrícula ' . date('Y'), (float)$liga['esc_matricula'], date('Y-m-d'), $por);
         generar_mensualidades($liga);
         flash('Alumno inscrito.');

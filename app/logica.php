@@ -807,7 +807,7 @@ function conceptos_egreso(): array
 
 function formas_pago(): array
 {
-    return ['efectivo' => 'Efectivo', 'transferencia' => 'Transferencia', 'deposito' => 'Depósito', 'tarjeta' => 'Tarjeta / Plux', 'otro' => 'Otro'];
+    return ['efectivo' => 'Efectivo', 'transferencia' => 'Transferencia', 'deuna' => 'DeUna', 'deposito' => 'Depósito', 'tarjeta' => 'Tarjeta / Plux', 'payphone' => 'Tarjeta / Payphone', 'otro' => 'Otro']; // (TuAcademia) DeUna y Payphone
 }
 
 /** Crea los cargos automáticos que falten de un campeonato y quita los que ya no corresponden. */

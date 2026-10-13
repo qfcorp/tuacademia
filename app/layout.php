@@ -7,6 +7,7 @@ function cabecera_admin(string $titulo): void
 {
     $u = usuario();
     $liga = liga_trabajo();
+    acad_vocabulario_activar($liga); // (TuAcademia) palabras de la academia (disciplina, clase, salón)
     $p = get('p', 'inicio');
     $activo = fn(array $ps) => in_array($p, $ps, true) ? ' class="activo"' : '';
     ?><!doctype html>
@@ -22,7 +23,7 @@ function cabecera_admin(string $titulo): void
 <body class="admin" style="--acento: <?= e($liga['color'] ?? '#0b6e4f') ?>; --acento2: <?= e(($liga['color2'] ?? '') !== '' ? $liga['color2'] : ($liga['color'] ?? '#0b6e4f')) ?>">
 <header class="barra">
   <div class="barra-in">
-    <a class="marca" href="admin.php">⚽ <?= e(marca()) ?> <small>Panel</small></a>
+    <a class="marca" href="admin.php"><?= es_academia() ? '🎓' : '⚽' ?> <?= e(marca()) ?> <small>Panel</small></a>
     <?= html_selector_idioma('idioma-panel') // (v28) ?>
     <?php if ($u): ?>
     <button class="menu-btn" type="button" onclick="document.body.classList.toggle('menu-abierto')" aria-label="Menú">☰</button>
@@ -32,9 +33,9 @@ function cabecera_admin(string $titulo): void
   <?php if ($liga): ?>
   <div class="subbarra"><div class="barra-in">
     <?= escudo($liga['logo'], $liga['nombre'], $liga['color'], 'mini') ?>
-    <strong><?= e($liga['nombre']) ?></strong> · <?= es_escuela($liga) ? (count($deps_l = deportes_de_escuela($liga)) > 1 ? '🎓 Escuela multideporte (' . e(mb_strtolower(texto_deportes($deps_l))) . ')' : '🎓 Escuela de ' . e(mb_strtolower(deportes_escuela()[$liga['deporte_escuela']] ?? 'deporte'))) : e(nombre_modalidad($liga['modalidad'])) ?>
+    <strong><?= e($liga['nombre']) ?></strong> · <?= es_escuela($liga) ? (count($deps_l = deportes_de_escuela($liga)) > 1 ? '🎓 ' . (es_academia() ? 'Academia' : 'Escuela multideporte') . ' (' . e(mb_strtolower(texto_deportes($deps_l))) . ')' : '🎓 ' . (es_academia() ? 'Academia' : 'Escuela') . ' de ' . e(mb_strtolower(deportes_escuela()[$liga['deporte_escuela']] ?? 'deporte'))) : e(nombre_modalidad($liga['modalidad'])) ?>
  · <a href="<?= e(url_liga($liga)) ?>" target="_blank">ver página pública ↗</a>
-    <?php if (es_super()): ?> · <a href="admin.php?p=ligas&amp;salir_liga=1">cambiar de liga o escuela</a><?php else: ?> · <span class="suave">Perfil: <?= e(nombre_perfil(perfil_actual())) ?></span><?php endif; ?>
+    <?php if (es_super()): ?> · <a href="admin.php?p=ligas&amp;salir_liga=1"><?= es_academia() ? 'cambiar de academia' : 'cambiar de liga o escuela' ?></a><?php else: ?> · <span class="suave">Perfil: <?= e(nombre_perfil(perfil_actual())) ?></span><?php endif; ?>
     <?php // (v16) combo liga + escuela
     if (!es_super() && ($cbo = combo_de($liga)) && (usuario()['perfil'] ?? 'admin') === 'admin'): ?> · <a class="btn btn-chico btn-sec-blanco" href="admin.php?combo=<?= (int)$cbo['id'] ?>">🔁 Ir a <?= ($cbo['tipo'] ?? 'liga') === 'escuela' ? '🎓' : '🏆' ?> <?= e($cbo['nombre']) ?></a><?php elseif (es_super() && ($cbo = combo_de($liga))): ?> · <span class="suave">combo con <?= e($cbo['nombre']) ?></span><?php endif; ?>
   </div></div>
@@ -95,7 +96,7 @@ function pie_admin(): void
 {
     ?>
 </main>
-<footer class="pie">Sistema de Ligas · QF Producciones · <a href="manual" target="_blank">Manuales</a></footer>
+<footer class="pie"><?= e(marca()) ?> · <?= e(ajuste('empresa', 'Tukán Software')) ?> · <a href="manual" target="_blank">Manuales</a></footer>
 <?= usuario() ? html_barra_abajo() . script_menu_panel() . html_boton_ayuda() : '' ?>
 </body>
 </html>
@@ -105,6 +106,7 @@ function pie_admin(): void
 function cabecera_publica(string $titulo, ?array $liga = null): void
 {
     $GLOBALS['liga_publica'] = $liga;
+    acad_vocabulario_activar($liga); // (TuAcademia)
     ?><!doctype html>
 <html lang="es">
 <head>
@@ -144,7 +146,7 @@ function pie_publico(): void
     ?>
 </main>
 <?php $lp = $GLOBALS['liga_publica'] ?? null; $propio = liga_por_dominio(); ?>
-<footer class="pie">Estadísticas en vivo<?= $propio ? '' : ' · <a href="index.php?v=ligas">Ligas</a> · <a href="index.php?v=ligas&amp;tipo=escuela">Escuelas</a> · <a href="index.php?v=manual">Manuales</a>' ?> · <a href="<?= $lp ? 'index.php?l=' . e($lp['slug']) . '&amp;v=privacidad' : 'index.php?v=privacidad' ?>">Privacidad</a> · <a href="<?= $lp ? 'index.php?l=' . e($lp['slug']) . '&amp;v=derechos' : 'index.php?v=derechos' ?>">Mis datos</a> · <a href="admin.php?p=login">Ingresar</a> · Powered by <?= $propio ? e(ajuste('empresa')) : '<a href="index.php">' . e(marca()) . '</a>' ?></footer>
+<footer class="pie"><?= es_academia() ? e(marca()) : 'Estadísticas en vivo' ?><?= $propio ? '' : (es_academia() ? ' · <a href="nuestras-escuelas">Academias</a> · <a href="index.php?v=manual">Manuales</a>' : ' · <a href="index.php?v=ligas">Ligas</a> · <a href="index.php?v=ligas&amp;tipo=escuela">Escuelas</a> · <a href="index.php?v=manual">Manuales</a>') ?> · <a href="<?= $lp ? 'index.php?l=' . e($lp['slug']) . '&amp;v=privacidad' : 'index.php?v=privacidad' ?>">Privacidad</a> · <a href="<?= $lp ? 'index.php?l=' . e($lp['slug']) . '&amp;v=derechos' : 'index.php?v=derechos' ?>">Mis datos</a> · <a href="admin.php?p=login">Ingresar</a> · Powered by <?= $propio ? e(ajuste('empresa')) : '<a href="index.php">' . e(marca()) . '</a>' ?></footer>
 </body>
 </html>
 <?php

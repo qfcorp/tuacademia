@@ -1,7 +1,7 @@
 {
-  "name": "tuvocalia-android",
+  "name": "tuacademia-android",
   "private": true,
-  "description": "Genera las apps Android de TuVocalía (Trusted Web Activity) con Bubblewrap",
+  "description": "Genera las apps Android de TuAcademia (Trusted Web Activity) con Bubblewrap",
   "dependencies": {
     "@bubblewrap/core": "1.27.0"
   }

@@ -1,4 +1,4 @@
-package com.tuvocalia.app;
+package com.tukan.tuacademia;
 
 
 import com.google.androidbrowserhelper.playbilling.digitalgoods.DigitalGoodsRequestHandler;

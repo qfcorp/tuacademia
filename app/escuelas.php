@@ -121,6 +121,7 @@ function leer_alumno_post(int $lid): array
 {
     $d = [];
     foreach (['nombres' => 60, 'apellidos' => 60, 'genero' => 10, 'posicion' => 30, 'pie' => 12, 'direccion' => 160, 'colegio' => 100,
+        'instrumento' => 60, 'talla_vestuario' => 20, 'carril' => 20, // (TuAcademia)
         'representante_nombre' => 80, 'representante_telefono' => 30, 'representante_email' => 120, 'parentesco' => 30,
         'tipo_sangre' => 5, 'alergias' => 200, 'condiciones' => 200, 'medicamentos' => 200, 'seguro' => 100,
         'emergencia_nombre' => 80, 'emergencia_telefono' => 30, 'notas' => 300] as $k => $max) {
@@ -167,6 +168,10 @@ function url_carnet_alumno(array $a): string
 
 function tipos_cargo_escuela(): array
 {
+    if (PRODUCTO === 'academia') { // (TuAcademia) pensión, vestuario, recital, paquete de clases
+        return ['mensualidad' => 'Pensión', 'matricula' => 'Matrícula', 'vestuario' => 'Vestuario', 'recital' => 'Recital / presentación', 'paquete' => 'Paquete de clases', 'uniforme' => 'Uniforme',
+            'material' => 'Material (libros, partituras)', 'torneo' => 'Torneo / viaje', 'tienda' => 'Tienda', 'seguro' => 'Seguro', 'examen' => 'Examen de nivel', 'otro' => 'Otro'];
+    }
     return ['mensualidad' => 'Mensualidad', 'matricula' => 'Matrícula', 'uniforme' => 'Uniforme', 'torneo' => 'Torneo / viaje', 'tienda' => 'Tienda', 'seguro' => 'Seguro', 'examen' => 'Examen de grado', 'otro' => 'Otro'];
 }
 
@@ -209,7 +214,7 @@ function generar_mensualidades(array $liga, ?string $periodo = null): int
             if ($base > 0) {
                 $desc = round($base * descuento_alumno($a, $liga) / 100, 2);
                 q("INSERT INTO esc_cargos (liga_id, alumno_id, tipo, periodo, descripcion, monto, descuento, vence, estado) VALUES (?,?, 'mensualidad', ?, ?, ?, ?, ?, ?)", [
-                    $liga['id'], $a['id'], $periodo, 'Mensualidad de ' . nombre_mes($periodo), $base, $desc, sprintf('%s-%02d', $periodo, $dia), $desc >= $base ? 'pagado' : 'pendiente',
+                    $liga['id'], $a['id'], $periodo, (PRODUCTO === 'academia' ? 'Pensión de ' : 'Mensualidad de ') . nombre_mes($periodo), $base, $desc, sprintf('%s-%02d', $periodo, $dia), $desc >= $base ? 'pagado' : 'pendiente',
                 ]);
                 $n++;
             }
@@ -223,7 +228,7 @@ function generar_mensualidades(array $liga, ?string $periodo = null): int
             if ($base <= 0) continue;
             $desc = round($base * min(100, (float)($liga['esc_desc_segundo'] ?? 0)) / 100, 2);
             q("INSERT INTO esc_cargos (liga_id, alumno_id, grupo_id, tipo, periodo, descripcion, monto, descuento, vence, estado) VALUES (?,?,?, 'mensualidad', ?, ?, ?, ?, ?, ?)", [
-                $liga['id'], $a['id'], $gx['grupo_id'], $periodo, 'Mensualidad de ' . nombre_mes($periodo) . ' · ' . $gx['nombre'], $base, $desc, sprintf('%s-%02d', $periodo, $dia), $desc >= $base ? 'pagado' : 'pendiente',
+                $liga['id'], $a['id'], $gx['grupo_id'], $periodo, (PRODUCTO === 'academia' ? 'Pensión de ' : 'Mensualidad de ') . nombre_mes($periodo) . ' · ' . $gx['nombre'], $base, $desc, sprintf('%s-%02d', $periodo, $dia), $desc >= $base ? 'pagado' : 'pendiente',
             ]);
             $n++;
         }
@@ -455,10 +460,10 @@ function mensaje_familia(array $a, array $liga, string $codigo): string
 }
 
 /* ============================================================
- * CONEXIÓN CON UNA LIGA DE TUVOCALÍA (opcional, por grupo)
+ * CONEXIÓN CON UNA LIGA DE TUACADEMIA (opcional, por grupo)
  * ============================================================ */
 
-/** Campeonatos de ligas de TuVocalía con inscripción de equipos abierta hoy. */
+/** Campeonatos de ligas de TuAcademia con inscripción de equipos abierta hoy. */
 function campeonatos_abiertos(): array
 {
     return filas("SELECT t.id, t.nombre, t.temporada, t.equipos_hasta, t.categoria, l.id AS liga_id, l.nombre AS liga, l.ciudad

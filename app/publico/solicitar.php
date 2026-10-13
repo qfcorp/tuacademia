@@ -3,14 +3,14 @@
 $planes = filas('SELECT * FROM planes WHERE activo = 1 ORDER BY orden, precio_mensual');
 $errores = [];
 $enviada = null;
-$tipo = post('tipo', get('tipo')) === 'escuela' ? 'escuela' : 'liga';
+$tipo = es_academia() || post('tipo', get('tipo')) === 'escuela' ? 'escuela' : 'liga'; // (TuAcademia) siempre academia
 $recomienda = recomendador_visitante(); // (v28) llegó con el enlace de una liga o escuela que nos recomienda
 
 if (es_post()) {
     csrf_verificar();
     if (post('sitio') !== '') exit; // campo trampa contra robots
     if (demasiados_intentos('solicitud_demo', 5, '-1 day')) $errores[] = 'Ya recibimos varias solicitudes desde su conexión hoy. Le contactaremos pronto.';
-    if (mb_strlen(post('organizacion')) < 3) $errores[] = 'Escriba el nombre de su liga o escuela.';
+    if (mb_strlen(post('organizacion')) < 3) $errores[] = es_academia() ? 'Escriba el nombre de su academia.' : 'Escriba el nombre de su liga o escuela.';
     if (mb_strlen(post('contacto')) < 3) $errores[] = 'Escriba su nombre.';
     if (strlen(preg_replace('/\D/', '', post('telefono'))) < 9) $errores[] = 'Escriba su número de celular (WhatsApp) para contactarle.';
     if (post('email') !== '' && !filter_var(post('email'), FILTER_VALIDATE_EMAIL)) $errores[] = 'El correo no es válido.';
@@ -51,15 +51,15 @@ cabecera_publica('Solicitar demo · ' . marca());
   <div>
     <h1>Solicite su demo gratis de <?= e(marca()) ?></h1>
     <?php if ($recomienda): ?><div class="aviso aviso-info">🤝 Le recomendó <b><?= e($recomienda['nombre']) ?></b>. ¡Bienvenido!</div><?php endif; ?>
-    <p><b>🎁 <?= (int)ajuste('dias_demo', 7) ?> días gratis con todos los módulos</b>: le preparamos el acceso y le ayudamos a cargar su liga o escuela.</p>
-    <p>Le mostramos el sistema con un asesor y le creamos su acceso de prueba para <?= $tipo === 'escuela' ? 'su escuela' : 'su liga' ?>, con sus propios datos.</p>
+    <p><b>🎁 <?= (int)ajuste('dias_demo', 7) ?> días gratis con todos los módulos</b>: le preparamos el acceso y le ayudamos a cargar su <?= es_academia() ? 'academia' : 'liga o escuela' ?>.</p>
+    <p>Le mostramos el sistema con un asesor y le creamos su acceso de prueba para <?= es_academia() ? 'su academia' : ($tipo === 'escuela' ? 'su escuela' : 'su liga') ?>, con sus propios datos.</p>
     <ul class="lista-check">
       <li>Demo guiada por WhatsApp o videollamada</li>
       <li>Acceso de prueba preparado para usted</li>
-      <li>Le ayudamos a cargar sus <?= $tipo === 'escuela' ? 'alumnos y grupos' : 'equipos y su primer campeonato' ?></li>
+      <li>Le ayudamos a cargar sus <?= $tipo === 'escuela' ? (es_academia() ? 'alumnos y cursos' : 'alumnos y grupos') : 'equipos y su primer campeonato' ?></li>
       <li>Sin compromiso: elige su plan cuando esté listo</li>
     </ul>
-    <?php if (liga_demo()): ?><p>¿Quiere mirar primero? <a href="index.php?v=demo">👀 Vea la liga de demostración</a>.</p><?php endif; ?>
+    <?php if (!es_academia() && liga_demo()): ?><p>¿Quiere mirar primero? <a href="index.php?v=demo">👀 Vea la liga de demostración</a>.</p><?php endif; ?>
   </div>
   <div class="tarjeta">
   <?php if ($enviada): ?>
@@ -72,18 +72,20 @@ cabecera_publica('Solicitar demo · ' . marca());
       <?= csrf_campo() ?>
       <input type="text" name="sitio" value="" style="display:none" tabindex="-1" autocomplete="off">
       <div class="campos">
+        <?php if (es_academia()): ?><input type="hidden" name="tipo" value="escuela"><?php else: ?>
         <div class="campo-ancho"><label>¿Qué organiza?</label><select name="tipo"><option value="liga" <?= $tipo === 'liga' ? 'selected' : '' ?>>🏆 Una liga o campeonatos</option><option value="escuela" <?= $tipo === 'escuela' ? 'selected' : '' ?>>🎓 Una escuela deportiva</option></select></div>
-        <div class="campo-ancho"><label>¿Qué deportes? <small class="suave">(marque todos los que necesite)</small></label><?= html_casillas_modulos(leer_deportes_post() ?: (get('modulo') !== '' && modulo_info(get('modulo')) ? [get('modulo')] : []), 'deportes') ?></div>
-        <div class="campo-ancho"><label>Nombre de la liga o escuela *</label><input type="text" name="organizacion" required maxlength="120" value="<?= e(post('organizacion')) ?>"></div>
+        <?php endif; ?>
+        <div class="campo-ancho"><label><?= es_academia() ? '¿Qué disciplinas enseña?' : '¿Qué deportes?' ?> <small class="suave">(marque todos los que necesite)</small></label><?= html_casillas_modulos(leer_deportes_post() ?: (get('modulo') !== '' && modulo_info(get('modulo')) ? [get('modulo')] : []), 'deportes') ?></div>
+        <div class="campo-ancho"><label><?= es_academia() ? 'Nombre de la academia *' : 'Nombre de la liga o escuela *' ?></label><input type="text" name="organizacion" required maxlength="120" value="<?= e(post('organizacion')) ?>"></div>
         <div><label>Ciudad / sector</label><input type="text" name="ciudad" maxlength="80" value="<?= e(post('ciudad')) ?>"></div>
-        <div><label>Tamaño aproximado</label><input type="text" name="tamano" maxlength="40" value="<?= e(post('tamano')) ?>" placeholder="Ej: 16 equipos · 80 alumnos"></div>
+        <div><label>Tamaño aproximado</label><input type="text" name="tamano" maxlength="40" value="<?= e(post('tamano')) ?>" placeholder="<?= es_academia() ? 'Ej: 80 alumnos, 3 profesores' : 'Ej: 16 equipos · 80 alumnos' ?>"></div>
         <div><label>Su nombre *</label><input type="text" name="contacto" required maxlength="80" value="<?= e(post('contacto')) ?>" autocomplete="name"></div>
         <div><label>Celular / WhatsApp *</label><input type="tel" name="telefono" required maxlength="30" value="<?= e(post('telefono')) ?>" autocomplete="tel"></div>
         <div class="campo-ancho"><label>Correo</label><input type="email" name="email" value="<?= e(post('email')) ?>" autocomplete="email"></div>
         <?php if ($planes): ?><div><label>Plan que le interesa</label><select name="plan_id"><option value="">Todavía no sé</option><?php foreach ($planes as $pl): ?><option value="<?= (int)$pl['id'] ?>" <?= (int)post('plan_id', get('plan')) === (int)$pl['id'] ? 'selected' : '' ?>><?= e($pl['nombre']) ?> — <?= e(texto_precio_principal($pl)) ?></option><?php endforeach; ?></select></div><?php endif; ?>
         <?php $vref = vendedor_del_visitante(get('ref')) ?? vendedor_del_visitante(); ?>
         <div><label>Código de vendedor (opcional)</label><input type="text" name="ref" maxlength="20" value="<?= e(post('ref', $vref['codigo'] ?? '')) ?>" style="text-transform:uppercase" placeholder="Si alguien le recomendó"><?php if ($vref): ?><div class="ayuda">Le atiende: <?= e($vref['nombre']) ?></div><?php endif; ?></div>
-        <div class="campo-ancho"><label>¿Algo que debamos saber?</label><textarea name="mensaje" rows="3" maxlength="600" placeholder="Ej: cuándo empieza su campeonato, qué le interesa más"><?= e(post('mensaje')) ?></textarea></div>
+        <div class="campo-ancho"><label>¿Algo que debamos saber?</label><textarea name="mensaje" rows="3" maxlength="600" placeholder="<?= es_academia() ? 'Ej: cuándo es su próximo recital, qué le interesa más' : 'Ej: cuándo empieza su campeonato, qué le interesa más' ?>"><?= e(post('mensaje')) ?></textarea></div>
         <div class="campo-ancho"><label class="check" style="font-weight:400"><input type="checkbox" name="acepto" value="1" required> Acepto que <?= e(ajuste('empresa', 'QF Producciones')) ?> me contacte por WhatsApp, llamada o correo sobre esta solicitud, y la <a href="index.php?v=privacidad" target="_blank">política de privacidad</a> (datos guardados en servidores fuera del Ecuador).</label></div>
       </div>
       <button class="btn btn-grande" type="submit">📝 Solicitar mi demo</button>

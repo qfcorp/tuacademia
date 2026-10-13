@@ -172,15 +172,19 @@ if (get('creada') !== '' && ($lc = fila('SELECT * FROM ligas WHERE id = ?', [(in
 <?php endif;
 
 if ($nueva): ?>
-  <p><a href="admin.php?p=ligas">← Volver a ligas y escuelas</a></p>
-  <h1>➕ <?= get('tipo') === 'escuela' ? 'Nueva escuela deportiva' : 'Nueva liga o escuela' ?></h1>
-  <p class="suave">Llene este formulario y la liga queda funcionando con su administrador, su página pública y (si quiere) su primer campeonato. No hay que copiar archivos ni tocar el servidor.</p>
+  <p><a href="admin.php?p=ligas">← Volver a <?= es_academia() ? 'las academias' : 'ligas y escuelas' ?></a></p>
+  <h1>➕ <?= es_academia() ? 'Nueva academia' : (get('tipo') === 'escuela' ? 'Nueva escuela deportiva' : 'Nueva liga o escuela') ?></h1>
+  <p class="suave"><?= es_academia() ? 'Llene este formulario y la academia queda funcionando con su administrador y su página pública.' : 'Llene este formulario y la liga queda funcionando con su administrador, su página pública y (si quiere) su primer campeonato.' ?> No hay que copiar archivos ni tocar el servidor.</p>
   <form method="post" enctype="multipart/form-data" action="admin.php?p=ligas&amp;nueva=1">
     <?= csrf_campo() ?><input type="hidden" name="accion" value="crear">
-    <fieldset><legend>1. Datos de la liga</legend>
+    <fieldset><legend>1. Datos de la <?= es_academia() ? 'academia' : 'liga' ?></legend>
       <div class="campos">
-        <div><label>Nombre de la liga o escuela *</label><input type="text" name="nombre" required maxlength="120"></div>
+        <div><label><?= es_academia() ? 'Nombre de la academia *' : 'Nombre de la liga o escuela *' ?></label><input type="text" name="nombre" required maxlength="120"></div>
         <div><label>Ciudad / sector</label><input type="text" name="ciudad" maxlength="80"></div>
+        <?php if (es_academia()): // (TuAcademia) toda cuenta es academia ?>
+        <input type="hidden" name="tipo" value="escuela"><input type="hidden" name="modalidad" value="F7">
+        <div><label>Disciplina principal</label><select name="deporte_escuela"><?= opciones_disciplinas(post('deporte_escuela', 'ballet')) ?></select><div class="ayuda">Después, en Cursos y horarios, cada curso puede ser de otra disciplina.</div></div>
+        <?php else: ?>
         <div><label>Tipo de cuenta</label><select name="tipo" onchange="document.querySelectorAll('.solo-escuela').forEach(function (x) { x.style.display = this.value === 'escuela' ? '' : 'none'; }, this); document.querySelectorAll('.solo-liga').forEach(function (x) { x.style.display = this.value === 'escuela' ? 'none' : ''; }, this)">
           <option value="liga" >🏆 Liga (campeonatos)</option><option value="escuela" <?= get('tipo') === 'escuela' ? 'selected' : '' ?>>🎓 Escuela deportiva (alumnos)</option></select>
           <?php if (get('tipo') === 'escuela'): ?><script>(function (s) { document.addEventListener('DOMContentLoaded', function () { s.dispatchEvent(new Event('change')); }); })(document.currentScript.previousElementSibling);</script><?php endif; ?></div>
@@ -188,15 +192,16 @@ if ($nueva): ?>
 
         <div><label>Dirección corta</label><input type="text" name="slug" maxlength="60" placeholder="se crea sola"><div class="ayuda">Ej: liga-norte → <?= e(url_base()) ?>liga-norte</div></div>
         <div><label>Modalidad</label><select name="modalidad"><?= opciones_modalidad('F7') ?></select></div>
+        <?php endif; ?>
         <div><label>Color</label><input type="color" name="color" value="#0b6e4f"></div>
         <div><label>Logo</label><input type="file" name="logo" accept="image/*"></div>
       </div>
     </fieldset>
-    <fieldset><legend>🧩 Módulos deportivos que tendrá la cuenta</legend>
-      <p class="suave" style="margin-top:0">Elija los deportes que compró (o que quiere probar en la demo). El plan incluye uno y cada módulo adicional suma su precio con <?= e(rtrim(rtrim(number_format(modulo_descuento(), 1, ',', ''), '0'), ',')) ?> % de descuento. Se pueden cambiar después.</p>
-      <?= html_casillas_modulos(['futbol'], 'deportes', true) ?>
+    <fieldset><legend>🧩 <?= es_academia() ? 'Disciplinas' : 'Módulos deportivos' ?> que tendrá la cuenta</legend>
+      <p class="suave" style="margin-top:0"><?= es_academia() ? 'Elija las disciplinas que compró (o que quiere probar en la demo).' : 'Elija los deportes que compró (o que quiere probar en la demo).' ?> El plan incluye uno y cada módulo adicional suma su precio con <?= e(rtrim(rtrim(number_format(modulo_descuento(), 1, ',', ''), '0'), ',')) ?> % de descuento. Se pueden cambiar después.</p>
+      <?= html_casillas_modulos([es_academia() ? 'baile' : 'futbol'], 'deportes', true) ?>
     </fieldset>
-    <fieldset><legend>2. Administrador de la liga</legend>
+    <fieldset><legend>2. Administrador de la <?= es_academia() ? 'academia' : 'liga' ?></legend>
       <?php $cuentas_combo = filas("SELECT id, nombre, tipo FROM ligas WHERE es_demo = 0 AND combo_id IS NULL ORDER BY nombre"); if ($cuentas_combo): ?>
       <div class="campos"><div class="campo-ancho"><label>🤝 Combo liga + escuela (mismo dueño, <?= e((string)(float)combo_descuento()) ?>% de descuento en los dos planes)</label>
         <select name="combo_con" id="combo-con"><option value="">— No, es un cliente nuevo —</option><?php foreach ($cuentas_combo as $cc): ?><option value="<?= (int)$cc['id'] ?>" data-tipo="<?= e($cc['tipo'] ?? 'liga') ?>"><?= ($cc['tipo'] ?? 'liga') === 'escuela' ? '🎓 ' : '🏆 ' ?><?= e($cc['nombre']) ?></option><?php endforeach; ?></select>
@@ -226,13 +231,13 @@ if ($nueva): ?>
         <?php $vends = filas('SELECT id, nombre, codigo FROM vendedores WHERE activo = 1 ORDER BY nombre'); if ($vends): ?><div><label>Vendedor (comisión)</label><select name="vendedor_id"><option value="">— venta directa —</option><?php foreach ($vends as $vd): ?><option value="<?= (int)$vd['id'] ?>"><?= e($vd['nombre'] . ' (' . $vd['codigo'] . ')') ?></option><?php endforeach; ?></select></div><?php endif; ?>
         <div id="vg-f" style="display:none"><label>Pagada hasta</label><input type="date" name="vence" value="<?= date('Y-m-d', strtotime('+1 month')) ?>"></div>
       </div>
-      <label class="check"><input type="checkbox" name="crear_campeonato" value="1" checked> Crear también su primer campeonato (<?= date('Y') ?>)</label>
+      <?php if (!es_academia()): ?><label class="check"><input type="checkbox" name="crear_campeonato" value="1" checked> Crear también su primer campeonato (<?= date('Y') ?>)</label><?php endif; ?>
     </fieldset>
-    <fieldset><legend>4. Límites de esta liga (opcional)</legend>
+    <fieldset><legend>4. Límites de esta <?= es_academia() ? 'academia' : 'liga' ?> (opcional)</legend>
       <p class="suave" style="margin-top:0">Déjelos vacíos para usar los del plan. Escriba <b>0</b> para ilimitado.</p>
       <?php html_limites_liga([]); ?>
     </fieldset>
-    <button class="btn btn-grande" type="submit">Crear liga</button>
+    <button class="btn btn-grande" type="submit"><?= es_academia() ? 'Crear academia' : 'Crear liga' ?></button>
   
     <?php if (get('demo') !== '' && ($sd = fila('SELECT * FROM solicitudes_demo WHERE id = ?', [(int)get('demo')]))): // (v14) datos de la solicitud de demo ?>
     <input type="hidden" name="solicitud_demo" value="<?= (int)$sd['id'] ?>">

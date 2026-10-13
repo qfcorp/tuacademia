@@ -69,7 +69,7 @@ self.addEventListener('fetch', function (e) {
 self.addEventListener('push', function (e) {
   var d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) { d = { t: e.data ? e.data.text() : '' }; }
-  e.waitUntil(self.registration.showNotification(d.t || 'TuVocalía', {
+  e.waitUntil(self.registration.showNotification(d.t || 'TuAcademia', {
     body: d.b || '', icon: 'assets/icono-192.png', badge: 'assets/icono-192.png', lang: 'es', data: { u: d.u || 'app.php' }
   }));
 });

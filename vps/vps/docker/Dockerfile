@@ -1,4 +1,4 @@
-# TuVocalia - PHP 8.5 (FPM) aislado para el VPS del ERP
+# TuAcademia - PHP 8.5 (FPM) aislado para el VPS del ERP
 # Imagen oficial de PHP + las extensiones que usa el sistema (imagenes y Excel).
 FROM php:8.5-fpm
 RUN apt-get update \
@@ -7,5 +7,5 @@ RUN apt-get update \
  && docker-php-ext-install -j2 gd zip \
  && rm -rf /var/lib/apt/lists/* \
  && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
-COPY php-tuvocalia.ini /usr/local/etc/php/conf.d/zz-tuvocalia.ini
-COPY fpm-tuvocalia.conf /usr/local/etc/php-fpm.d/zz-tuvocalia.conf
+COPY php-tuacademia.ini /usr/local/etc/php/conf.d/zz-tuacademia.ini
+COPY fpm-tuacademia.conf /usr/local/etc/php-fpm.d/zz-tuacademia.conf

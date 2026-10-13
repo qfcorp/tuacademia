@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Recorrido: abre todas las páginas que se alcanzan desde el panel y la web pública (solo GET) y busca errores PHP."""
-import re, sys
+import os, re, sys
 from urllib.parse import urljoin, urlparse
 import requests
 
-B = 'http://127.0.0.1:8199/'
+PUERTO = os.environ.get('TA_PUERTO', '8196')
+B = 'http://127.0.0.1:' + PUERTO + '/'
 ERR = re.compile(r'(Fatal error|Warning:|Deprecated:|Uncaught|Notice:|Parse error)')
 SALTAR = re.compile(r'(p=salir|cancelar=1|salir|logout|\.(png|jpg|jpeg|webp|svg|css|js|ico|pdf|apk|mp4)(\?|$)|descargar\.php\?apk|wa\.me|mailto:|tel:)', re.I)
 MAX = int(sys.argv[1]) if len(sys.argv) > 1 else 1500
@@ -44,7 +45,7 @@ def recorrer(nombre, s, inicio):
         for h in re.findall(r'href="([^"#]+)', r.text):
             h = h.replace('&amp;', '&')
             v = urljoin(u, h)
-            if urlparse(v).netloc != '127.0.0.1:8199' or SALTAR.search(v):
+            if urlparse(v).netloc != '127.0.0.1:' + PUERTO or SALTAR.search(v):
                 continue
             if v not in vistos:
                 cola.append(v)

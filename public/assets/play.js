@@ -1,5 +1,5 @@
 /*
- * (v38) Pagos con Google Play dentro de la app de TuVocalía (Trusted Web Activity con Digital Goods API).
+ * (v38) Pagos con Google Play dentro de la app de TuAcademia (Trusted Web Activity con Digital Goods API).
  * 1. Pide a Google los precios reales (en la moneda del cliente) y los pone en los botones.
  * 2. Al tocar un botón abre el cobro de Google Play (PaymentRequest con https://play.google.com/billing).
  * 3. Manda el purchaseToken al servidor (play.php), que lo verifica con Google, lo reconoce y activa el plan.

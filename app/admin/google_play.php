@@ -12,7 +12,7 @@ if (es_post()) {
         if ($f < 0 || $f > 100) throw new RuntimeException('El aumento debe estar entre 0 y 100 %.');
         guardar_ajuste('play_factor', (string)$f);
         $pq = trim(post('play_paquete'));
-        if ($pq !== '' && !preg_match('/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/', $pq)) throw new RuntimeException('El nombre del paquete no es válido (ejemplo: com.tuvocalia.app).');
+        if ($pq !== '' && !preg_match('/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/', $pq)) throw new RuntimeException('El nombre del paquete no es válido (ejemplo: com.tukan.tuacademia).');
         guardar_ajuste('play_paquete', $pq !== '' ? $pq : PLAY_PAQUETE);
         guardar_ajuste('play_idioma', trim(post('play_idioma')) !== '' ? trim(post('play_idioma')) : 'es-419');
         guardar_ajuste('play_huellas', mb_substr(trim(post('play_huellas')), 0, 1000));
@@ -63,6 +63,13 @@ $tot = fila("SELECT COUNT(*) AS n, COALESCE(SUM(monto), 0) AS m FROM pagos_suscr
 cabecera_admin('Google Play');
 ?>
 <h1>📱 Apps Android y Google Play</h1>
+<?php if (!play_permitido()): ?>
+<div class="aviso aviso-info">⏸ <b>La app de Google Play está APAGADA en este servidor</b> (todavía no se publica). Todo funciona como en la web: nadie ve precios de Google ni botones de Google Play.
+  Se enciende cuando se decida, escribiendo <code>'google_play' => true</code> en <code>app/config.php</code>. Esta página sirve para dejar todo preparado.</div>
+<?php endif; ?>
+<?php if (TV_HUELLA_FIRMA === ''): ?>
+<div class="aviso aviso-error">🔑 TuAcademia todavía no tiene su <b>llave de firma de Android</b>. Hay que generar una nueva (no se usa la de TuVocalía) y poner su huella SHA-256 en <code>app/config.php</code> (<code>'huella_firma' => '…'</code>). Los pasos están en BLOC_DE_NOTAS.md → «Apps Android».</div>
+<?php endif; ?>
 <p class="suave">Hay tres formas de usar <?= e(marca()) ?> en el celular: el <b>navegador</b> (como siempre), el <b>APK</b> que se baja de <a href="descargar.php" target="_blank">descargar.php</a> y la <b>app de Google Play</b>. En las dos primeras se paga como siempre, con los precios normales. En la de Google Play el plan solo se puede pagar con Google, con los precios de abajo (Google se queda con su comisión).</p>
 
 <?php if ($log): ?>
@@ -99,8 +106,8 @@ cabecera_admin('Google Play');
       <button class="btn btn-sec" style="margin-top:6px"><?= $cuenta ? 'Cambiar' : 'Subir' ?></button>
     </form>
     <h3>📦 APK directo</h3>
-    <p><?= apk_disponible() ? '✅ Disponible: <a href="descargar.php?apk=1">descargar.php?apk=1</a> (' . round(filesize(apk_archivo()) / 1048576, 1) . ' MB)' : '➖ Todavía no está en el servidor (public/descargas/tuvocalia.apk).' ?></p>
-    <p class="suave" style="margin:0">Huella de nuestra firma: <code style="font-size:.75rem;word-break:break-all"><?= e(TV_HUELLA_FIRMA) ?></code></p>
+    <p><?= apk_disponible() ? '✅ Disponible: <a href="descargar.php?apk=1">descargar.php?apk=1</a> (' . round(filesize(apk_archivo()) / 1048576, 1) . ' MB)' : '➖ Todavía no está en el servidor (public/descargas/tuacademia.apk).' ?></p>
+    <p class="suave" style="margin:0">Huella de nuestra firma: <code style="font-size:.75rem;word-break:break-all"><?= TV_HUELLA_FIRMA !== '' ? e(TV_HUELLA_FIRMA) : '— (falta generar la llave)' ?></code></p>
     <p class="suave">Comprobar: <a href="/.well-known/assetlinks.json" target="_blank">/.well-known/assetlinks.json</a></p>
     <p style="margin:0"><b>Cobrado por Google Play:</b> <?= (int)$tot['n'] ?> pago(s) · <?= dinero($tot['m']) ?> (antes de la comisión de Google)</p>
   </div>
@@ -123,8 +130,8 @@ cabecera_admin('Google Play');
 <div class="tarjeta" style="margin-top:16px">
   <h2 style="margin-top:0">📘 Guía rápida (una sola vez)</h2>
   <ol>
-    <li><b>Play Console</b> → Crear app «TuVocalía», idioma <b>Español (Latinoamérica)</b>, App, Gratis.</li>
-    <li>Subir <code>tuvocalia-play.aab</code> a <b>Pruebas → Prueba cerrada</b> (así Google habilita las suscripciones) y crear el perfil de pagos (Configuración → Perfil de pagos).</li>
+    <li><b>Play Console</b> → Crear app «TuAcademia», idioma <b>Español (Latinoamérica)</b>, App, Gratis.</li>
+    <li>Subir <code>tuacademia-play.aab</code> a <b>Pruebas → Prueba cerrada</b> (así Google habilita las suscripciones) y crear el perfil de pagos (Configuración → Perfil de pagos).</li>
     <li><b>Google Cloud</b> (console.cloud.google.com) → crear un proyecto → activar <b>Google Play Android Developer API</b> → <b>Cuentas de servicio</b> → crear una → <b>Claves → Agregar clave → JSON</b> (se descarga el archivo).</li>
     <li><b>Play Console</b> → Usuarios y permisos → Invitar al correo de la cuenta de servicio → permisos de la app: <b>Ver información financiera</b>, <b>Administrar pedidos y suscripciones</b> y <b>Administrar productos y precios</b>.</li>
     <li>Aquí: subir el .json → <b>Probar la conexión</b> → <b>Crear los productos</b> → marcar <b>Cobrar dentro de la app</b> → Guardar.</li>

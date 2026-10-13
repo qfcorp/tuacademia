@@ -8,11 +8,11 @@
 function crear_federacion_demo(int $lid, int $eid): ?int
 {
     return sin_auditoria(function () use ($lid, $eid): ?int {
-        q("DELETE FROM usuarios WHERE email = 'federacion@demo.tuvocalia.com'");
+        q("DELETE FROM usuarios WHERE email = 'federacion@demo.tuacademia.tukanec.com'");
         q('DELETE FROM ligas WHERE es_demo = 1 AND es_federacion = 1');
         $r = crear_liga_completa([
             'nombre' => 'Federación Deportiva Demo', 'slug' => 'federacion-demo', 'ciudad' => 'Quito', 'color' => '#6a1b9a', 'modalidad' => 'F7',
-            'admin_nombre' => 'Presidente de la federación', 'admin_email' => 'federacion@demo.tuvocalia.com', 'admin_clave' => bin2hex(random_bytes(12)),
+            'admin_nombre' => 'Presidente de la federación', 'admin_email' => 'federacion@demo.tuacademia.tukanec.com', 'admin_clave' => bin2hex(random_bytes(12)),
         ]);
         $fid = (int)$r['liga_id'];
         q("UPDATE ligas SET es_demo = 1, es_federacion = 1, vence = '', es_prueba = 0, color2 = '#f2b705', contacto_nombre = 'QF Producciones', contacto_telefono = '0990000000' WHERE id = ?", [$fid]);

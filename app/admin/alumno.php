@@ -28,6 +28,7 @@ if (es_post()) {
         q('UPDATE esc_alumnos SET ' . implode(', ', array_map(fn($k) => "$k = :$k", array_keys($d))) . ' WHERE id = :id', $d + ['id' => $aid]);
         if (!empty($d['grupo_id'])) q('DELETE FROM esc_alumno_grupos WHERE alumno_id = ? AND grupo_id = ?', [$aid, $d['grupo_id']]); // (v19)
         guardar_requisitos($lid, $mod_req, 'esc_alumnos', $aid); // (v35)
+        guardar_nivel_inicial($aid, $lid, $por); // (TuAcademia)
         flash('Datos guardados.');
     } elseif ($accion === 'grupo_extra' && $puede_alumnos) {
         // (v19) Otro deporte / otro grupo además del principal (paga también la mensualidad de ese grupo)
@@ -172,7 +173,8 @@ cabecera_admin(nombre_alumno($a));
   <?= foto_alumno($a, 'foto-grande') ?>
   <div>
     <h1 style="margin:0"><?= e(nombre_alumno($a)) ?> <?= $a['estado'] !== 'activo' ? '<span class="etiqueta gris">' . e($a['estado']) . '</span>' : '' ?></h1>
-    <p style="margin:.3rem 0"><b><?= e(sub_de($a['fecha_nac'])) ?></b> · <?= $a['fecha_nac'] ? edad($a['fecha_nac']) . ' años · ' : '' ?><?= e($a['grupo'] ?? 'sin grupo') ?><?= $a['posicion'] ? ' · ' . e($a['posicion']) : '' ?> · <?= implode(' ', array_map('chip_deporte', deportes_alumno($a, $liga))) ?><?= ($gr_a = grado_actual($aid)) ? ' <span class="chip-deporte">🥋 ' . e($gr_a['grado']) . '</span>' : '' ?></p>
+    <p style="margin:.3rem 0"><b><?= e(sub_de($a['fecha_nac'])) ?></b> · <?= $a['fecha_nac'] ? edad($a['fecha_nac']) . ' años · ' : '' ?><?= e($a['grupo'] ?? 'sin grupo') ?><?= $a['posicion'] ? ' · ' . e($a['posicion']) : '' ?><?= ($a['instrumento'] ?? '') !== '' ? ' · 🎵 ' . e($a['instrumento']) : '' ?><?= ($a['talla_vestuario'] ?? '') !== '' ? ' · 👗 talla ' . e($a['talla_vestuario']) : '' ?><?= ($a['carril'] ?? '') !== '' ? ' · 🏊 carril ' . e($a['carril']) : '' ?> · <?= implode(' ', array_map('chip_deporte', deportes_alumno($a, $liga))) ?><?= html_chips_nivel($a, $liga) ?></p>
+    <?= html_paquete_alumno_chip($aid) ?>
     <?php if ($otros = texto_otros_grupos($a, $liga)): ?><p class="suave" style="margin:.2rem 0"><?= e($otros) ?></p><?php endif; ?>
     <p style="margin:.3rem 0">Asistencia (90 días): <b><?= $as['pct'] !== null ? $as['pct'] . '%' : '—' ?></b><?php if (puede('cobros')): $ep = estado_pagos($aid); ?> · Pagos: <?= chip_pago($ep['estado']) ?><?= $ep['deuda'] > 0 ? ' ' . dinero($ep['deuda']) : '' ?><?php endif; ?>
       <?= $a['alergias'] || $a['condiciones'] ? ' · <span class="etiqueta roja">🩺 ' . e(trim($a['alergias'] . ' ' . $a['condiciones'])) . '</span>' : '' ?></p>
@@ -222,7 +224,7 @@ cabecera_admin(nombre_alumno($a));
     $metas = filas("SELECT * FROM esc_metas WHERE alumno_id = ? ORDER BY estado = 'lograda', estado = 'pausada', actualizado DESC", [$aid]); ?>
   <div class="acciones" style="margin-bottom:10px"><a class="btn btn-sec btn-chico" target="_blank" href="<?= e($url) ?>&amp;libreta=<?= periodo_libreta() ?>">🖨 Informe para imprimir o PDF</a>
     <span class="suave">Esto mismo ven los padres en su portal (sin las notas internas).</span></div>
-  <?= panel_desarrollo($a, $liga) ?><?= html_cinturon_alumno($a, $liga) ?><?= html_competencias_alumno($a) ?>
+  <?= panel_desarrollo($a, $liga) ?><?= html_cinturon_alumno($a, $liga) ?><?= html_niveles_alumno($a, $liga) ?><?= html_competencias_alumno($a) ?>
   <div class="tarjeta" id="metas">
     <h3 style="margin-top:0">🎯 Metas personales</h3>
     <p class="suave" style="margin-top:0">Metas concretas para el alumno (ej: "Pasar con la pierna izquierda", "Bajar el sprint de 30 m a 5,2 s"). Al cumplirlas gana una insignia.</p>

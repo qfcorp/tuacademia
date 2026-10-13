@@ -21,11 +21,11 @@ plugins {
 }
 
 def twaManifest = [
-    applicationId: 'com.tuvocalia.directo',
-    hostName: 'tuvocalia.com', // The domain being opened in the TWA.
+    applicationId: 'com.tukan.tuacademia.directo',
+    hostName: 'tuacademia.tukanec.com', // The domain being opened in the TWA.
     launchUrl: '/app.php?origen=apk', // The start path for the TWA. Must be relative to the domain.
-    name: 'TuVocalía', // The application name.
-    launcherName: 'TuVocalía', // The name shown on the Android Launcher.
+    name: 'TuAcademia', // The application name.
+    launcherName: 'TuAcademia', // The name shown on the Android Launcher.
     themeColor: '#0F1614', // The color used for the status bar.
     themeColorDark: '#000000', // The color used for the dark status bar.
     navigationColor: '#0F1614', // The color used for the navigation bar.
@@ -42,7 +42,7 @@ def twaManifest = [
     shortcuts: [],
     // The duration of fade out animation in milliseconds to be played when removing splash screen.
     splashScreenFadeOutDuration: 300,
-    generatorApp: 'tuvocalia-v38', // Application that generated the Android Project
+    generatorApp: 'tuacademia-v38', // Application that generated the Android Project
     // The fallback strategy for when Trusted Web Activity is not available. Possible values are
     // 'customtabs' and 'webview'.
     fallbackType: 'customtabs',
@@ -52,9 +52,9 @@ def twaManifest = [
 
 android {
     compileSdkVersion 36
-    namespace "com.tuvocalia.directo"
+    namespace "com.tukan.tuacademia.directo"
     defaultConfig {
-        applicationId "com.tuvocalia.directo"
+        applicationId "com.tukan.tuacademia.directo"
         minSdkVersion 24
         targetSdkVersion 36
         versionCode 1
@@ -76,7 +76,7 @@ android {
             // The URL the Web Manifest for the Progressive Web App that the TWA points to. This
             // is used by Chrome OS and Meta Quest to open the Web version of the PWA instead of
             // the TWA, as it will probably give a better user experience for non-mobile devices.
-            resValue "string", "webManifestUrl", 'https://tuvocalia.com/manifest.php'
+            resValue "string", "webManifestUrl", 'https://tuacademia.tukanec.com/manifest.php'
         
 
         

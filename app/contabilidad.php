@@ -6,7 +6,7 @@
  *
  * El lector de comprobantes está adaptado del Sincronizador SRI del ERP de QF Producciones
  * (factura, liquidación de compra, notas de crédito y débito; bases 0 % / con IVA, IVA y total).
- * Solo se REGISTRAN facturas recibidas: TuVocalía no emite facturas electrónicas.
+ * Solo se REGISTRAN facturas recibidas: TuAcademia no emite facturas electrónicas.
  */
 
 /* ---------- Categorías de gasto ---------- */

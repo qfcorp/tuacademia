@@ -3,8 +3,9 @@
 import json, os, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 
-B = 'http://127.0.0.1:8199/'
-REPO = '/home/claude/tuvocalia'
+PUERTO = os.environ.get('TA_PUERTO', '8196')
+B = 'http://127.0.0.1:' + PUERTO + '/'
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SIM = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sim_estado.json')
 ok, fallos = 0, []
 
@@ -68,7 +69,7 @@ with sync_playwright() as p:
     pg = cx.new_page()
     errores_js = []
     pg.on('pageerror', lambda ex: errores_js.append(str(ex)))
-    pg.goto(B + 'app.php?origen=play', referer='android-app://com.tuvocalia.app/')
+    pg.goto(B + 'app.php?origen=play', referer='android-app://com.tukan.tuacademia/')
     pg.wait_for_timeout(800)
     entrar(pg)
     pg.goto(B + 'admin.php?p=mi_plan')
@@ -94,7 +95,7 @@ with sync_playwright() as p:
     cx = nav.new_context()
     cx.add_init_script("try{sessionStorage.setItem('tv_twa','1')}catch(e){}")
     pg = cx.new_page()
-    pg.goto(B + 'app.php?origen=play', referer='android-app://com.tuvocalia.app/')
+    pg.goto(B + 'app.php?origen=play', referer='android-app://com.tukan.tuacademia/')
     entrar(pg)
     pg.goto(B + 'admin.php?p=mi_plan')
     pg.wait_for_timeout(1000)

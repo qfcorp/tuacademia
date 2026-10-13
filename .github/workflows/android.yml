@@ -1,7 +1,7 @@
-# TuVocalía (v38) — Compila y firma las apps Android en GitHub (se puede lanzar desde el celular).
+# TuAcademia (v38) — Compila y firma las apps Android en GitHub (se puede lanzar desde el celular).
 # GitHub → pestaña Actions → "Apps Android" → Run workflow → elegir la rama → Run workflow.
-# Resultado: un "Release" con tuvocalia-play.aab (para Google Play) y tuvocalia.apk (APK directo),
-# y el APK se guarda en public/descargas/tuvocalia.apk de la misma rama.
+# Resultado: un "Release" con tuacademia-play.aab (para Google Play) y tuacademia.apk (APK directo),
+# y el APK se guarda en public/descargas/tuacademia.apk de la misma rama.
 # Necesita el secreto TV_CLAVE_FIRMA (Settings → Secrets and variables → Actions).
 name: Apps Android
 on:
@@ -40,12 +40,12 @@ jobs:
         run: |
           VER=$(grep -o "VERSION_NOMBRE = '[^']*'" android/generar.js | cut -d"'" -f2)
           ETIQ="app-v${VER}-${GITHUB_RUN_NUMBER}"
-          gh release create "$ETIQ" android/salida/tuvocalia-play.aab android/salida/tuvocalia.apk \
+          gh release create "$ETIQ" android/salida/tuacademia-play.aab android/salida/tuacademia.apk \
             --target "$GITHUB_SHA" --title "Apps Android ${VER} (compilación ${GITHUB_RUN_NUMBER}, rama ${GITHUB_REF_NAME})" \
-            --notes "tuvocalia-play.aab → subir a Google Play Console. tuvocalia.apk → APK directo (precios normales)."
+            --notes "tuacademia-play.aab → subir a Google Play Console. tuacademia.apk → APK directo (precios normales)."
       - name: Guardar el APK en la rama
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add public/descargas/tuvocalia.apk
+          git add public/descargas/tuacademia.apk
           if git diff --cached --quiet; then echo "El APK no cambió"; else git commit -m "APK directo compilado por GitHub Actions [skip ci]" && git push; fi

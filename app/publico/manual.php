@@ -1,15 +1,15 @@
 <?php
 /*
- * (v27) Manuales de TuVocalía en la web: /manual, /manual/ligas y /manual/escuelas.
+ * (v27) Manuales de TuAcademia en la web: /manual, /manual/ligas y /manual/escuelas.
  * El contenido está en app/manuales/*.html (secciones con anclas #s1, #s2… para el botón de ayuda del panel)
- * y las imágenes en public/assets/manual/. El PDF se descarga de assets/manual/Manual-TuVocalia-*.pdf.
+ * y las imágenes en public/assets/manual/. El PDF se descarga de assets/manual/Manual-TuAcademia-*.pdf.
  */
 $manuales = [
-    'ligas' => ['Manual de ligas y campeonatos', '🏆', 'Fútbol, indor, vóley, ecuavóley, básquet, balonmano, béisbol y deportes individuales: carreras, tenis, pádel, squash, tenis de mesa, artes marciales, boxeo, ajedrez, e-sports, bolos, natación, atletismo, carreras de ruta, pesas y triatlón; y olimpiadas multideportivas.', 'Manual-TuVocalia-Ligas.pdf'],
-    'escuelas' => ['Manual de escuelas deportivas', '🎓', 'Grupos, alumnos, asistencia, entrenamientos, pagos, profesores, evaluaciones, club, tienda y escuela multideporte.', 'Manual-TuVocalia-Escuelas.pdf'],
+    'ligas' => ['Manual de ligas y campeonatos', '🏆', 'Fútbol, indor, vóley, ecuavóley, básquet, balonmano, béisbol y deportes individuales: carreras, tenis, pádel, squash, tenis de mesa, artes marciales, boxeo, ajedrez, e-sports, bolos, natación, atletismo, carreras de ruta, pesas y triatlón; y olimpiadas multideportivas.', 'Manual-TuAcademia-Ligas.pdf'],
+    'escuelas' => ['Manual de escuelas deportivas', '🎓', 'Grupos, alumnos, asistencia, entrenamientos, pagos, profesores, evaluaciones, club, tienda y escuela multideporte.', 'Manual-TuAcademia-Escuelas.pdf'],
 ];
 $m = get('m');
-// (v30) Manuales traducidos: app/manuales/<manual>.<idioma>.html y assets/manual/Manual-TuVocalia-<Manual>.<idioma>.pdf
+// (v30) Manuales traducidos: app/manuales/<manual>.<idioma>.html y assets/manual/Manual-TuAcademia-<Manual>.<idioma>.pdf
 $idm = function_exists('idioma_actual') ? idioma_actual() : 'es';
 $pdf_idioma = function (string $f) use ($idm): string {
     if ($idm === 'es') return $f;
@@ -53,7 +53,7 @@ $html = str_replace('7 días', (int)ajuste('dias_demo', 7) . ' días', $html);
 preg_match_all('#<h2 id="(s\d+)">(.*?)</h2>#s', $html, $sec, PREG_SET_ORDER);
 $impresion = get('imprimir') === '1';
 $host_manual = preg_replace('#^https?://#', '', rtrim(url_base(), '/'));
-if (preg_match('#^(127\.|localhost)#', $host_manual)) $host_manual = 'tuvocalia.com'; // el PDF se arma en la computadora de desarrollo
+if (preg_match('#^(127\.|localhost)#', $host_manual)) $host_manual = 'tuacademia.tukanec.com'; // el PDF se arma en la computadora de desarrollo
 cabecera_publica($titulo . ' · ' . marca());
 ?>
 <style>

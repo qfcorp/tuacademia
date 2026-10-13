@@ -2,10 +2,10 @@
 /*
  * (v38) APPS ANDROID Y GOOGLE PLAY
  *
- * Hay 3 formas de usar TuVocalía en el celular:
+ * Hay 3 formas de usar TuAcademia en el celular:
  *  - Navegador / PWA (como siempre): precios normales.
- *  - APK directo (com.tuvocalia.directo, se baja de tuvocalia.com/descargar.php): precios normales.
- *  - App de Google Play (com.tuvocalia.app): el plan se paga DENTRO de la app con Google Play (regla de Google),
+ *  - APK directo (com.tukan.tuacademia.directo, se baja de tuacademia.tukanec.com/descargar.php): precios normales.
+ *  - App de Google Play (com.tukan.tuacademia): el plan se paga DENTRO de la app con Google Play (regla de Google),
  *    con precios más altos (ajuste play_factor, 20 % por defecto, redondeado hacia arriba a 0,50) porque Google cobra comisión.
  *
  * Cómo se sabe desde dónde entra: cada app abre /app.php?origen=play|apk|web y eso guarda la cookie tv_app.
@@ -22,10 +22,20 @@
  * (purchases.subscriptionsv2), la reconoce (acknowledge) y activa el plan. Cada 6 horas revisa las renovaciones.
  */
 
-const PLAY_PAQUETE = 'com.tuvocalia.app';
-const APK_PAQUETE = 'com.tuvocalia.directo';
-/** Huella SHA-256 de la llave con la que firmamos (subida a Google Play y APK directo). La de Google se agrega en el panel. */
-const TV_HUELLA_FIRMA = 'F9:DB:E9:A4:B4:75:78:07:C6:A4:62:61:10:45:47:55:2C:04:54:BB:A2:9E:CC:4B:E6:B5:21:20:44:E1:6E:E7';
+const PLAY_PAQUETE = 'com.tukan.tuacademia';
+const APK_PAQUETE = 'com.tukan.tuacademia.directo';
+/**
+ * Huella SHA-256 de la llave con la que firmamos (subida a Google Play y APK directo). La de Google se agrega en el panel.
+ * TuAcademia TODAVÍA NO TIENE LLAVE: hay que generar una nueva (no se usa la de TuVocalía). Ver BLOC_DE_NOTAS.md → "Apps Android".
+ * Cuando exista, se pone aquí o en app/config.php: 'huella_firma' => 'AA:BB:...'.
+ */
+define('TV_HUELLA_FIRMA', strtoupper(trim((string)(CFG['huella_firma'] ?? ''))));
+
+/** (TuAcademia) ¿La app de Google Play está encendida en este servidor? Apagada hasta que se decida (app/config.php 'google_play' => true). */
+function play_permitido(): bool
+{
+    return !empty(CFG['google_play']);
+}
 
 /* ============================================================
  * 1) ¿DESDE DÓNDE ENTRA? (cookie tv_app)
@@ -50,6 +60,7 @@ function fijar_origen_app(string $o): void
 function en_app_play(): bool
 {
     if (!empty($GLOBALS['__forzar_app_play'])) return true; // pruebas automáticas
+    if (!play_permitido()) return false; // (TuAcademia) app de Google Play apagada: todo funciona como en la web
     if (defined('SIN_PRECIO_PLAY') || PHP_SAPI === 'cli') return false;
     return app_origen() === 'play' && !es_super();
 }
@@ -66,7 +77,7 @@ function nombre_forma_pago(string $f): string
 
 function play_activo(): bool
 {
-    return (string)ajuste('play_activo', '0') === '1';
+    return play_permitido() && (string)ajuste('play_activo', '0') === '1';
 }
 
 function play_factor(): float
@@ -302,7 +313,7 @@ function play_consultar(string $token): array
 /** Reconoce la compra (si no se reconoce en 3 días, Google la devuelve). */
 function play_reconocer(string $producto, string $token): void
 {
-    [$cod, $r] = play_http('POST', play_url_api('/purchases/subscriptions/' . rawurlencode($producto) . '/tokens/' . rawurlencode($token) . ':acknowledge'), ['developerPayload' => 'tuvocalia']);
+    [$cod, $r] = play_http('POST', play_url_api('/purchases/subscriptions/' . rawurlencode($producto) . '/tokens/' . rawurlencode($token) . ':acknowledge'), ['developerPayload' => 'tuacademia']);
     if ($cod !== 200 && $cod !== 204) throw new RuntimeException('No se pudo reconocer la compra en Google (' . $cod . '): ' . play_error_texto($r));
 }
 
@@ -545,7 +556,7 @@ function play_crear_productos(): array
 
 function play_huellas(): array
 {
-    $h = [TV_HUELLA_FIRMA];
+    $h = TV_HUELLA_FIRMA !== '' ? [TV_HUELLA_FIRMA] : []; // (TuAcademia) sin llave propia todavía
     foreach (preg_split('/[\s,;]+/', strtoupper((string)ajuste('play_huellas', ''))) as $x) {
         $x = trim($x);
         if (preg_match('/^([0-9A-F]{2}:){31}[0-9A-F]{2}$/', $x)) $h[] = $x;
@@ -557,10 +568,11 @@ function play_huellas(): array
 function play_assetlinks(): array
 {
     $rel = ['delegate_permission/common.handle_all_urls'];
-    return [
-        ['relation' => $rel, 'target' => ['namespace' => 'android_app', 'package_name' => play_paquete(), 'sha256_cert_fingerprints' => play_huellas()]],
-        ['relation' => $rel, 'target' => ['namespace' => 'android_app', 'package_name' => APK_PAQUETE, 'sha256_cert_fingerprints' => [TV_HUELLA_FIRMA]]],
-    ];
+    $r = [];
+    // (TuAcademia) solo se publica cada app si tiene huella (sin llave todavía, la lista queda vacía)
+    if (play_permitido() && play_huellas()) $r[] = ['relation' => $rel, 'target' => ['namespace' => 'android_app', 'package_name' => play_paquete(), 'sha256_cert_fingerprints' => play_huellas()]];
+    if (TV_HUELLA_FIRMA !== '') $r[] = ['relation' => $rel, 'target' => ['namespace' => 'android_app', 'package_name' => APK_PAQUETE, 'sha256_cert_fingerprints' => [TV_HUELLA_FIRMA]]];
+    return $r;
 }
 
 /* ============================================================
@@ -569,7 +581,7 @@ function play_assetlinks(): array
 
 function apk_archivo(): string
 {
-    return PUBLIC_DIR . '/descargas/tuvocalia.apk';
+    return PUBLIC_DIR . '/descargas/tuacademia.apk';
 }
 
 function apk_disponible(): bool
@@ -688,9 +700,7 @@ CREATE TABLE IF NOT EXISTS play_compras (
 );
 CREATE INDEX IF NOT EXISTS idx_play_compras_liga ON play_compras(liga_id);
 SQL);
-    $t = 'TuVocalía ahora es app para Android';
-    q('INSERT INTO novedades (titulo, texto, para, enlace, version, fecha) SELECT ?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM novedades WHERE titulo = ?)',
-        [$t, 'Descargue la app para Android desde descargar.php y compártala con sus árbitros, delegados, jugadores y familias. Sigue funcionando igual desde el navegador.', 'todos', 'descargar.php', 'apps', date('Y-m-d'), $t]);
+    // (TuAcademia) la novedad «ahora es app para Android» se publica cuando exista la app (todavía no hay llave ni APK)
     guardar_ajuste('play_esquema', '1');
 }
 

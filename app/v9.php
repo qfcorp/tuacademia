@@ -2,7 +2,7 @@
 /*
  * VERSIÓN 9 — Funciones nuevas:
  *   1) Copiar un campeonato para la nueva temporada (mismas reglas y, si se quiere, los mismos equipos)
- *   2) Vendedores con comisión: venden TuVocalía con su código; ganan un % de los pagos de suscripción de sus ligas
+ *   2) Vendedores con comisión: venden TuAcademia con su código; ganan un % de los pagos de suscripción de sus ligas
  */
 
 /* ============================================================

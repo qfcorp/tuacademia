@@ -1,5 +1,5 @@
 <?php
-/* PÁGINA DE VENTA del sistema (portada principal: tuvocalia.com) */
+/* PÁGINA DE VENTA del sistema (portada principal: tuacademia.tukanec.com) */
 $planes = filas('SELECT * FROM planes WHERE activo = 1 ORDER BY orden, precio_mensual');
 $ver_escuelas = ($v_global ?? '') === 'escuelas' || get('para') === 'escuelas';
 $ligas_vitrina = filas("SELECT l.nombre, l.slug, l.logo, l.color, l.ciudad FROM ligas l WHERE l.activa = 1 AND l.es_demo = 0 AND (SELECT COUNT(*) FROM equipos e WHERE e.liga_id = l.id) > 0 ORDER BY l.id LIMIT 8");

@@ -26,10 +26,13 @@ if (es_post()) {
         flash('Cargo "' . post('descripcion') . '" agregado a ' . count($alumnos) . ' alumno(s).');
     } elseif ($accion === 'aprobar_comp') {
         $c = fila("SELECT * FROM esc_cargos WHERE id = ? AND liga_id = ? AND estado = 'pendiente'", [(int)post('id'), $lid]) ?? throw new RuntimeException('Cargo no encontrado.');
-        $r = cobrar_cargos($liga, [$c['id']], 'transferencia', $por);
-        flash('Comprobante aprobado. Recibo N° ' . str_pad((string)$r, 6, '0', STR_PAD_LEFT) . '.');
+        $grupo_c = acad_cargos_de_comprobante($lid, $c); // (TuAcademia) un comprobante puede pagar varios valores
+        $forma_c = in_array($c['comprobante_forma'] ?? '', ['deuna', 'transferencia', 'deposito'], true) ? $c['comprobante_forma'] : 'transferencia';
+        $r = cobrar_cargos($liga, array_column($grupo_c, 'id'), $forma_c, $por);
+        flash('Comprobante aprobado' . ($forma_c === 'deuna' ? ' (DeUna)' : '') . '. Recibo N° ' . str_pad((string)$r, 6, '0', STR_PAD_LEFT) . (count($grupo_c) > 1 ? ' por ' . count($grupo_c) . ' valores.' : '.'));
     } elseif ($accion === 'rechazar_comp') {
-        q("UPDATE esc_cargos SET comprobante_estado = 'rechazado' WHERE id = ? AND liga_id = ?", [(int)post('id'), $lid]);
+        $c = fila('SELECT * FROM esc_cargos WHERE id = ? AND liga_id = ?', [(int)post('id'), $lid]) ?? throw new RuntimeException('Cargo no encontrado.');
+        foreach (acad_cargos_de_comprobante($lid, $c) as $x) q("UPDATE esc_cargos SET comprobante_estado = 'rechazado' WHERE id = ? AND liga_id = ?", [(int)$x['id'], $lid]);
         flash('Comprobante rechazado. La familia lo verá en su portal.');
     } elseif ($accion === 'gasto') {
         $monto = round((float)str_replace(',', '.', post('monto')), 2);
@@ -89,13 +92,17 @@ cabecera_admin('Pagos de la escuela');
   <?php endif; ?>
 
 <?php elseif ($ver === 'comprobantes'):
-    $cs = filas("SELECT c.*, a.nombres, a.apellidos, a.representante_nombre FROM esc_cargos c JOIN esc_alumnos a ON a.id = c.alumno_id WHERE c.liga_id = ? AND c.comprobante <> '' ORDER BY (c.comprobante_estado = 'pendiente') DESC, c.id DESC LIMIT 100", [$lid]); ?>
-  <p class="suave">Las familias suben aquí la foto de su transferencia desde su portal. Revise que el dinero llegó y apruébelo: se emite el recibo.</p>
+    $cs_todos = filas("SELECT c.*, a.nombres, a.apellidos, a.representante_nombre FROM esc_cargos c JOIN esc_alumnos a ON a.id = c.alumno_id WHERE c.liga_id = ? AND c.comprobante <> '' ORDER BY (c.comprobante_estado = 'pendiente') DESC, c.id DESC LIMIT 200", [$lid]);
+    // (TuAcademia) un comprobante que paga varios valores se muestra una sola vez
+    $cs = []; $grupo_vals = [];
+    foreach ($cs_todos as $x) { $kg = ($x['comprobante_grupo'] ?? '') !== '' ? $x['comprobante_grupo'] : 'c' . $x['id']; $grupo_vals[$kg][] = $x; if (count($grupo_vals[$kg]) === 1) $cs[] = $x + ['_g' => $kg]; } ?>
+  <p class="suave">Las familias suben aquí la foto de su <b>DeUna</b> o de su transferencia desde su portal. Revise que el dinero llegó y apruébelo: se emite el recibo.</p>
   <?php if (!$cs): ?><div class="tarjeta">Todavía no hay comprobantes.</div><?php endif; ?>
   <?php foreach ($cs as $c): ?>
     <div class="tarjeta comprobante"><a target="_blank" href="admin.php?p=cobros&amp;foto=<?= (int)$c['id'] ?>"><img src="admin.php?p=cobros&amp;foto=<?= (int)$c['id'] ?>" alt="Comprobante" loading="lazy"></a>
-      <div><h3 style="margin:0"><?= e(nombre_alumno($c)) ?> · <?= dinero($c['monto'] - $c['descuento']) ?> <?= ['pendiente' => '<span class="estado-chip chip-pend">Por revisar</span>', 'aprobado' => '<span class="estado-chip chip-ok">Aprobado</span>', 'rechazado' => '<span class="estado-chip chip-mal">Rechazado</span>'][$c['comprobante_estado']] ?? '' ?></h3>
-        <p class="suave" style="margin:.3rem 0"><?= e($c['descripcion']) ?> · envió <?= e($c['representante_nombre']) ?></p>
+      <?php $vals = $grupo_vals[$c['_g']]; $tot_g = array_sum(array_map(fn($x) => (float)$x['monto'] - (float)$x['descuento'], $vals)); ?>
+      <div><h3 style="margin:0"><?= ($c['comprobante_forma'] ?? '') === 'deuna' ? '📱 DeUna · ' : '' ?><?= e(implode(', ', array_unique(array_map('nombre_alumno', $vals)))) ?> · <?= dinero($tot_g) ?> <?= ['pendiente' => '<span class="estado-chip chip-pend">Por revisar</span>', 'aprobado' => '<span class="estado-chip chip-ok">Aprobado</span>', 'rechazado' => '<span class="estado-chip chip-mal">Rechazado</span>'][$c['comprobante_estado']] ?? '' ?></h3>
+        <p class="suave" style="margin:.3rem 0"><?= e(implode(' · ', array_column($vals, 'descripcion'))) ?> · envió <?= e($c['representante_nombre']) ?><?= ($c['comprobante_ref'] ?? '') !== '' ? ' · N° ' . e($c['comprobante_ref']) : '' ?><?= ($c['comprobante_fecha'] ?? '') !== '' ? ' · ' . e($c['comprobante_fecha']) : '' ?></p>
         <?php if ($c['comprobante_estado'] === 'pendiente' && $c['estado'] === 'pendiente' && $ed): ?>
           <div class="acciones">
             <form class="inline" method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="aprobar_comp"><input type="hidden" name="id" value="<?= (int)$c['id'] ?>"><button class="btn">✓ Aprobar y emitir recibo</button></form>

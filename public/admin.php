@@ -21,12 +21,15 @@ $validas = ['login', 'salir', 'inicio', 'ligas', 'usuarios', 'clave', 'config', 
     'examenes', // (v31)
     'modulos', 'requisito_doc', 'requisitos', // (v35)
     'olimpiadas', // (v37)
-    'google_play']; // (v38)
+    'google_play', // (v38)
+    'mensajes', 'recitales', 'particulares']; // (TuAcademia)
 if (!in_array($p, $validas, true)) {
     $p = 'inicio';
 }
 
 csrf_verificar();
+// (TuAcademia) las páginas de ligas no se abren (el código sigue ahí para PRODUCTO = 'ligas')
+if (PRODUCTO === 'academia' && in_array($p, paginas_solo_ligas(), true)) $p = $p === 'config' && liga_trabajo() && es_escuela(liga_trabajo()) ? 'escuela_config' : 'inicio';
 
 if ($p === 'login') {
     require APP_DIR . '/admin/login.php';

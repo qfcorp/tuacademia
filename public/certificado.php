@@ -8,10 +8,10 @@ require __DIR__ . '/../app/bootstrap.php';
 
 $c = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', get('c')));
 if ($c === '') {
-    cabecera_publica('Verificar certificado de grado');
+    cabecera_publica('Verificar certificado');
     ?>
 <div class="tarjeta" style="max-width:520px;margin:auto;text-align:center">
-  <h1>🥋 Verificar certificado de grado</h1>
+  <h1>🎖️ Verificar certificado</h1>
   <p>Escriba el código que aparece debajo del QR del certificado.</p>
   <form method="get" class="acciones" style="justify-content:center"><input type="text" name="c" maxlength="20" required placeholder="Ej: K7M2Q9XR4TPA" style="text-transform:uppercase;max-width:240px"> <button class="btn">Verificar</button></form>
 </div>
@@ -27,7 +27,7 @@ $esc = $i ? fila('SELECT * FROM ligas WHERE id = ?', [$i['lid']]) : null;
 if (!$i || !$esc) {
     http_response_code(404);
     cabecera_publica('Certificado no válido');
-    echo '<div class="tarjeta" style="text-align:center;max-width:560px;margin:auto"><h1 style="color:var(--roja)">✗ CERTIFICADO NO VÁLIDO</h1><p>El código <b>' . e($c) . '</b> no corresponde a ningún certificado de grado, o la escuela lo anuló.</p>'
+    echo '<div class="tarjeta" style="text-align:center;max-width:560px;margin:auto"><h1 style="color:var(--roja)">✗ CERTIFICADO NO VÁLIDO</h1><p>El código <b>' . e($c) . '</b> no corresponde a ningún certificado, o la academia lo anuló.</p>'
         . '<p><a class="btn btn-sec" href="certificado.php">Probar con otro código</a></p></div>';
     pie_publico();
     exit;
@@ -42,14 +42,15 @@ cabecera_publica('Certificado · ' . nombre_alumno($i), $esc);
   <?php if ($i['cedula'] !== ''): ?><p style="text-align:center;margin:0" class="suave">C.I. <?= e(cedula_oculta($i['cedula'])) ?></p><?php endif; ?>
   <p style="text-align:center;font-size:1.15rem;margin:.8rem 0"><?= html_cinturon($cint, $i['grado_aspira']) ?></p>
   <table class="tabla-verif" style="margin:auto">
-    <tr><th>Disciplina</th><td><?= e(disciplinas_marciales()[$i['disciplina']] ?? '') ?></td></tr>
-    <tr><th>Escuela</th><td><?= e($esc['nombre']) ?><?= $esc['ciudad'] !== '' ? ' · ' . e($esc['ciudad']) : '' ?></td></tr>
+    <tr><th>Disciplina</th><td><?= e(nombre_disciplina_nivel((string)$i['disciplina'])) ?></td></tr>
+    <tr><th><?= es_academia() ? 'Academia' : 'Escuela' ?></th><td><?= e($esc['nombre']) ?><?= $esc['ciudad'] !== '' ? ' · ' . e($esc['ciudad']) : '' ?></td></tr>
+    <tr><th><?= e(vocabulario_nivel((string)$i['disciplina'])['nivel']) ?></th><td><b><?= e($i['grado_aspira']) ?></b></td></tr>
     <tr><th>Fecha del examen</th><td><?= e(fecha_larga($i['fecha'])) ?></td></tr>
     <?php if ($i['lugar'] !== ''): ?><tr><th>Lugar</th><td><?= e($i['lugar']) ?></td></tr><?php endif; ?>
     <?php if ($i['examinador'] !== ''): ?><tr><th>Examinador</th><td><?= e($i['examinador']) ?></td></tr><?php endif; ?>
     <tr><th>Código</th><td><code><?= e($c) ?></code></td></tr>
   </table>
-  <p class="suave" style="text-align:center;font-size:.8rem;margin-top:12px">Verificación en línea con los datos de la escuela. Si algún dato del papel no coincide con esta página, el certificado fue alterado.</p>
+  <p class="suave" style="text-align:center;font-size:.8rem;margin-top:12px">Verificación en línea con los datos de la <?= es_academia() ? 'academia' : 'escuela' ?>. Si algún dato del papel no coincide con esta página, el certificado fue alterado.</p>
 </div>
 <?php
 pie_publico();

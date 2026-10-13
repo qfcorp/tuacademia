@@ -37,6 +37,8 @@ public/descargas/*.apk
 pruebas/**/sim_estado.json
 pruebas/**/web.log
 pruebas/**/sim.log
+pruebas/**/*.pem
+pruebas/**/cuenta_servicio.json
 pruebas/**/capturas_salida/
 __pycache__/
 

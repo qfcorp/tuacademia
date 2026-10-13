@@ -1,7 +1,7 @@
 <?php
 /*
  * VERSIÓN 10 — Funciones nuevas:
- *   1) Dirección propia de cada campeonato: tuvocalia.com/liga/campeonato (+ /tabla, /fixture, /en-vivo)
+ *   1) Dirección propia de cada campeonato: tuacademia.tukanec.com/liga/campeonato (+ /tabla, /fixture, /en-vivo)
  *   2) Aviso de vencimiento 5 días antes (panel + Telegram) con el valor y los datos para pagar
  *   3) Liga de demostración que se reinicia sola cada noche
  *   4) Boletín oficial de la fecha (resultados, tabla, suspendidos, resoluciones, próxima fecha)
@@ -67,7 +67,7 @@ function guardar_slug_torneo(array $t, string $escrito): string
     return $s;
 }
 
-/** Dirección pública del campeonato: https://tuvocalia.com/liga/apertura-2026[/tabla]. */
+/** Dirección pública del campeonato: https://tuacademia.tukanec.com/liga/apertura-2026[/tabla]. */
 function url_torneo(array $liga, array $t, string $sub = ''): string
 {
     if (($t['slug'] ?? '') === '') {
@@ -218,10 +218,10 @@ function crear_liga_demo(): int
     return sin_auditoria(function (): int {
         mt_srand(crc32(date('Y-m-d')));
         q("DELETE FROM ligas WHERE es_demo = 1 AND COALESCE(tipo, 'liga') = 'liga'");
-        q("DELETE FROM usuarios WHERE email IN ('demo@demo.tuvocalia.com', 'arbitro@demo.tuvocalia.com', 'delegado@demo.tuvocalia.com')");
+        q("DELETE FROM usuarios WHERE email IN ('demo@demo.tuacademia.tukanec.com', 'arbitro@demo.tuacademia.tukanec.com', 'delegado@demo.tuacademia.tukanec.com')");
         $r = crear_liga_completa([
             'nombre' => 'Liga Demo ' . marca(), 'slug' => 'liga-demo', 'ciudad' => 'Quito', 'color' => '#0b6e4f', 'modalidad' => 'F7',
-            'admin_nombre' => 'Visitante de la demo', 'admin_email' => 'demo@demo.tuvocalia.com', 'admin_clave' => bin2hex(random_bytes(12)),
+            'admin_nombre' => 'Visitante de la demo', 'admin_email' => 'demo@demo.tuacademia.tukanec.com', 'admin_clave' => bin2hex(random_bytes(12)),
         ]);
         $lid = (int)$r['liga_id'];
         $pdo = db();
@@ -762,7 +762,7 @@ function der_a_firma_jwt(string $der): string
 
 function vapid_jwt(string $audiencia, string $privada): string
 {
-    $sub = (string)ajuste('ventas_email') !== '' ? 'mailto:' . ajuste('ventas_email') : 'mailto:soporte@tuvocalia.com';
+    $sub = (string)ajuste('ventas_email') !== '' ? 'mailto:' . ajuste('ventas_email') : 'mailto:soporte@tuacademia.tukanec.com';
     $ent = b64u(json_encode(['typ' => 'JWT', 'alg' => 'ES256'])) . '.' . b64u(json_encode(['aud' => $audiencia, 'exp' => time() + 12 * 3600, 'sub' => $sub], JSON_UNESCAPED_SLASHES));
     if (!openssl_sign($ent, $firma, $privada, OPENSSL_ALGO_SHA256)) throw new RuntimeException('No se pudo firmar la notificación.');
     return $ent . '.' . b64u(der_a_firma_jwt($firma));

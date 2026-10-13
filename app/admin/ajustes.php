@@ -49,7 +49,7 @@ if (es_post()) {
     } elseif ($accion === 'videos') {
         // (v28) Dónde se guardan los videos de jugadores y alumnos
         $url = rtrim(trim(post('videos_url')), '/');
-        if ($url !== '' && !preg_match('#^https://[a-z0-9.\-]+(/[\w\-/]*)?$#i', $url)) throw new RuntimeException('La dirección debe empezar con https:// (ej: https://videos.tuvocalia.com)');
+        if ($url !== '' && !preg_match('#^https://[a-z0-9.\-]+(/[\w\-/]*)?$#i', $url)) throw new RuntimeException('La dirección debe empezar con https:// (ej: https://videos.tukanec.com)');
         guardar_ajuste('videos_url', $url);
         if (post('videos_clave') !== '') guardar_ajuste('videos_clave', mb_substr(trim(post('videos_clave')), 0, 200));
         if ($url === '') guardar_ajuste('videos_clave', '');
@@ -145,7 +145,7 @@ cabecera_admin('Ajustes');
     <div><label>Días de la prueba automática</label><input type="number" name="dias_prueba" min="1" max="365" value="<?= (int)ajuste('dias_prueba', 30) ?>"><div class="ayuda">Solo si la prueba automática está permitida.</div></div>
     <div><label>Días de gracia después de vencer (cuentas pagadas)</label><input type="number" name="dias_gracia" min="0" max="60" value="<?= (int)ajuste('dias_gracia', 7) ?>"><div class="ayuda">Luego el panel de la liga queda en solo lectura (la página pública sigue visible).</div></div>
     <div><label>Días de gracia de las demos</label><input type="number" name="dias_gracia_demo" min="0" max="60" value="<?= (int)ajuste('dias_gracia_demo', 0) ?>"><div class="ayuda">(v33) Recomendado 0: la demo se bloquea el día que vence y se le ofrece contratar (no pierde lo que cargó).</div></div>
-    <div class="campo-ancho"><label>Dirección pública del sistema</label><input type="text" name="url_sitio" value="<?= e(ajuste('url_sitio')) ?>" placeholder="https://tuvocalia.com/" readonly><div class="ayuda">(v33) Se guarda sola cuando usted entra al panel. La usan los correos y avisos que salen de la tarea automática.</div></div>
+    <div class="campo-ancho"><label>Dirección pública del sistema</label><input type="text" name="url_sitio" value="<?= e(ajuste('url_sitio')) ?>" placeholder="https://tuacademia.tukanec.com/" readonly><div class="ayuda">(v33) Se guarda sola cuando usted entra al panel. La usan los correos y avisos que salen de la tarea automática.</div></div>
   </div>
   <h2>Protección de datos (LOPDP)</h2>
   <div class="campos">
@@ -208,7 +208,7 @@ cabecera_admin('Ajustes');
     <div><label>Seguridad</label><select name="smtp_seguridad"><?php foreach (['tls' => 'TLS (puerto 587)', 'ssl' => 'SSL (puerto 465)', 'no' => 'Ninguna'] as $k => $v): ?><option value="<?= $k ?>" <?= ajuste('smtp_seguridad', 'tls') === $k ? 'selected' : '' ?>><?= $v ?></option><?php endforeach; ?></select></div>
     <div><label>Usuario</label><input type="text" name="smtp_usuario" maxlength="120" value="<?= e(ajuste('smtp_usuario')) ?>" autocomplete="off"></div>
     <div><label>Contraseña</label><input type="password" name="smtp_clave" maxlength="200" autocomplete="new-password" placeholder="<?= ajuste('smtp_clave') !== '' ? '•••••••• (guardada; escriba para cambiarla)' : '' ?>"><?php if (ajuste('smtp_clave') !== ''): ?><label class="check" style="font-weight:400"><input type="checkbox" name="smtp_borrar_clave" value="1"> borrar la guardada</label><?php endif; ?></div>
-    <div><label>Correo remitente</label><input type="email" name="smtp_remitente" maxlength="120" value="<?= e(ajuste('smtp_remitente')) ?>" placeholder="notificaciones@tuvocalia.com"></div>
+    <div><label>Correo remitente</label><input type="email" name="smtp_remitente" maxlength="120" value="<?= e(ajuste('smtp_remitente')) ?>" placeholder="notificaciones@tukanec.com"></div>
   </div>
   <button class="btn btn-sec">Guardar correo</button>
 </form>
@@ -229,10 +229,10 @@ cabecera_admin('Ajustes');
 <div class="tarjeta" id="videos">
   <h2 style="margin-top:0">🎬 Videos de jugadores y alumnos</h2>
   <p>Ahora se guardan en: <b><?= videos_modo() === 'laptop' ? e(ajuste('videos_url')) . ' (laptop)' : 'este servidor' ?></b> · Videos disponibles: <?= (int)$uv['n'] ?> (<?= texto_bytes((int)$uv['b']) ?>) · Se borran solos a los <?= VIDEO_DIAS ?> días.</p>
-  <p class="suave">Para guardarlos en la laptop (disco grande): instale el receptor con <code>sudo bash vps/laptop_videos.sh</code> en la laptop, publíquelo en el túnel de Cloudflare (ej: videos.tuvocalia.com) y escriba aquí la dirección y la clave que le mostró el instalador.</p>
+  <p class="suave">Para guardarlos en la laptop (disco grande): instale el receptor con <code>sudo bash vps/laptop_videos.sh</code> en la laptop, publíquelo en el túnel de Cloudflare (ej: videos.tukanec.com) y escriba aquí la dirección y la clave que le mostró el instalador.</p>
   <form method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="videos">
     <div class="campos">
-      <div><label>Dirección del receptor (vacío = este servidor)</label><input name="videos_url" value="<?= e(ajuste('videos_url')) ?>" placeholder="https://videos.tuvocalia.com"></div>
+      <div><label>Dirección del receptor (vacío = este servidor)</label><input name="videos_url" value="<?= e(ajuste('videos_url')) ?>" placeholder="https://videos.tukanec.com"></div>
       <div><label>Clave del receptor</label><input name="videos_clave" value="" autocomplete="off" placeholder="<?= ajuste('videos_clave') !== '' ? '•••••••• (guardada; escriba solo para cambiarla)' : 'la clave que mostró el instalador' ?>"></div>
     </div>
     <button class="btn btn-sec">Guardar</button></form>
@@ -248,7 +248,7 @@ cabecera_admin('Ajustes');
     <p>Para activar los avisos por Telegram (opcional):</p>
     <ol>
       <li>En Telegram busque <b>@BotFather</b> y escríbale <code>/newbot</code>.</li>
-      <li>Póngale un nombre (ej: <i>TuVocalía Avisos</i>) y un usuario que termine en <i>bot</i> (ej: <i>TuVocaliaBot</i>).</li>
+      <li>Póngale un nombre (ej: <i>TuAcademia Avisos</i>) y un usuario que termine en <i>bot</i> (ej: <i>TuAcademiaBot</i>).</li>
       <li>BotFather le da un <b>token</b> (algo como <code>123456789:ABCdef…</code>). Cópielo y péguelo aquí abajo.</li>
     </ol>
   <?php endif; ?>

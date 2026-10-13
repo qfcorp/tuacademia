@@ -1,6 +1,6 @@
 <?php
 /* (v11) GRUPOS DE ENTRENAMIENTO: categoría (Sub-N o abierta), sede, profesor, días, horas, cupo, mensualidad
- * y, si se quiere, la conexión con un campeonato de una liga de TuVocalía (opcional, por grupo). */
+ * y, si se quiere, la conexión con un campeonato de una liga de TuAcademia (opcional, por grupo). */
 $liga = requiere_liga();
 $lid = (int)$liga['id'];
 preparar_escuela($lid);
@@ -10,7 +10,7 @@ if (es_post()) {
     if ($accion === 'guardar') {
         $id = (int)post('id');
         if ($id) grupo_de_escuela($id, $lid);
-        if (mb_strlen(post('nombre')) < 2) throw new RuntimeException('Escriba el nombre del grupo (ej: Sub-10 mañana).');
+        if (mb_strlen(post('nombre')) < 2) throw new RuntimeException(es_academia() ? 'Escriba el nombre del curso (ej: Ballet infantil, Piano nivel 1, Natación bebés).' : 'Escriba el nombre del grupo (ej: Sub-10 mañana).');
         $cat = post('categoria') === 'sub' ? 'sub' : 'abierta';
         $desde = post('anio_desde') !== '' ? entero(post('anio_desde'), 1950, (int)date('Y')) : null;
         $hasta = post('anio_hasta') !== '' ? entero(post('anio_hasta'), 1950, (int)date('Y')) : $desde;
@@ -37,11 +37,11 @@ if (es_post()) {
             q('INSERT INTO esc_grupos (' . implode(', ', array_keys($d)) . ') VALUES (' . implode(', ', array_map(fn($k) => ":$k", array_keys($d))) . ')', $d);
         }
         preparar_deporte($lid, $d['deporte']); // tests, habilidades y ejercicios de fábrica de ese deporte
-        flash('Grupo guardado.');
+        flash(es_academia() ? 'Curso guardado.' : 'Grupo guardado.');
         ir('admin.php?p=grupos');
     }
     if ($accion === 'enviar_liga') {
-        // (52, opcional) Mandar este grupo como equipo a un campeonato de una liga de TuVocalía
+        // (52, opcional) Mandar este grupo como equipo a un campeonato de una liga de TuAcademia
         $g = grupo_de_escuela((int)post('id'), $lid);
         $t = null;
         foreach (campeonatos_abiertos() as $c) if ((int)$c['id'] === (int)post('torneo_id')) $t = $c;
@@ -49,7 +49,7 @@ if (es_post()) {
         $email = mb_strtolower(trim(post('email')));
         if (mb_strlen(post('delegado')) < 3 || !filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('Escriba el nombre y el correo del delegado del equipo.');
         if (strlen(post('clave')) < 8) throw new RuntimeException('La contraseña del delegado debe tener al menos 8 caracteres.');
-        if (fila('SELECT id FROM usuarios WHERE lower(email) = ?', [$email])) throw new RuntimeException('Ese correo ya tiene una cuenta en TuVocalía. Use otro correo para el delegado de este equipo.');
+        if (fila('SELECT id FROM usuarios WHERE lower(email) = ?', [$email])) throw new RuntimeException('Ese correo ya tiene una cuenta en TuAcademia. Use otro correo para el delegado de este equipo.');
         if (fila("SELECT id FROM solicitudes_equipo WHERE escuela_grupo_id = ? AND estado = 'pendiente'", [$g['id']])) throw new RuntimeException('Este grupo ya tiene una solicitud pendiente en una liga.');
         $nombre = mb_substr(trim(post('nombre_equipo')) ?: ($liga['nombre'] . ' ' . $g['nombre']), 0, 80);
         q('INSERT INTO solicitudes_equipo (liga_id, torneo_id, nombre, abreviatura, escudo, color, delegado, cedula, telefono, email, clave, ip, escuela_grupo_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', [
@@ -96,26 +96,31 @@ $profes = filas('SELECT * FROM esc_profesores WHERE liga_id = ? AND activo = 1 O
 $editar = get('editar') !== '' ? fila('SELECT * FROM esc_grupos WHERE id = ? AND liga_id = ?', [(int)get('editar'), $lid]) : null;
 $abiertos = campeonatos_abiertos();
 $ed = puede('alumnos', true);
-cabecera_admin('Grupos y horarios');
+$va = vocab_academia($liga);
+cabecera_admin($va['cursos'] . ' y horarios');
 ?>
-<h1>👥 Grupos y horarios</h1>
+<h1>👥 <?= e($va['cursos']) ?> y horarios</h1>
+<?php if (es_academia()): ?>
+<p class="suave">Cada curso tiene su <b>disciplina</b> (ballet, salsa, piano, canto, natación, fútbol…), las <b>edades</b> que recibe (por año de nacimiento, o todas las edades), su profesor, sus días, su horario y su lugar (salón, aula, piscina o cancha). Una academia puede tener cursos de varias disciplinas.</p>
+<?php else: ?>
 <p class="suave">Cada grupo tiene su <b>deporte</b>, su categoría (<b>Sub-N</b> por año de nacimiento, o <b>abierta</b>), su profesor, sus días y su horario. Una misma escuela puede tener grupos de varios deportes. En <?= (int)date('Y') ?>, un niño nacido en <?= (int)date('Y') - 10 ?> es <b>Sub-10</b>.</p>
-<?php if (!$grupos): ?><div class="tarjeta">Todavía no hay grupos. Cree el primero abajo.</div><?php endif; ?>
+<?php endif; ?>
+<?php if (!$grupos): ?><div class="tarjeta">Todavía no hay <?= e(mb_strtolower($va['cursos'])) ?>. Cree el primero abajo.</div><?php endif; ?>
 <?php foreach ($grupos as $g):
     $eq = $g['equipo_destino_id'] ? fila('SELECT e.*, l.nombre AS liga FROM equipos e JOIN ligas l ON l.id = e.liga_id WHERE e.id = ?', [$g['equipo_destino_id']]) : null;
     $sol = fila("SELECT s.*, l.nombre AS liga, t.nombre AS torneo FROM solicitudes_equipo s JOIN ligas l ON l.id = s.liga_id LEFT JOIN torneos t ON t.id = s.torneo_id WHERE s.escuela_grupo_id = ? ORDER BY s.id DESC LIMIT 1", [$g['id']]); ?>
   <div class="tarjeta" id="g<?= (int)$g['id'] ?>" style="<?= $g['activo'] ? '' : 'opacity:.55' ?>">
     <div class="fila-titulo"><h2 style="margin:0"><?= e($g['nombre']) ?> <?= chip_deporte(deporte_grupo($g, $liga)) ?> <small class="suave"><?= e(texto_categoria_grupo($g)) ?></small></h2>
       <?php if ($ed): ?><a class="btn btn-sec btn-chico" href="admin.php?p=grupos&amp;editar=<?= (int)$g['id'] ?>#form">Editar</a><?php endif; ?></div>
-    <p style="margin:.4rem 0">📅 <?= e(texto_horario($g)) ?><?= $g['cancha'] ? ' · ' . e($g['cancha']) : '' ?><?= $g['sede'] ? ' · 🏟 ' . e($g['sede']) : '' ?> · 🧑‍🏫 <?= e($g['profesor'] ?? 'sin profesor') ?>
+    <p style="margin:.4rem 0">📅 <?= e(texto_horario($g)) ?><?= $g['cancha'] ? ' · 📍 ' . e($g['cancha']) : '' ?><?= $g['sede'] ? ' · 🏢 ' . e($g['sede']) : '' ?> · 🧑‍🏫 <?= e($g['profesor'] ?? 'sin profesor') ?>
       · 👦 <b><?= (int)$g['n_alumnos'] ?></b> alumno(s)<?= $g['cupo'] ? ' de ' . (int)$g['cupo'] : '' ?><?= $g['mensualidad'] !== null ? ' · ' . dinero($g['mensualidad']) . '/mes' : '' ?></p>
     <div class="acciones">
       <a class="btn btn-sec btn-chico" href="admin.php?p=alumnos&amp;g=<?= (int)$g['id'] ?>">Ver alumnos</a>
       <?php if (puede('clases', true)): ?><a class="btn btn-sec btn-chico" href="admin.php?p=asistencia&amp;g=<?= (int)$g['id'] ?>">📋 Asistencia</a><?php endif; ?>
       <a class="btn btn-sec btn-chico" target="_blank" href="admin.php?p=esc_carnets&amp;g=<?= (int)$g['id'] ?>">🪪 Carnets</a>
     </div>
-    <?php if (in_array(deporte_grupo($g, $liga), ['futbol', 'indor', 'basquet', 'ecuavoley'], true) || $eq): // (v19) solo deportes que tienen ligas en TuVocalía ?>
-    <details style="margin-top:8px" <?= $eq || ($sol && $sol['estado'] === 'pendiente') ? 'open' : '' ?>><summary><b>🏆 Jugar en una liga de TuVocalía</b> <small class="suave">(opcional)</small></summary>
+    <?php if (!es_academia() && (in_array(deporte_grupo($g, $liga), ['futbol', 'indor', 'basquet', 'ecuavoley'], true) || $eq)): // (v19) solo deportes que tienen ligas · (TuAcademia) apagado: no hay ligas ?>
+    <details style="margin-top:8px" <?= $eq || ($sol && $sol['estado'] === 'pendiente') ? 'open' : '' ?>><summary><b>🏆 Jugar en una liga de TuAcademia</b> <small class="suave">(opcional)</small></summary>
       <?php if ($eq): ?>
         <p>✓ Conectado con el equipo <b><?= e($eq['nombre']) ?></b> de <b><?= e($eq['liga']) ?></b>.</p>
         <?php if ($ed): ?><div class="acciones">
@@ -125,7 +130,7 @@ cabecera_admin('Grupos y horarios');
       <?php elseif ($sol && $sol['estado'] === 'pendiente'): ?>
         <p>⏳ Solicitud enviada a <b><?= e($sol['liga']) ?></b> (<?= e($sol['torneo'] ?? '') ?>) como "<?= e($sol['nombre']) ?>". Falta que la liga la apruebe.</p>
       <?php elseif (!$abiertos): ?>
-        <p class="suave">Ahora no hay campeonatos de ligas de TuVocalía con la inscripción de equipos abierta.</p>
+        <p class="suave">Ahora no hay campeonatos de ligas de TuAcademia con la inscripción de equipos abierta.</p>
       <?php elseif ($ed): ?>
         <?php if ($sol && $sol['estado'] === 'rechazado'): ?><p class="suave">La última solicitud fue rechazada: <?= e($sol['respuesta']) ?></p><?php endif; ?>
         <p class="suave">No es obligatorio: cada grupo puede ir a una liga distinta, o a ninguna. Al aprobarlo la liga, los alumnos activos del grupo pasan como jugadores (con sus fotos y autorizaciones).</p>
@@ -150,24 +155,24 @@ cabecera_admin('Grupos y horarios');
     'profesor_id' => null, 'dias' => '2,4', 'hora_inicio' => '16:00', 'hora_fin' => '17:30', 'cancha' => '', 'cupo' => 0, 'mensualidad' => null, 'activo' => 1, 'deporte' => $liga['deporte_escuela'] ?: 'futbol'];
     $dias_sel = array_map('intval', explode(',', (string)$e['dias'])); ?>
 <div class="tarjeta" id="form" style="margin-top:16px">
-  <h2 style="margin-top:0"><?= $editar ? 'Editar ' . e($editar['nombre']) : '+ Nuevo grupo' ?></h2>
+  <h2 style="margin-top:0"><?= $editar ? 'Editar ' . e($editar['nombre']) : '+ Nuevo ' . e(mb_strtolower($va['curso'])) ?></h2>
   <form method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="guardar"><input type="hidden" name="id" value="<?= (int)$e['id'] ?>">
     <div class="campos">
-      <div><label>Nombre *</label><input type="text" name="nombre" required maxlength="60" value="<?= e($e['nombre']) ?>" placeholder="Ej: Sub-10 tarde"></div>
-      <div><label>Deporte</label><select name="deporte"><?php foreach (catalogo_deportes() as $k => [$n, $ic]): if ($k !== deporte_grupo($e, $liga) && !deporte_escuela_permitido($liga, $k)) continue; ?><option value="<?= $k ?>" <?= deporte_grupo($e, $liga) === $k ? 'selected' : '' ?>><?= $ic ?> <?= e($n) ?></option><?php endforeach; ?></select><div class="ayuda">Define los tests, las habilidades, los ejercicios y el club del grupo.</div></div>
-      <div><label>Categoría</label><select name="categoria" onchange="document.getElementById('anios').style.display = this.value === 'sub' ? '' : 'none'"><option value="sub" <?= $e['categoria'] === 'sub' ? 'selected' : '' ?>>Sub (por año de nacimiento)</option><option value="abierta" <?= $e['categoria'] === 'abierta' ? 'selected' : '' ?>>Categoría abierta (todas las edades)</option></select></div>
+      <div><label>Nombre *</label><input type="text" name="nombre" required maxlength="60" value="<?= e($e['nombre']) ?>" placeholder="<?= es_academia() ? 'Ej: Ballet infantil · Piano nivel 1 · Natación bebés' : 'Ej: Sub-10 tarde' ?>"></div>
+      <div><label><?= es_academia() ? 'Disciplina' : 'Deporte' ?></label><select name="deporte"><?= opciones_disciplinas(deporte_grupo($e, $liga), fn($k) => deporte_escuela_permitido($liga, $k)) ?></select><div class="ayuda"><?= es_academia() ? 'Define los niveles, los tests, las habilidades y los ejercicios del curso.' : 'Define los tests, las habilidades, los ejercicios y el club del grupo.' ?></div></div>
+      <div><label><?= es_academia() ? 'Edades' : 'Categoría' ?></label><select name="categoria" onchange="document.getElementById('anios').style.display = this.value === 'sub' ? '' : 'none'"><option value="sub" <?= $e['categoria'] === 'sub' ? 'selected' : '' ?>><?= es_academia() ? 'Por año de nacimiento' : 'Sub (por año de nacimiento)' ?></option><option value="abierta" <?= $e['categoria'] === 'abierta' ? 'selected' : '' ?>><?= es_academia() ? 'Todas las edades' : 'Categoría abierta (todas las edades)' ?></option></select></div>
       <div id="anios" style="<?= $e['categoria'] === 'sub' ? '' : 'display:none' ?>"><label>Nacidos entre los años</label><div class="acciones"><input type="number" name="anio_desde" min="1950" max="<?= date('Y') ?>" value="<?= e((string)$e['anio_desde']) ?>" style="max-width:90px"> y <input type="number" name="anio_hasta" min="1950" max="<?= date('Y') ?>" value="<?= e((string)$e['anio_hasta']) ?>" style="max-width:90px"></div><div class="ayuda">Un solo año = una sola categoría (ej: 2016 = Sub-<?= (int)date('Y') - 2016 ?>).</div></div>
       <div><label>Sede</label><select name="sede_id"><?php foreach ($sedes as $s): ?><option value="<?= (int)$s['id'] ?>" <?= (int)$e['sede_id'] === (int)$s['id'] ? 'selected' : '' ?>><?= e($s['nombre']) ?></option><?php endforeach; ?></select></div>
       <div><label>Profesor</label><select name="profesor_id"><option value="">— sin asignar —</option><?php foreach ($profes as $p): ?><option value="<?= (int)$p['id'] ?>" <?= (int)$e['profesor_id'] === (int)$p['id'] ? 'selected' : '' ?>><?= e($p['nombre']) ?></option><?php endforeach; ?></select></div>
-      <div class="campo-ancho"><label>Días de entrenamiento</label><div class="acciones"><?php foreach (dias_semana() as $k => $v): ?><label class="check" style="font-weight:400"><input type="checkbox" name="dias[]" value="<?= $k ?>" <?= in_array($k, $dias_sel, true) ? 'checked' : '' ?>> <?= $v ?></label><?php endforeach; ?></div></div>
+      <div class="campo-ancho"><label>Días de <?= es_academia() ? 'clase' : 'entrenamiento' ?></label><div class="acciones"><?php foreach (dias_semana() as $k => $v): ?><label class="check" style="font-weight:400"><input type="checkbox" name="dias[]" value="<?= $k ?>" <?= in_array($k, $dias_sel, true) ? 'checked' : '' ?>> <?= $v ?></label><?php endforeach; ?></div></div>
       <div><label>Desde</label><input type="time" name="hora_inicio" value="<?= e($e['hora_inicio']) ?>"></div>
       <div><label>Hasta</label><input type="time" name="hora_fin" value="<?= e($e['hora_fin']) ?>"></div>
-      <div><label>Lugar <small>(cancha, coliseo, piscina, ring…)</small></label><input type="text" name="cancha" maxlength="60" value="<?= e($e['cancha']) ?>"></div>
+      <div><label>Lugar <small>(<?= es_academia() ? 'salón, aula, piscina, cancha…' : 'cancha, coliseo, piscina, ring…' ?>)</small></label><input type="text" name="cancha" maxlength="60" value="<?= e($e['cancha']) ?>" placeholder="<?= e(vocab_familia(familia_deporte(deporte_grupo($e, $liga)))['lugar_ej']) ?>"></div>
       <div><label>Cupo máximo</label><input type="number" name="cupo" min="0" max="500" value="<?= (int)$e['cupo'] ?>"><div class="ayuda">0 = sin límite.</div></div>
-      <div><label>Mensualidad de este grupo ($)</label><input type="number" name="mensualidad" min="0" step="0.01" value="<?= $e['mensualidad'] !== null ? e(number_format((float)$e['mensualidad'], 2, '.', '')) : '' ?>" placeholder="la general"><div class="ayuda">Vacío = la de Parámetros (<?= dinero($liga['esc_mensualidad']) ?>).</div></div>
+      <div><label><?= es_academia() ? 'Pensión de este curso ($)' : 'Mensualidad de este grupo ($)' ?></label><input type="number" name="mensualidad" min="0" step="0.01" value="<?= $e['mensualidad'] !== null ? e(number_format((float)$e['mensualidad'], 2, '.', '')) : '' ?>" placeholder="la general"><div class="ayuda">Vacío = la de Parámetros (<?= dinero($liga['esc_mensualidad']) ?>).</div></div>
     </div>
     <label class="check"><input type="checkbox" name="activo" value="1" <?= $e['activo'] ? 'checked' : '' ?>> Activo</label>
-    <div class="acciones" style="margin-top:8px"><button class="btn">Guardar grupo</button><?php if ($editar): ?><a class="btn btn-sec" href="admin.php?p=grupos">Cancelar</a><?php endif; ?></div>
+    <div class="acciones" style="margin-top:8px"><button class="btn">Guardar <?= e(mb_strtolower($va['curso'])) ?></button><?php if ($editar): ?><a class="btn btn-sec" href="admin.php?p=grupos">Cancelar</a><?php endif; ?></div>
   </form>
 </div>
 <?php endif;

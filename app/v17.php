@@ -192,6 +192,7 @@ function barra_avance(int $pct, string $color = ''): string
 /** (v21) Tipos de ejercicio; el tipo "específico" (antes Arqueros) y el de juego cambian según el deporte ('' = genérico). */
 function tipos_ejercicio(string $familia = 'futbol'): array
 {
+    if ($acad = tipos_ejercicio_academia($familia)) return $acad; // (TuAcademia) baile y música
     $esp = $familia === '' ? ['⭐', 'Específico del deporte'] : nombre_especifico($familia);
     $individual = in_array($familia, ['boxeo', 'artes_marciales', 'natacion', 'atletismo', 'tenis', 'padel', 'tenis_mesa', 'bolos', 'ciclismo', 'squash', 'ajedrez', 'esports', 'pesas', 'triatlon'], true);
     return ['calentamiento' => ['🔥', 'Calentamiento'], 'tecnico' => ['🎯', 'Técnico'], 'tactico' => ['🧠', 'Táctico'], 'fisico' => ['💪', 'Físico / coordinación'],
@@ -673,7 +674,7 @@ function insignias_alumno(array $a, array $liga): array
     if ($rec['n'] >= 3 && $rec['p'] === 0) $r[] = ['🛡', 'Invicto', 'Récord ' . $rec['g'] . '-' . $rec['p'] . '-' . $rec['e'] . ' sin derrotas.'];
     $med = filas("SELECT medalla, prueba FROM esc_competencias WHERE alumno_id = ? AND tipo = 'prueba' AND medalla <> '' AND fecha >= ? ORDER BY fecha DESC", [$aid, $desde]);
     if ($med) $r[] = [icono_medalla($med[0]['medalla']), 'Medallista', count($med) . ' medalla(s) en los últimos 4 meses (' . implode(', ', array_slice(array_unique(array_column($med, 'prueba')), 0, 3)) . ').'];
-    if (($gr = grado_actual($aid)) && $gr['fecha'] >= $desde) $r[] = ['🥋', 'Nuevo cinturón', 'Subió a ' . $gr['grado'] . '.'];
+    if (($gr = grado_actual($aid)) && $gr['fecha'] >= $desde) { $vn = vocabulario_nivel($gr['disciplina'] !== '' ? $gr['disciplina'] : 'artes_marciales'); $r[] = [$vn['ico'], 'Nuevo ' . mb_strtolower($vn['nivel']), 'Subió a ' . $gr['grado'] . '.']; }
     return $r;
 }
 

@@ -3,8 +3,8 @@
 $dir = __DIR__;
 $estado_f = "$dir/sim_estado.json";
 $E = is_file($estado_f) ? json_decode(file_get_contents($estado_f), true) : [];
-$E += ['tokens' => [], 'subs' => [], 'log' => [], 'emitidos' => []];
-$guardar = function () use (&$E, $estado_f) { foreach (["tokens", "subs"] as $k) $E[$k] = (object)$E[$k]; file_put_contents($estado_f, json_encode($E, JSON_PRETTY_PRINT)); foreach (["tokens", "subs"] as $k) $E[$k] = (array)$E[$k]; };
+$E += ['tokens' => [], 'subs' => [], 'log' => [], 'emitidos' => [], 'payphone' => []];
+$guardar = function () use (&$E, $estado_f) { foreach (["tokens", "subs", "payphone"] as $k) $E[$k] = (object)$E[$k]; file_put_contents($estado_f, json_encode($E, JSON_PRETTY_PRINT)); foreach (["tokens", "subs", "payphone"] as $k) $E[$k] = (array)$E[$k]; };
 $metodo = $_SERVER['REQUEST_METHOD'];
 $ruta = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $cuerpo_txt = file_get_contents('php://input');
@@ -27,11 +27,22 @@ if ($ruta === '/token') {
     $E['emitidos'][] = $tok;
     $r(200, ['access_token' => $tok, 'expires_in' => 3599, 'token_type' => 'Bearer']);
 }
+// (TuAcademia) Simulador de Payphone: POST /api/button/V2/Confirm {id, clientTxId} con Authorization: Bearer TOKEN-DE-LA-ACADEMIA.
+// El estado de cada pago lo pone la prueba en $E['payphone'][id] = ['estado' => 'Approved'|'Canceled', 'monto' => centavos, 'token' => '...'].
+if ($ruta === '/api/button/V2/Confirm') {
+    $E += ['payphone' => []];
+    $pid = (string)($cuerpo['id'] ?? '');
+    $pp = $E['payphone'][$pid] ?? null;
+    if (!$pp) $r(404, ['message' => 'Transacción no encontrada']);
+    if (($_SERVER['HTTP_AUTHORIZATION'] ?? '') !== 'Bearer ' . $pp['token']) $r(401, ['message' => 'Token inválido']);
+    $E['payphone'][$pid]['confirmado'] = ($E['payphone'][$pid]['confirmado'] ?? 0) + 1;
+    $r(200, ['transactionStatus' => $pp['estado'], 'amount' => $pp['monto'], 'clientTransactionId' => (string)($cuerpo['clientTxId'] ?? ''), 'transactionId' => (int)$pid, 'statusCode' => $pp['estado'] === 'Approved' ? 3 : 2]);
+}
 $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 if (!preg_match('/^Bearer (.+)$/', $auth, $m) || !in_array($m[1], $E['emitidos'], true)) $r(401, ['error' => ['code' => 401, 'message' => 'Request had invalid authentication credentials.']]);
 if (!preg_match('#^/androidpublisher/v3/applications/([^/]+)(/.*)$#', $ruta, $m)) $r(404, ['error' => ['message' => 'ruta desconocida']]);
 [$pkg, $resto] = [$m[1], $m[2]];
-if ($pkg !== 'com.tuvocalia.app') $r(404, ['error' => ['code' => 404, 'message' => 'Package not found: ' . $pkg]]);
+if ($pkg !== 'com.tukan.tuacademia') $r(404, ['error' => ['code' => 404, 'message' => 'Package not found: ' . $pkg]]);
 $resto = rawurldecode($resto);
 
 if ($metodo === 'GET' && preg_match('#^/purchases/subscriptionsv2/tokens/(.+)$#', $resto, $m)) {

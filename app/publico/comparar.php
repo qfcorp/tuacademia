@@ -1,15 +1,15 @@
 <?php
 /* (v12) TABLA COMPARATIVA: todos los planes lado a lado, función por función.  /comparar  (?para=escuelas) */
-$tipo = get('para') === 'escuelas' ? 'escuela' : 'liga';
+$tipo = es_academia() || get('para') === 'escuelas' ? 'escuela' : 'liga'; // (TuAcademia) solo academias
 $planes = array_values(array_filter(filas("SELECT * FROM planes WHERE activo = 1 AND tipo_cuenta IN ('ambos', ?) ORDER BY orden, precio_mensual", [$tipo]), fn($p) => opciones_precio($p)));
 $mods = modulos_sistema($tipo);
 $registro = prueba_automatica();
 $celda = fn(bool $si) => $si ? '<span class="comp-si">✓</span>' : '<span class="comp-no">—</span>';
 cabecera_publica('Comparar planes · ' . marca());
 ?>
-<p><a href="<?= $tipo === 'escuela' ? 'escuelas' : 'index.php' ?>#planes">← Volver</a></p>
-<div class="fila-titulo"><h1>📊 Comparar planes <?= $tipo === 'escuela' ? 'para escuelas' : 'para ligas' ?></h1>
-  <nav class="pestanas" style="margin:0"><a class="<?= $tipo === 'liga' ? 'activa' : '' ?>" href="comparar">Ligas</a><a class="<?= $tipo === 'escuela' ? 'activa' : '' ?>" href="comparar?para=escuelas">Escuelas</a></nav></div>
+<p><a href="<?= $tipo === 'escuela' && !es_academia() ? 'escuelas' : 'index.php' ?>#planes">← Volver</a></p>
+<div class="fila-titulo"><h1>📊 Comparar planes <?= es_academia() ? '' : ($tipo === 'escuela' ? 'para escuelas' : 'para ligas') ?></h1>
+  <nav class="pestanas" style="margin:0<?= es_academia() ? ';display:none' : '' ?>"><a class="<?= $tipo === 'liga' ? 'activa' : '' ?>" href="comparar">Ligas</a><a class="<?= $tipo === 'escuela' ? 'activa' : '' ?>" href="comparar?para=escuelas">Escuelas</a></nav></div>
 <?php if (!$planes): ?><p class="suave">No hay planes publicados.</p><?php else: ?>
 <div class="tabla-scroll"><table class="comparativa">
   <tr><th></th><?php foreach ($planes as $pl): ?><th class="<?= $pl['destacado'] ? 'comp-dest' : '' ?>"><?= e($pl['nombre']) ?><?= $pl['destacado'] ? '<br><small>Recomendado</small>' : '' ?></th><?php endforeach; ?></tr>

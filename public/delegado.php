@@ -59,7 +59,7 @@ if (es_post()) {
         $accion = post('accion');
         if (!in_array($accion, ['clave', 'tg_desconectar', 'pagar_tarjeta'], true)) exigir_suscripcion($liga);
         if ($accion === 'pagar_tarjeta') {
-            // (v12) Pago con tarjeta del estado de cuenta (TuVocalía cobra y transfiere a la liga)
+            // (v12) Pago con tarjeta del estado de cuenta (TuAcademia cobra y transfiere a la liga)
             if (!org_cobra_con_tarjeta($liga)) throw new RuntimeException('La liga no recibe pagos con tarjeta por ahora.');
             $monto = round((float)str_replace(',', '.', post('monto')), 2);
             $token = crear_pago_linea($liga, [

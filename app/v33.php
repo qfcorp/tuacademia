@@ -436,7 +436,7 @@ function cabeceras_seguridad(): void
 }
 
 /**
- * Recuerda la dirección pública del sistema (https://tuvocalia.com/) la primera vez que entra el superadministrador,
+ * Recuerda la dirección pública del sistema (https://tuacademia.tukanec.com/) la primera vez que entra el superadministrador,
  * para que los correos y avisos que salen de la tarea automática (sin navegador) tengan enlaces correctos.
  */
 function recordar_url_sitio(): void

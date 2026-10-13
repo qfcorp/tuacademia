@@ -26,11 +26,17 @@ $destino = $u ? ['super' => 'admin.php', 'liga' => 'admin.php', 'arbitro' => 'ar
   <div class="tarjeta" style="margin-top:18px">
     <?php if ($u): ?>
       <p style="margin-top:0">Hola, <b><?= e($u['nombre']) ?></b></p>
-      <a class="btn btn-grande" href="<?= e($destino) ?>"><?= e(['super' => 'Ir al panel', 'liga' => 'Ir al panel de la liga', 'arbitro' => 'Mis partidos e informes', 'delegado' => 'Mi equipo'][$u['rol']] ?? 'Entrar') ?></a>
+      <a class="btn btn-grande" href="<?= e($destino) ?>"><?= e(['super' => 'Ir al panel', 'liga' => es_academia() ? 'Ir al panel de la academia' : 'Ir al panel de la liga', 'arbitro' => 'Mis partidos e informes', 'delegado' => 'Mi equipo'][$u['rol']] ?? 'Entrar') ?></a>
     <?php else: ?>
+      <?php if (es_academia()): // (TuAcademia) ?>
+      <a class="btn btn-grande" href="admin.php?p=login">Ingresar (academia y profesores)</a>
+      <a class="btn btn-grande btn-sec" href="familia.php">👨‍👩‍👦 Soy padre o madre: portal de padres</a>
+      <a class="btn btn-grande btn-sec" href="nuestras-escuelas">Ver academias</a>
+      <?php else: ?>
       <a class="btn btn-grande" href="admin.php?p=login">Ingresar (liga, árbitros y delegados)</a>
       <a class="btn btn-grande btn-sec" href="mi.php">🪪 Soy jugador: mi carnet</a>
       <a class="btn btn-grande btn-sec" href="index.php?v=ligas">Ver ligas y resultados</a>
+      <?php endif; ?>
     <?php endif; ?>
   </div>
   <div class="tarjeta" id="mis-vocalias" style="display:none">

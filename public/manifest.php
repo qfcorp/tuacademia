@@ -6,7 +6,7 @@ header('Cache-Control: public, max-age=3600');
 echo json_encode([
     'name' => marca(),
     'short_name' => mb_substr(marca(), 0, 12),
-    'description' => 'Ligas de fútbol: vocalía en vivo, resultados, árbitros y delegados',
+    'description' => PRODUCTO === 'academia' ? 'Academias de baile, música, natación y deportes: alumnos, pensiones, asistencia y portal de padres' : 'Ligas de fútbol: vocalía en vivo, resultados, árbitros y delegados',
     'lang' => 'es',
     'id' => 'app.php', // (v38) misma identidad de siempre (antes start_url era app.php) para no duplicar la app instalada
     'start_url' => 'app.php?origen=web', // (v38) el navegador marca "web"; las apps de Android abren ?origen=play o ?origen=apk

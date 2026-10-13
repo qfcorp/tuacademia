@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Pruebas de la v38 (apps Android y Google Play) contra php -S + simulador de Google."""
+"""Pruebas de la v38 (apps Android y Google Play) contra php -S + simulador de Google.
+(TuAcademia) Se corren con el producto de ligas encendido: TA_PRODUCTO=ligas bash pruebas/v38/reiniciar.sh"""
 import json, re, subprocess, sys, time, os
 import requests
 
-B = 'http://127.0.0.1:8199/'
-REPO = '/home/claude/tuvocalia'
+PUERTO = os.environ.get('TA_PUERTO', '8196')
+B = 'http://127.0.0.1:' + PUERTO + '/'
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DIR = os.path.dirname(os.path.abspath(__file__))
 SIM = os.path.join(DIR, 'sim_estado.json')
 ok = 0
@@ -76,7 +78,7 @@ limpio(r, 'google_play')
 chk('Productos para Google Play' in r.text and 'plan_1_1m' in r.text and 'modulo_ciclismo' in r.text, 'lista de productos')
 chk('$12.00' in r.text and '$18.00' in r.text and '$8.50' in r.text, 'precios de Google +20 % redondeados')
 chk('Google Play' in su.get(B + 'admin.php').text, 'menú del súper con Google Play')
-r = su.post(B + 'admin.php?p=google_play', data={'csrf': csrf(r.text), 'accion': 'ajustes', 'play_activo': '1', 'play_factor': '20', 'play_paquete': 'com.tuvocalia.app', 'play_idioma': 'es-419',
+r = su.post(B + 'admin.php?p=google_play', data={'csrf': csrf(r.text), 'accion': 'ajustes', 'play_activo': '1', 'play_factor': '20', 'play_paquete': 'com.tukan.tuacademia', 'play_idioma': 'es-419',
                                                  'play_huellas': 'aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99'})
 limpio(r, 'guardar ajustes')
 chk('guardados' in r.text, 'ajustes guardados')
@@ -85,7 +87,7 @@ chk('no es una clave de cuenta de servicio' in r.text, 'rechaza un JSON que no e
 r = su.get(B + 'admin.php?p=google_play')
 r = su.post(B + 'admin.php?p=google_play', data={'csrf': csrf(r.text), 'accion': 'cuenta'}, files={'archivo': ('cuenta.json', open(os.path.join(DIR, 'cuenta_servicio.json'), 'rb'), 'application/json')})
 limpio(r, 'subir cuenta')
-chk('tuvocalia-play@tuvocalia-prueba.iam.gserviceaccount.com' in r.text, 'cuenta de servicio guardada')
+chk('tuacademia-play@tuacademia-prueba.iam.gserviceaccount.com' in r.text, 'cuenta de servicio guardada')
 chk(oct(os.stat(REPO + '/data/google_play_cuenta.json').st_mode)[-3:] == '600', 'archivo de la cuenta con permisos 600')
 r = su.post(B + 'admin.php?p=google_play', data={'csrf': csrf(r.text), 'accion': 'probar'})
 chk('Conexión correcta' in r.text, 'probar la conexión (token OAuth firmado RS256 aceptado)')
@@ -93,7 +95,7 @@ r = su.post(B + 'admin.php?p=google_play', data={'csrf': csrf(r.text), 'accion':
 limpio(r, 'crear productos')
 creados = r.text.count('creado a')
 TOTAL = int(php('echo count(play_productos());'))
-chk(creados == TOTAL and TOTAL == 31, 'crea los %d productos (%d)' % (TOTAL, creados))
+chk(creados == TOTAL and TOTAL == 33, 'crea los %d productos (%d)' % (TOTAL, creados))  # (TuAcademia) 31 de TuVocalía + baile y música
 e = sim()
 chk(len(e['subs']) == TOTAL and all(s['basePlans'][0]['state'] == 'ACTIVE' for s in e['subs'].values()), 'todos activados en Google')
 p1 = e['subs'].get('plan_1_1m', {})
@@ -107,9 +109,9 @@ chk(m8 and m8[0]['price'] == {'currencyCode': 'USD', 'units': '8', 'nanos': 5000
 r = su.post(B + 'admin.php?p=google_play', data={'csrf': csrf(r.text), 'accion': 'crear'})
 chk(r.text.count('ya existe') == TOTAL and 'creado a' not in r.text, 'segunda vez: no duplica')
 al = requests.get(B + 'assetlinks.php').json()
-chk(len(al) == 2 and al[0]['target']['package_name'] == 'com.tuvocalia.app' and al[1]['target']['package_name'] == 'com.tuvocalia.directo', 'assetlinks con las 2 apps')
+chk(len(al) == 2 and al[0]['target']['package_name'] == 'com.tukan.tuacademia' and al[1]['target']['package_name'] == 'com.tukan.tuacademia.directo', 'assetlinks con las 2 apps')
 chk('AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99' in al[0]['target']['sha256_cert_fingerprints'], 'assetlinks con la huella de Google')
-chk(al[0]['target']['sha256_cert_fingerprints'][0].startswith('F9:DB:E9'), 'assetlinks con nuestra huella')
+chk(al[1]['target']['sha256_cert_fingerprints'][0].startswith('11:22:33'), 'assetlinks con nuestra huella (la de app/config.php)')
 
 # ---------- 2. Web normal vs app de Google Play ----------
 php('guardar_ajuste("ventas_whatsapp", "0986833077");')

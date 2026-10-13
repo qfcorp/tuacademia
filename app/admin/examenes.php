@@ -1,6 +1,7 @@
 <?php
 /*
  * (v31) 🥋 EXÁMENES DE GRADO, CINTURONES Y POOMSAE / KATA (escuelas de taekwondo, karate y judo)
+ * (TuAcademia) Generalizado a NIVELES de cualquier disciplina: baile, música, natación y deportes, con su certificado con QR.
  *  admin.php?p=examenes                       → lista de exámenes y nuevo examen
  *  admin.php?p=examenes&v=cinturones          → lista de cinturones de la escuela (grado, color, punta y forma)
  *  admin.php?p=examenes&v=formas              → poomsae / kata de cada alumno (aprendiendo / la domina)
@@ -12,21 +13,23 @@ $lid = (int)$liga['id'];
 $por = usuario()['nombre'];
 $ed = puede('evaluaciones', true);
 if (!es_escuela($liga)) ir('admin.php');
-$discs = disciplinas_de_escuela($liga);
+$discs = sistemas_nivel_escuela($liga); // (TuAcademia) todas las disciplinas de la academia
 $id = (int)get('id');
 $ex = $id ? examen_de_liga($id, $lid) : null;
 $disc = $ex ? $ex['disciplina'] : (in_array(get('d'), $discs, true) ? get('d') : ($discs[0] ?? 'taekwondo'));
-$voc = vocabulario_marcial($disc);
+$voc = vocabulario_nivel($disc);
+$marcial = es_clave_marcial($disc);
+$ndisc = nombre_disciplina_nivel($disc);
 $vista = $ex ? 'examen' : (in_array(get('v'), ['cinturones', 'formas'], true) ? get('v') : 'examenes');
 $url = 'admin.php?p=examenes' . ($ex ? '&id=' . (int)$ex['id'] : '&d=' . $disc);
 
 // Grupos y alumnos de la disciplina (lo que ve este usuario)
-$grupos = array_values(array_filter(grupos_visibles($lid), fn($g) => es_deporte_marcial(deporte_grupo($g, $liga)) && disciplina_de(deporte_grupo($g, $liga)) === $disc));
+$grupos = array_values(array_filter(grupos_visibles($lid), fn($g) => nivel_clave(deporte_grupo($g, $liga)) === $disc));
 $ids_g = array_map(fn($g) => (int)$g['id'], $grupos);
 $alumnos = $ids_g ? filas("SELECT a.* FROM esc_alumnos a WHERE a.liga_id = ? AND a.estado = 'activo' AND " . sql_en_grupo('a', $ids_g) . ' ORDER BY a.apellidos, a.nombres', [$lid]) : [];
 $alumno_ok = function (int $aid) use ($lid, $ids_g, $disc): array {
     $a = fila('SELECT * FROM esc_alumnos WHERE id = ? AND liga_id = ?', [$aid, $lid]) ?? throw new RuntimeException('Alumno no encontrado.');
-    if (!array_intersect(ids_grupos_alumno($a), $ids_g)) throw new RuntimeException('Ese alumno no está en un grupo de ' . (disciplinas_marciales()[$disc] ?? 'esta disciplina') . '.');
+    if (!array_intersect(ids_grupos_alumno($a), $ids_g)) throw new RuntimeException('Ese alumno no está en un grupo de ' . $ndisc . '.');
     return $a;
 };
 
@@ -47,7 +50,7 @@ if (es_post()) {
             q('INSERT INTO esc_examenes (liga_id, disciplina, fecha, hora, lugar, examinador, valor, notas, registrado_por) VALUES (?,?,?,?,?,?,?,?,?)',
                 [$lid, post('disciplina'), $d['fecha'], $d['hora'], $d['lugar'], $d['examinador'], $d['valor'], $d['notas'], $por]);
             $nid = (int)db()->lastInsertId();
-            flash('Examen creado. Ahora inscriba a los alumnos que van a rendirlo.');
+            flash($voc['examen'] . ' creado. Ahora inscriba a los alumnos que van a rendirlo.');
             ir('admin.php?p=examenes&id=' . $nid . '#inscribir');
         }
         q('UPDATE esc_examenes SET fecha = ?, hora = ?, lugar = ?, examinador = ?, valor = ?, notas = ? WHERE id = ?', [$d['fecha'], $d['hora'], $d['lugar'], $d['examinador'], $d['valor'], $d['notas'], $ex['id']]);
@@ -65,7 +68,7 @@ if (es_post()) {
             $cid = (int)($_POST['aspira'][(int)$aid] ?? 0);
             $c = $por_id[$cid] ?? null;
             if (!$c) continue;
-            [$gr] = cinturon_alumno($a, $liga);
+            [$gr] = nivel_alumno($a, $disc);
             $fs = formas_alumno((int)$a['id']);
             q('INSERT OR IGNORE INTO esc_examen_inscritos (examen_id, alumno_id, grado_actual, grado_aspira, cinturon_id, forma, forma_ok) VALUES (?,?,?,?,?,?,?)', [
                 $ex['id'], $a['id'], $gr['grado'] ?? '', etiqueta_cinturon($c), $c['id'], $c['forma'], ($c['forma'] !== '' && ($fs[$c['forma']]['estado'] ?? '') === 'domina') ? 1 : 0]);
@@ -93,7 +96,7 @@ if (es_post()) {
         $n = 0;
         foreach (inscritos_examen((int)$ex['id']) as $i) {
             if ($i['cargo_id'] && fila('SELECT id FROM esc_cargos WHERE id = ?', [$i['cargo_id']])) continue;
-            $cid = crear_cargo_escuela($liga, (int)$i['alumno_id'], 'examen', 'Derecho a examen de grado: ' . $i['grado_aspira'] . ' (' . fecha_corta($ex['fecha']) . ')', (float)$ex['valor'], $ex['fecha'], $por);
+            $cid = crear_cargo_escuela($liga, (int)$i['alumno_id'], 'examen', 'Derecho a ' . mb_strtolower($voc['examen']) . ': ' . $i['grado_aspira'] . ' (' . fecha_corta($ex['fecha']) . ')', (float)$ex['valor'], $ex['fecha'], $por);
             q('UPDATE esc_examen_inscritos SET cargo_id = ? WHERE id = ?', [$cid, $i['id']]);
             $n++;
         }
@@ -109,9 +112,9 @@ if (es_post()) {
             q('UPDATE esc_examen_inscritos SET resultado = ?, nota = ?, forma_ok = ?, observaciones = ? WHERE id = ?', [
                 array_key_exists($res, resultados_examen()) ? $res : 'pendiente', mb_substr(trim((string)($_POST['nota'][$k] ?? '')), 0, 20),
                 !empty($_POST['forma_ok'][$k]) ? 1 : 0, mb_substr(trim((string)($_POST['obs'][$k] ?? '')), 0, 200), $k]);
-            if (!empty($_POST['forma_ok'][$k]) && $i['forma'] !== '') guardar_forma_alumno((int)$i['alumno_id'], $i['forma'], 'domina', $por);
+            if ($marcial && !empty($_POST['forma_ok'][$k]) && $i['forma'] !== '') guardar_forma_alumno((int)$i['alumno_id'], $i['forma'], 'domina', $por);
         }
-        flash('Resultados guardados. Cuando estén todos, toque «Cerrar examen y entregar cinturones».');
+        flash('Resultados guardados. Cuando estén todos, toque «Cerrar examen».');
         ir($url . '#resultados');
     }
 
@@ -119,13 +122,13 @@ if (es_post()) {
         $pend = (int)valor("SELECT COUNT(*) FROM esc_examen_inscritos WHERE examen_id = ? AND resultado = 'pendiente'", [$ex['id']]);
         if ($pend) throw new RuntimeException('Faltan ' . $pend . ' resultado(s): marque aprobado, no aprobó o no se presentó para cada inscrito.');
         $n = cerrar_examen($ex, $por);
-        bitacora_evento('examen', 'Cerró el examen de grado del ' . $ex['fecha'] . ' (' . $n . ' cinturón(es) nuevo(s))', $lid, (int)$ex['id']);
-        flash('¡Examen cerrado! ' . $n . ' alumno(s) tienen su cinturón nuevo en la ficha, el carnet y el portal de los padres. Ya puede imprimir los certificados.');
+        bitacora_evento('examen', 'Cerró el ' . mb_strtolower($voc['examen']) . ' del ' . $ex['fecha'] . ' (' . $n . ' ' . mb_strtolower($voc['nivel']) . '(es) nuevo(s))', $lid, (int)$ex['id']);
+        flash('¡Examen cerrado! ' . $n . ' alumno(s) tienen su ' . mb_strtolower($voc['nivel']) . ' nuevo en la ficha, el carnet y el portal de los padres. Ya puede imprimir los certificados.');
         ir($url);
     }
     if ($accion === 'reabrir') {
         q("UPDATE esc_examenes SET estado = 'abierto' WHERE id = ?", [$ex['id']]);
-        flash('Examen abierto de nuevo: corrija y vuelva a cerrarlo (los cinturones se actualizan solos).');
+        flash('Examen abierto de nuevo: corrija y vuelva a cerrarlo (los ' . mb_strtolower($voc['niveles']) . ' se actualizan solos).');
         ir($url);
     }
     if ($accion === 'eliminar') {
@@ -151,17 +154,17 @@ if (es_post()) {
                 if ($nombre === '') continue;
                 q('INSERT INTO esc_cinturones (orden, grado, nombre, color, punta, forma, activo, liga_id, disciplina) VALUES (?,?,?,?,?,?,?,?,?)', array_merge($d, [$lid, $disc]));
             } else {
-                if ($nombre === '') throw new RuntimeException('Cada cinturón debe tener nombre (o desmárquelo como activo).');
+                if ($nombre === '') throw new RuntimeException('Cada ' . mb_strtolower($voc['nivel']) . ' debe tener nombre (o desmárquelo como activo).');
                 q('UPDATE esc_cinturones SET orden = ?, grado = ?, nombre = ?, color = ?, punta = ?, forma = ?, activo = ? WHERE id = ? AND liga_id = ?', array_merge($d, [(int)$k, $lid]));
             }
             $n++;
         }
-        flash('Lista de cinturones guardada (' . $n . ').');
+        flash('Lista de ' . mb_strtolower($voc['niveles']) . ' guardada (' . $n . ').');
         ir('admin.php?p=examenes&v=cinturones&d=' . $disc);
     }
     if ($accion === 'fabrica') {
         cargar_cinturones_fabrica($lid, $disc, true);
-        flash('Se cargó la lista de fábrica de ' . disciplinas_marciales()[$disc] . '.');
+        flash('Se cargó la lista de fábrica de ' . $ndisc . '.');
         ir('admin.php?p=examenes&v=cinturones&d=' . $disc);
     }
     if ($accion === 'forma') {
@@ -172,19 +175,21 @@ if (es_post()) {
     }
 }
 
-cabecera_admin('Exámenes de grado');
+$titulo_pag = array_filter($discs, fn($x) => !es_clave_marcial($x)) ? 'Niveles y exámenes' : 'Exámenes de grado y cinturones';
+cabecera_admin($titulo_pag);
 ?>
-<h1>🥋 Exámenes de grado y cinturones</h1>
+<h1><?= array_filter($discs, fn($x) => !es_clave_marcial($x)) ? '🎖️' : '🥋' ?> <?= e($titulo_pag) ?></h1>
 <?php if (!$discs): ?>
-  <div class="tarjeta">Para usar los exámenes de grado, los cinturones y los <?= e(mb_strtolower($voc['formas'])) ?>, cree un grupo de <b>Taekwondo</b>, <b>Karate</b> o <b>Judo</b> en
-    <a href="admin.php?p=grupos">Grupos y horarios</a> (campo <b>Deporte</b>), o elija ese deporte como deporte principal en Parámetros.</div>
+  <div class="tarjeta">Para usar los niveles, los exámenes y los certificados, primero cree un curso o grupo en
+    <a href="admin.php?p=grupos">Cursos y horarios</a> y elija su disciplina (ballet, piano, natación, karate…).</div>
 <?php pie_admin(); return; endif; ?>
 <?php if (!$ex): ?>
-  <?php if (count($discs) > 1): ?><p class="acciones"><?php foreach ($discs as $dd): ?><a class="btn btn-chico <?= $dd === $disc ? '' : 'btn-sec' ?>" href="admin.php?p=examenes&amp;v=<?= e($vista) ?>&amp;d=<?= e($dd) ?>">🥋 <?= e(disciplinas_marciales()[$dd]) ?></a> <?php endforeach; ?></p><?php endif; ?>
+  <?php if (count($discs) > 1): ?><p class="acciones"><?php foreach ($discs as $dd): ?><a class="btn btn-chico <?= $dd === $disc ? '' : 'btn-sec' ?>" href="admin.php?p=examenes&amp;v=<?= e($vista) ?>&amp;d=<?= e($dd) ?>"><?= vocabulario_nivel($dd)['ico'] ?> <?= e(nombre_disciplina_nivel($dd)) ?></a> <?php endforeach; ?></p><?php endif; ?>
   <nav class="pestanas">
     <a class="<?= $vista === 'examenes' ? 'activa' : '' ?>" href="admin.php?p=examenes&amp;d=<?= e($disc) ?>">📝 Exámenes</a>
-    <a class="<?= $vista === 'formas' ? 'activa' : '' ?>" href="admin.php?p=examenes&amp;v=formas&amp;d=<?= e($disc) ?>">📖 <?= e($voc['formas']) ?> de los alumnos</a>
-    <a class="<?= $vista === 'cinturones' ? 'activa' : '' ?>" href="admin.php?p=examenes&amp;v=cinturones&amp;d=<?= e($disc) ?>">⚙ Cinturones y <?= e(mb_strtolower($voc['formas'])) ?></a>
+    <?php if ($marcial): ?><a class="<?= $vista === 'formas' ? 'activa' : '' ?>" href="admin.php?p=examenes&amp;v=formas&amp;d=<?= e($disc) ?>">📖 <?= e($voc['formas']) ?> de los alumnos</a><?php else: ?>
+    <a class="<?= $vista === 'formas' ? 'activa' : '' ?>" href="admin.php?p=examenes&amp;v=formas&amp;d=<?= e($disc) ?>">👥 <?= e($voc['nivel']) ?> de cada alumno</a><?php endif; ?>
+    <a class="<?= $vista === 'cinturones' ? 'activa' : '' ?>" href="admin.php?p=examenes&amp;v=cinturones&amp;d=<?= e($disc) ?>">⚙ <?= $marcial ? 'Cinturones y ' . e(mb_strtolower($voc['formas'])) : 'Lista de ' . e(mb_strtolower($voc['niveles'])) ?></a>
   </nav>
 <?php endif; ?>
 
@@ -193,7 +198,7 @@ cabecera_admin('Exámenes de grado');
                     FROM esc_examenes e WHERE e.liga_id = ? AND e.disciplina = ? ORDER BY e.fecha DESC, e.id DESC', [$lid, $disc]); ?>
   <div class="rejilla-2">
     <div class="tarjeta">
-      <h2 style="margin-top:0">Exámenes de <?= e(disciplinas_marciales()[$disc]) ?></h2>
+      <h2 style="margin-top:0">Exámenes de <?= e($ndisc) ?></h2>
       <?php if (!$lista): ?><p class="suave">Todavía no hay exámenes. Cree el primero con el formulario.</p><?php else: ?>
       <div class="tabla-scroll"><table><tr><th>Fecha</th><th>Lugar</th><th class="num">Inscritos</th><th class="num">Aprobados</th><th>Estado</th></tr>
         <?php foreach ($lista as $x): ?><tr><td><a href="admin.php?p=examenes&amp;id=<?= (int)$x['id'] ?>"><b><?= e(fecha_bonita($x['fecha'])) ?></b></a></td><td><?= e($x['lugar']) ?></td><td class="num"><?= (int)$x['n'] ?></td><td class="num"><?= (int)$x['ap'] ?></td>
@@ -202,15 +207,15 @@ cabecera_admin('Exámenes de grado');
     </div>
     <?php if ($ed): ?>
     <div class="tarjeta">
-      <h2 style="margin-top:0">+ Nuevo examen de grado</h2>
+      <h2 style="margin-top:0">+ Nuevo <?= e(mb_strtolower($voc['examen'])) ?></h2>
       <form method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="nuevo"><input type="hidden" name="disciplina" value="<?= e($disc) ?>">
         <div class="campos">
           <div><label>Fecha *</label><input type="date" name="fecha" required value="<?= date('Y-m-d', strtotime('+14 days')) ?>"></div>
           <div><label>Hora</label><input type="time" name="hora" value="09:00"></div>
           <div><label>Lugar</label><input type="text" name="lugar" maxlength="120" placeholder="Ej: <?= e($voc['lugar']) ?> principal"></div>
-          <div><label>Examinador</label><input type="text" name="examinador" maxlength="100" placeholder="Ej: <?= e($voc['maestro']) ?> Carlos Andrade, 4.º Dan"></div>
+          <div><label>Examinador</label><input type="text" name="examinador" maxlength="100" placeholder="Ej: <?= e($voc['maestro']) ?> <?= $marcial ? 'Carlos Andrade, 4.º Dan' : 'María Torres' ?>"></div>
           <div><label>Derecho a examen ($)</label><input type="number" name="valor" min="0" step="0.01" value="0"><div class="ayuda">Si pone un valor, con un botón se carga a cada inscrito en Pagos.</div></div>
-          <div class="campo-ancho"><label>Notas</label><input type="text" name="notas" maxlength="1000" placeholder="Ej: traer el dobok limpio y el carnet"></div>
+          <div class="campo-ancho"><label>Notas</label><input type="text" name="notas" maxlength="1000" placeholder="<?= e($voc['notas_ej'] ?? '') ?>"></div>
         </div>
         <button class="btn">Crear examen</button>
       </form>
@@ -222,38 +227,52 @@ cabecera_admin('Exámenes de grado');
     $lista = cinturones_escuela($lid, $disc, false);
     $colores = colores_cinturon(); ?>
   <div class="tarjeta">
-    <h2 style="margin-top:0">⚙ Cinturones de <?= e(disciplinas_marciales()[$disc]) ?></h2>
-    <p class="suave">Esta es la lista que usa su escuela, en orden del primero al último. Puede cambiar el grado, el nombre, los colores, la punta y el <?= e(mb_strtolower($voc['forma'])) ?> de cada cinturón, o desmarcar los que no usa. El orden decide cuál es el «próximo cinturón» de cada alumno.</p>
+    <h2 style="margin-top:0">⚙ <?= e($voc['niveles']) ?> de <?= e($ndisc) ?></h2>
+    <p class="suave">Esta es la lista que usa su <?= es_academia() ? 'academia' : 'escuela' ?>, en orden del primero al último. Puede cambiar el nombre, el color<?= $marcial ? ', la punta' : '' ?> y <?= $marcial ? 'el ' . e(mb_strtolower($voc['forma'])) : 'lo que se evalúa' ?> de cada <?= e(mb_strtolower($voc['nivel'])) ?>, o desmarcar los que no usa. El orden decide cuál es el «próximo <?= e(mb_strtolower($voc['nivel'])) ?>» de cada alumno.</p>
     <form method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="guardar_cinturones">
-      <div class="tabla-scroll"><table class="tabla-cinturones"><tr><th>Orden</th><th>Cinturón</th><th>Grado</th><th>Nombre</th><th>Color</th><th>Punta</th><th><?= e($voc['forma']) ?></th><th>Activo</th></tr>
+      <div class="tabla-scroll"><table class="tabla-cinturones"><tr><th>Orden</th><th><?= e($voc['nivel']) ?></th><th><?= $marcial ? 'Grado' : 'Código' ?></th><th>Nombre</th><th>Color</th><th>Punta</th><th><?= $marcial ? e($voc['forma']) : 'Qué se evalúa' ?></th><th>Activo</th></tr>
         <?php foreach (array_merge($lista, [['id' => 'n1'], ['id' => 'n2'], ['id' => 'n3']]) as $i => $c): $nuevo = str_starts_with((string)$c['id'], 'n'); $k = e((string)$c['id']); ?>
         <tr><td><input type="number" name="c[<?= $k ?>][orden]" value="<?= $nuevo ? (int)(end($lista)['orden'] ?? 0) + $i - count($lista) + 1 : (int)$c['orden'] ?>" style="width:64px"></td>
           <td><?= $nuevo ? '<small class="suave">nuevo</small>' : html_cinturon($c, '', false) ?></td>
-          <td><input type="text" name="c[<?= $k ?>][grado]" value="<?= e($c['grado'] ?? '') ?>" maxlength="30" style="width:96px" placeholder="8.º Kup"></td>
-          <td><input type="text" name="c[<?= $k ?>][nombre]" value="<?= e($c['nombre'] ?? '') ?>" maxlength="60" placeholder="Amarillo"></td>
+          <td><input type="text" name="c[<?= $k ?>][grado]" value="<?= e($c['grado'] ?? '') ?>" maxlength="30" style="width:96px" placeholder="<?= e($voc['ej_nivel'] ?? '') ?>"></td>
+          <td><input type="text" name="c[<?= $k ?>][nombre]" value="<?= e($c['nombre'] ?? '') ?>" maxlength="60" placeholder="<?= e($voc['ej_nombre'] ?? '') ?>"></td>
           <td><select name="c[<?= $k ?>][color]"><?php foreach ($colores as $ck => [$cn]): ?><option value="<?= $ck ?>" <?= ($c['color'] ?? 'blanco') === $ck ? 'selected' : '' ?>><?= e($cn) ?></option><?php endforeach; ?></select></td>
           <td><select name="c[<?= $k ?>][punta]"><option value="">—</option><?php foreach ($colores as $ck => [$cn]): ?><option value="<?= $ck ?>" <?= ($c['punta'] ?? '') === $ck ? 'selected' : '' ?>><?= e($cn) ?></option><?php endforeach; ?></select></td>
-          <td><input type="text" name="c[<?= $k ?>][forma]" value="<?= e($c['forma'] ?? '') ?>" maxlength="80" placeholder="<?= $disc === 'taekwondo' ? 'Taegeuk Il Jang' : 'Heian Shodan' ?>"></td>
+          <td><input type="text" name="c[<?= $k ?>][forma]" value="<?= e($c['forma'] ?? '') ?>" maxlength="160" placeholder="<?= $disc === 'taekwondo' ? 'Taegeuk Il Jang' : ($marcial ? 'Heian Shodan' : '') ?>"></td>
           <td class="num"><input type="checkbox" name="c[<?= $k ?>][activo]" value="1" <?= $nuevo || (int)$c['activo'] ? 'checked' : '' ?>></td></tr>
         <?php endforeach; ?>
       </table></div>
-      <?php if ($ed): ?><button class="btn">💾 Guardar cinturones</button><?php endif; ?>
+      <?php if ($ed): ?><button class="btn">💾 Guardar <?= e(mb_strtolower($voc['niveles'])) ?></button><?php endif; ?>
     </form>
     <?php if ($ed): ?>
-    <form method="post" style="margin-top:12px" onsubmit="return confirm('¿Reemplazar su lista por la de fábrica de <?= e(disciplinas_marciales()[$disc]) ?>? Los grados ya registrados de los alumnos no se borran.')"><?= csrf_campo() ?><input type="hidden" name="accion" value="fabrica">
-      <button class="btn btn-sec btn-chico">↺ Volver a la lista de fábrica de <?= e(disciplinas_marciales()[$disc]) ?></button>
-      <span class="ayuda"><?= $disc === 'taekwondo' ? 'Sistema kup/dan de World Taekwondo con puntas y los poomsae Taegeuk y de Dan.' : ($disc === 'karate' ? 'Sistema kyu/dan con los katas Heian, Tekki, Bassai y Kanku.' : ($disc === 'judo' ? 'Sistema kyu/dan de judo.' : 'Colores generales.')) ?></span>
+    <form method="post" style="margin-top:12px" onsubmit="return confirm('¿Reemplazar su lista por la de fábrica de <?= e($ndisc) ?>? Lo que ya tienen registrado los alumnos no se borra.')"><?= csrf_campo() ?><input type="hidden" name="accion" value="fabrica">
+      <button class="btn btn-sec btn-chico">↺ Volver a la lista de fábrica de <?= e($ndisc) ?></button>
+      <span class="ayuda"><?= $disc === 'taekwondo' ? 'Sistema kup/dan de World Taekwondo con puntas y los poomsae Taegeuk y de Dan.' : ($disc === 'karate' ? 'Sistema kyu/dan con los katas Heian, Tekki, Bassai y Kanku.' : ($disc === 'judo' ? 'Sistema kyu/dan de judo.' : e(implode(' · ', array_column(niveles_fabrica($disc), 1))))) ?></span>
     </form>
     <?php endif; ?>
+  </div>
+
+<?php elseif ($vista === 'formas' && !$marcial): // (TuAcademia) nivel de cada alumno en la disciplina ?>
+  <div class="tarjeta">
+    <h2 style="margin-top:0">👥 <?= e($voc['nivel']) ?> de cada alumno · <?= e($ndisc) ?></h2>
+    <p class="suave">El <?= e(mb_strtolower($voc['nivel'])) ?> que tiene cada alumno y el próximo. Para subir de <?= e(mb_strtolower($voc['nivel'])) ?> cree un examen (con cobro, acta y certificado con QR) o registre el <?= e(mb_strtolower($voc['nivel'])) ?> que ya tenía en su ficha.</p>
+    <?php if (!$alumnos): ?><p class="suave">No hay alumnos activos en cursos de <?= e($ndisc) ?>.</p><?php else: ?>
+    <div class="tabla-scroll"><table class="tabla-examen"><tr><th>Alumno</th><th><?= e($voc['nivel']) ?> actual</th><th>Próximo</th><th>Para subir</th></tr>
+      <?php foreach ($alumnos as $a): [$gr, $act, $sig] = nivel_alumno($a, $disc); ?>
+        <tr id="al<?= (int)$a['id'] ?>"><td><a href="admin.php?p=alumno&amp;id=<?= (int)$a['id'] ?>"><?= e(nombre_alumno($a)) ?></a></td>
+          <td><?= $gr ? html_cinturon($act, $act ? '' : $gr['grado']) : '<span class="suave">sin registrar</span>' ?></td>
+          <td><?= $sig ? html_cinturon($sig) : '—' ?></td><td><small><?= e($sig['forma'] ?? '') ?></small></td></tr>
+      <?php endforeach; ?>
+    </table></div><?php endif; ?>
   </div>
 
 <?php elseif ($vista === 'formas'): ?>
   <div class="tarjeta">
     <h2 style="margin-top:0">📖 <?= e($voc['formas']) ?> de los alumnos</h2>
     <p class="suave">Para cada alumno: su cinturón, el próximo y el <?= e(mb_strtolower($voc['forma'])) ?> que debe presentar para subir. Márquelo cuando lo esté <b>aprendiendo</b> y cuando lo <b>domine</b>; los padres lo ven en su portal.</p>
-    <?php if (!$alumnos): ?><p class="suave">No hay alumnos activos en grupos de <?= e(disciplinas_marciales()[$disc]) ?>.</p><?php else: ?>
+    <?php if (!$alumnos): ?><p class="suave">No hay alumnos activos en grupos de <?= e($ndisc) ?>.</p><?php else: ?>
     <div class="tabla-scroll"><table class="tabla-examen"><tr><th>Alumno</th><th>Cinturón → próximo</th><th><?= e($voc['forma']) ?> del próximo</th><?php if ($ed): ?><th></th><?php endif; ?></tr>
-      <?php foreach ($alumnos as $a): [$gr, $act, $sig] = cinturon_alumno($a, $liga); $fs = formas_alumno((int)$a['id']); $f = $sig['forma'] ?? ''; ?>
+      <?php foreach ($alumnos as $a): [$gr, $act, $sig] = nivel_alumno($a, $disc); $fs = formas_alumno((int)$a['id']); $f = $sig['forma'] ?? ''; ?>
         <tr id="al<?= (int)$a['id'] ?>"><td><a href="admin.php?p=alumno&amp;id=<?= (int)$a['id'] ?>"><?= e(nombre_alumno($a)) ?></a></td>
           <td><?= $gr ? html_cinturon($act, $act ? '' : $gr['grado']) : '<span class="suave">sin registrar</span>' ?><?= $sig ? '<br><small class="suave">→ ' . html_cinturon($sig, '', false) . ' ' . e(etiqueta_cinturon($sig)) . '</small>' : '' ?></td>
           <td><?= $f !== '' ? '<b>' . e($f) . '</b><br>' . chip_forma($fs[$f] ?? null) : '<span class="suave">—</span>' ?></td>
@@ -273,8 +292,8 @@ cabecera_admin('Exámenes de grado');
     $cargos = [];
     foreach ($ins as $i) if ($i['cargo_id']) $cargos[(int)$i['id']] = fila('SELECT * FROM esc_cargos WHERE id = ?', [$i['cargo_id']]);
     $n_ap = count(array_filter($ins, fn($i) => $i['resultado'] === 'aprobado')); ?>
-  <p><a href="admin.php?p=examenes&amp;d=<?= e($disc) ?>">← Exámenes de grado</a></p>
-  <div class="fila-titulo"><h2 style="margin:0">📝 Examen de <?= e(disciplinas_marciales()[$disc]) ?> · <?= e(fecha_bonita($ex['fecha'])) ?></h2>
+  <p><a href="admin.php?p=examenes&amp;d=<?= e($disc) ?>">← <?= e($voc['examenes']) ?></a></p>
+  <div class="fila-titulo"><h2 style="margin:0">📝 <?= e($voc['examen']) ?> de <?= e($ndisc) ?> · <?= e(fecha_bonita($ex['fecha'])) ?></h2>
     <span><?= $abierto ? '<span class="chip-estado chip-pend">Abierto</span>' : '<span class="chip-estado chip-ok">✓ Cerrado</span>' ?></span></div>
   <div class="acciones" style="margin:8px 0 12px">
     <a class="btn btn-sec" target="_blank" href="<?= e($url) ?>&amp;doc=acta">🖨 Acta del examen</a>
@@ -301,11 +320,11 @@ cabecera_admin('Exámenes de grado');
     $libres = array_values(array_filter($alumnos, fn($a) => !in_array((int)$a['id'], $ids_ins, true))); ?>
   <details class="tarjeta" id="inscribir" <?= $ins ? '' : 'open' ?>>
     <summary><strong>+ Inscribir alumnos</strong> <small class="suave">· <?= count($libres) ?> sin inscribir</small></summary>
-    <?php if (!$libres): ?><p class="suave">Todos los alumnos de <?= e(disciplinas_marciales()[$disc]) ?> ya están inscritos.</p><?php else: ?>
+    <?php if (!$libres): ?><p class="suave">Todos los alumnos de <?= e($ndisc) ?> ya están inscritos.</p><?php else: ?>
     <form method="post" style="margin-top:10px"><?= csrf_campo() ?><input type="hidden" name="accion" value="inscribir">
-      <p class="ayuda">Viene marcado el próximo cinturón de cada alumno; puede cambiarlo (por ejemplo, si salta un grado).</p>
-      <div class="tabla-scroll"><table><tr><th><input type="checkbox" onclick="document.querySelectorAll('.chk-ins').forEach(c => c.checked = this.checked)" aria-label="Marcar todos"></th><th>Alumno</th><th>Cinturón actual</th><th>Aspira a</th><th><?= e($voc['forma']) ?></th></tr>
-        <?php foreach ($libres as $a): [$gr, $act, $sig] = cinturon_alumno($a, $liga); $fs = formas_alumno((int)$a['id']); ?>
+      <p class="ayuda">Viene marcado el próximo <?= e(mb_strtolower($voc['nivel'])) ?> de cada alumno; puede cambiarlo (por ejemplo, si salta uno).</p>
+      <div class="tabla-scroll"><table><tr><th><input type="checkbox" onclick="document.querySelectorAll('.chk-ins').forEach(c => c.checked = this.checked)" aria-label="Marcar todos"></th><th>Alumno</th><th><?= e($voc['nivel']) ?> actual</th><th>Aspira a</th><th><?= e($voc['forma']) ?></th></tr>
+        <?php foreach ($libres as $a): [$gr, $act, $sig] = nivel_alumno($a, $disc); $fs = formas_alumno((int)$a['id']); ?>
           <tr><td><input type="checkbox" class="chk-ins" name="alumnos[]" value="<?= (int)$a['id'] ?>"></td><td><?= e(nombre_alumno($a)) ?></td>
             <td><?= $gr ? html_cinturon($act, $act ? '' : $gr['grado']) : '<span class="suave">sin registrar</span>' ?></td>
             <td><select name="aspira[<?= (int)$a['id'] ?>]"><?php foreach ($lista_c as $c): ?><option value="<?= (int)$c['id'] ?>" <?= $sig && (int)$sig['id'] === (int)$c['id'] ? 'selected' : '' ?>><?= e(etiqueta_cinturon($c)) ?></option><?php endforeach; ?></select></td>
@@ -326,7 +345,7 @@ cabecera_admin('Exámenes de grado');
         <?php foreach ($ins as $i): $cg = $cargos[(int)$i['id']] ?? null; $c = null; foreach ($lista_c as $x) if ((int)$x['id'] === (int)$i['cinturon_id']) $c = $x; ?>
           <tr><td><a href="admin.php?p=alumno&amp;id=<?= (int)$i['alumno_id'] ?>"><?= e(nombre_alumno($i)) ?></a><br><small class="suave"><span>Actual:</span> <span><?= e($i['grado_actual'] ?: '—') ?></span></small></td>
             <td><?= html_cinturon($c, $i['grado_aspira']) ?></td>
-            <td><?= $i['forma'] === '' ? '—' : e($i['forma']) . '<br>' . ($abierto ? '<label class="check" style="font-weight:400"><input type="checkbox" name="forma_ok[' . (int)$i['id'] . ']" value="1" ' . ($i['forma_ok'] ? 'checked' : '') . '> la domina</label>' : ($i['forma_ok'] ? '<small>✅ la domina</small>' : '')) ?></td>
+            <td><?= $i['forma'] === '' ? '—' : e($i['forma']) . '<br>' . ($abierto ? '<label class="check" style="font-weight:400"><input type="checkbox" name="forma_ok[' . (int)$i['id'] . ']" value="1" ' . ($i['forma_ok'] ? 'checked' : '') . '> ' . ($marcial ? 'la domina' : 'cumplido') . '</label>' : ($i['forma_ok'] ? '<small>✅ ' . ($marcial ? 'la domina' : 'cumplido') . '</small>' : '')) ?></td>
             <td><?= $cg ? ($cg['estado'] === 'pagado' ? '<span class="chip-estado chip-ok">Pagado</span>' : '<span class="chip-estado chip-pend">Pendiente</span>') : '<span class="suave">—</span>' ?></td>
             <?php if ($abierto): ?>
             <td><input type="text" name="nota[<?= (int)$i['id'] ?>]" value="<?= e($i['nota']) ?>" maxlength="20" style="width:64px;min-width:0"></td>
@@ -342,7 +361,7 @@ cabecera_admin('Exámenes de grado');
     </form>
     <?php if ($ed && $abierto): ?>
       <div class="acciones" style="margin-top:12px">
-        <form method="post" class="inline" onsubmit="return confirm('¿Cerrar el examen? A los aprobados se les registra el cinturón nuevo.')"><?= csrf_campo() ?><input type="hidden" name="accion" value="cerrar"><button class="btn">🥋 Cerrar examen y entregar cinturones</button></form>
+        <form method="post" class="inline" onsubmit="return confirm('¿Cerrar el examen? A los aprobados se les registra el <?= e(mb_strtolower($voc['nivel'])) ?> nuevo.')"><?= csrf_campo() ?><input type="hidden" name="accion" value="cerrar"><button class="btn"><?= $voc['ico'] ?> Cerrar examen<?= $marcial ? ' y entregar cinturones' : ' y subir de ' . e(mb_strtolower($voc['nivel'])) ?></button></form>
       </div>
       <details style="margin-top:10px"><summary class="suave">Quitar a un inscrito</summary>
         <?php foreach ($ins as $i): ?><form method="post" class="inline" onsubmit="return confirm('¿Quitar a este alumno del examen?')"><?= csrf_campo() ?><input type="hidden" name="accion" value="quitar"><input type="hidden" name="iid" value="<?= (int)$i['id'] ?>"><button class="btn btn-sec btn-chico">✕ <?= e(nombre_alumno($i)) ?></button></form> <?php endforeach; ?>

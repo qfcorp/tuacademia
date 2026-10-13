@@ -6,7 +6,7 @@
  * Cómo funciona:
  *  1. pagar.php muestra el formulario de tarjeta. En el navegador, los datos de la tarjeta se cifran con AES-256-ECB
  *     usando una clave al azar de 32 caracteres, y esa clave se cifra con la llave pública RSA de Plux (igual que TuPass).
- *     El servidor de TuVocalía nunca ve el número de la tarjeta sin cifrar y no guarda nada de la tarjeta.
+ *     El servidor de TuAcademia nunca ve el número de la tarjeta sin cifrar y no guarda nada de la tarjeta.
  *  2. plux_pagar.php (JSON) llama a la API de Plux. Respuestas: 0 aprobado · 100 pide código OTP · 103 pide validación 3DS del banco.
  *  3. plux_3ds.php recibe el regreso del banco (pti, pcc, ptk) y confirma con Plux.
  *  Aprobado → confirmar_pago_linea() (no duplica aunque llegue dos veces) → aplica el pago (suscripción, equipo o escuela).

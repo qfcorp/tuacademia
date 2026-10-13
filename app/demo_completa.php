@@ -59,10 +59,10 @@ function completar_demo_liga(int $lid): void
         q("UPDATE usuarios SET perfil = 'admin' WHERE liga_id = ? AND rol = 'liga'", [$lid]);
         // Árbitro con su portal
         $arb = fila('SELECT * FROM arbitros WHERE liga_id = ? ORDER BY id LIMIT 1', [$lid]);
-        if ($arb) q('UPDATE arbitros SET usuario_id = ? WHERE id = ?', [usuario_demo('arbitro@demo.tuvocalia.com', $arb['nombre'], 'arbitro', $lid), $arb['id']]);
+        if ($arb) q('UPDATE arbitros SET usuario_id = ? WHERE id = ?', [usuario_demo('arbitro@demo.tuacademia.tukanec.com', $arb['nombre'], 'arbitro', $lid), $arb['id']]);
         // Delegado del primer equipo
         $eq = fila('SELECT * FROM equipos WHERE liga_id = ? ORDER BY id LIMIT 1', [$lid]);
-        if ($eq) usuario_demo('delegado@demo.tuvocalia.com', $eq['delegado'] ?: 'Delegado de la demo', 'delegado', $lid, ['equipo_id' => $eq['id']]);
+        if ($eq) usuario_demo('delegado@demo.tuacademia.tukanec.com', $eq['delegado'] ?: 'Delegado de la demo', 'delegado', $lid, ['equipo_id' => $eq['id']]);
         // Jugador con su portal (carnet digital)
         $jug = $eq ? fila("SELECT * FROM jugadores WHERE equipo_id = ? AND posicion <> 'Arquero' ORDER BY numero LIMIT 1 OFFSET 7", [$eq['id']]) : null;
         if ($jug) q('UPDATE jugadores SET portal_pin = ? WHERE id = ?', [password_hash(DEMO_CLAVE, PASSWORD_DEFAULT), $jug['id']]);
@@ -111,11 +111,11 @@ function crear_escuela_demo(): int
 {
     return sin_auditoria(function (): int {
         q("DELETE FROM ligas WHERE es_demo = 1 AND tipo = 'escuela'");
-        q("DELETE FROM usuarios WHERE email IN ('escuela@demo.tuvocalia.com', 'profesor@demo.tuvocalia.com', 'staff@demo.tuvocalia.com')");
+        q("DELETE FROM usuarios WHERE email IN ('escuela@demo.tuacademia.tukanec.com', 'profesor@demo.tuacademia.tukanec.com', 'staff@demo.tuacademia.tukanec.com')");
         $r = crear_liga_completa([
             'nombre' => 'Escuela Demo ' . marca(), 'slug' => 'escuela-demo', 'ciudad' => 'Quito', 'color' => '#1565c0', 'modalidad' => 'F7',
             'tipo' => 'escuela', 'deporte_escuela' => 'futbol',
-            'admin_nombre' => 'Dueño de la escuela', 'admin_email' => 'escuela@demo.tuvocalia.com', 'admin_clave' => bin2hex(random_bytes(12)),
+            'admin_nombre' => 'Dueño de la escuela', 'admin_email' => 'escuela@demo.tuacademia.tukanec.com', 'admin_clave' => bin2hex(random_bytes(12)),
         ]);
         $lid = (int)$r['liga_id'];
         $pdo = db();
@@ -138,7 +138,7 @@ function crear_escuela_demo(): int
                 q("INSERT INTO esc_profesores (liga_id, nombre, cedula, telefono, especialidad, tipo_pago, valor_pago) VALUES (?,?,?,?,?,?,?)", [$lid, $n, cedula_demo(), '099' . random_int(1000000, 9999999), $esp, $tp, $v]);
                 $prof[] = (int)$pdo->lastInsertId();
             }
-            $uprof = usuario_demo('profesor@demo.tuvocalia.com', 'Andrea Ruiz', 'liga', $lid, ['perfil' => 'profesor']);
+            $uprof = usuario_demo('profesor@demo.tuacademia.tukanec.com', 'Andrea Ruiz', 'liga', $lid, ['perfil' => 'profesor']);
             q('UPDATE esc_profesores SET usuario_id = ? WHERE id = ?', [$uprof, $prof[0]]);
             // Grupos
             $Y = (int)date('Y');
@@ -263,13 +263,13 @@ function entrar_demo(string $rol): string
     };
     switch ($rol) {
         case 'admin':
-            $sesion($liga ? fila("SELECT * FROM usuarios WHERE liga_id = ? AND rol = 'liga' AND activo = 1 AND email = 'demo@demo.tuvocalia.com'", [$liga['id']]) : null);
+            $sesion($liga ? fila("SELECT * FROM usuarios WHERE liga_id = ? AND rol = 'liga' AND activo = 1 AND email = 'demo@demo.tuacademia.tukanec.com'", [$liga['id']]) : null);
             return 'admin.php';
         case 'arbitro':
-            $sesion($liga ? fila("SELECT * FROM usuarios WHERE email = 'arbitro@demo.tuvocalia.com' AND liga_id = ?", [$liga['id']]) : null);
+            $sesion($liga ? fila("SELECT * FROM usuarios WHERE email = 'arbitro@demo.tuacademia.tukanec.com' AND liga_id = ?", [$liga['id']]) : null);
             return 'arbitro.php';
         case 'delegado':
-            $sesion($liga ? fila("SELECT * FROM usuarios WHERE email = 'delegado@demo.tuvocalia.com' AND liga_id = ?", [$liga['id']]) : null);
+            $sesion($liga ? fila("SELECT * FROM usuarios WHERE email = 'delegado@demo.tuacademia.tukanec.com' AND liga_id = ?", [$liga['id']]) : null);
             return 'delegado.php';
         case 'vocal':
             $p = $liga ? fila("SELECT p.vocal_token FROM partidos p JOIN torneos t ON t.id = p.torneo_id WHERE t.liga_id = ? AND p.vocal_token <> '' AND p.estado IN ('programado','en_vivo') ORDER BY p.fecha, p.hora LIMIT 1", [$liga['id']]) : null;
@@ -284,13 +284,13 @@ function entrar_demo(string $rol): string
             return 'mi.php';
         case 'federacion': // (v28)
             $fd = fila('SELECT * FROM ligas WHERE es_demo = 1 AND es_federacion = 1 AND activa = 1 ORDER BY id DESC LIMIT 1');
-            $sesion($fd ? fila("SELECT * FROM usuarios WHERE email = 'federacion@demo.tuvocalia.com' AND liga_id = ?", [$fd['id']]) : null);
+            $sesion($fd ? fila("SELECT * FROM usuarios WHERE email = 'federacion@demo.tuacademia.tukanec.com' AND liga_id = ?", [$fd['id']]) : null);
             return 'admin.php?p=federacion';
         case 'dueno':
-            $sesion($esc ? fila("SELECT * FROM usuarios WHERE email = 'escuela@demo.tuvocalia.com' AND liga_id = ?", [$esc['id']]) : null);
+            $sesion($esc ? fila("SELECT * FROM usuarios WHERE email = 'escuela@demo.tuacademia.tukanec.com' AND liga_id = ?", [$esc['id']]) : null);
             return 'admin.php';
         case 'profesor':
-            $sesion($esc ? fila("SELECT * FROM usuarios WHERE email = 'profesor@demo.tuvocalia.com' AND liga_id = ?", [$esc['id']]) : null);
+            $sesion($esc ? fila("SELECT * FROM usuarios WHERE email = 'profesor@demo.tuacademia.tukanec.com' AND liga_id = ?", [$esc['id']]) : null);
             return 'admin.php';
         case 'familia':
             $f = $esc ? fila('SELECT id FROM esc_familias WHERE liga_id = ? LIMIT 1', [$esc['id']]) : null;

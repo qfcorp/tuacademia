@@ -43,7 +43,7 @@ function demo_v17_escuela(int $lid, array $gids, array $alumnos, array $prof): v
     }
 
     // Usuario del cuerpo técnico (psicóloga)
-    usuario_demo('staff@demo.tuvocalia.com', 'Lcda. Paula Vera', 'liga', $lid, ['perfil' => 'staff', 'area' => 'psicologia']);
+    usuario_demo('staff@demo.tuacademia.tukanec.com', 'Lcda. Paula Vera', 'liga', $lid, ['perfil' => 'staff', 'area' => 'psicologia']);
 
     // Datos de cada alumno: talento, constancia, fecha de nacimiento
     $info = [];

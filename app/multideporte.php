@@ -33,7 +33,7 @@ function catalogo_deportes(): array
         'tenis_mesa' => ['Tenis de mesa', '🏓', 'tenis_mesa', 'combate'],
         'bolos' => ['Bolos', '🎳', 'bolos', 'marcas'],
         'ciclismo' => ['Ciclismo', '🚴', 'ciclismo', 'marcas'],
-    ] + catalogo_deportes_v36() + [ // (v36) squash, ajedrez, e-sports, pesas, triatlón, béisbol, softbol y balonmano
+    ] + catalogo_deportes_v36() + catalogo_disciplinas_academia() + [ // (v36) squash, ajedrez, e-sports, pesas, triatlón, béisbol, softbol y balonmano · (TuAcademia) baile y música
         'otro' => ['Otro deporte', '🏅', 'otro', 'equipo'],
     ];
 }
@@ -148,7 +148,7 @@ function nombre_especifico(string $familia): array
         'boxeo' => ['🥊', 'Sparring'], 'artes_marciales' => ['🥋', 'Combate'], 'natacion' => ['🏊', 'Estilos y salidas'],
         'atletismo' => ['🏃', 'Por prueba'], 'tenis' => ['🎾', 'Saque y devolución'],
         'padel' => ['🎾', 'Red y paredes'], 'tenis_mesa' => ['🏓', 'Saque y efectos'], 'bolos' => ['🎳', 'Spares y línea de tiro'], 'ciclismo' => ['🚴', 'Pedaleo y curvas'],
-        default => nombre_especifico_v36($familia) ?? ['⭐', 'Específico del deporte'],
+        default => nombre_especifico_v36($familia) ?? nombre_especifico_academia($familia) ?? ['⭐', 'Específico del deporte'],
     };
 }
 
@@ -237,7 +237,7 @@ function tests_fabrica(string $familia): array
             ['Slalom entre conos', 's', 'menor', 'tecnico', 'Recorrido de habilidad entre 10 conos sin tocarlos.'],
             ['Cadencia sostenida (rpm)', 'rpm', 'mayor', 'fisico', 'Pedaleo a cadencia alta durante 1 minuto.'],
         ],
-        default => tests_fabrica_v36($familia),
+        default => tests_fabrica_v36($familia) ?: tests_fabrica_academia($familia),
     };
 }
 
@@ -258,7 +258,7 @@ function habilidades_fabrica(string $familia): array
         'tenis_mesa' => ['Saque', 'Derecha (drive)', 'Revés', 'Efectos (top y corte)', 'Bloqueo', 'Desplazamientos', 'Táctica de juego'],
         'bolos' => ['Postura y aproximación', 'Soltada de la bola', 'Línea de tiro', 'Primer tiro (strike)', 'Spares', 'Concentración y rutina'],
         'ciclismo' => ['Equilibrio y manejo', 'Pedaleo (cadencia)', 'Cambios de marcha', 'Curvas', 'Subidas', 'Rueda en grupo', 'Seguridad vial'],
-        default => habilidades_fabrica_v36($familia),
+        default => habilidades_fabrica_v36($familia) ?: habilidades_fabrica_academia($familia),
     };
 }
 
@@ -358,7 +358,7 @@ function ejercicios_fabrica(string $familia): array
             ['Series de sprint', 'fisico', 'Potencia y velocidad', 'Seis sprints de 100 m con recuperación pedaleando suave.', 15, 'Todo el grupo', 'Cronómetro, casco', 'Sub-10 en adelante'],
             ['Rodada en grupo', 'juego', 'Ir a rueda y relevos', 'Rodada en fila con relevos cada minuto y señales de seguridad.', 20, 'Grupos de 4 a 6', 'Bicicletas, casco', 'Sub-11 en adelante'],
         ],
-        default => ejercicios_fabrica_v36($familia),
+        default => ejercicios_fabrica_v36($familia) ?: ejercicios_fabrica_academia($familia),
     };
 }
 
@@ -484,8 +484,7 @@ function html_deportes_alumno(array $a, ?array $liga = null): string
     if (count($deps) > 1 || ($liga && es_multideporte($liga))) $h .= implode(' ', array_map('chip_deporte', $deps));
     $o = texto_otros_grupos($a, $liga);
     if ($o !== '') $h .= ' <small class="suave">' . e($o) . '</small>';
-    $gr = grado_actual((int)$a['id']);
-    if ($gr) $h .= ' <span class="chip-deporte">🥋 ' . e($gr['grado']) . '</span>';
+    $h .= html_chips_nivel($a, $liga); // (TuAcademia) nivel de cada disciplina (o cinturón)
     return $h === '' ? '' : '<div class="deportes-alumno">' . $h . '</div>';
 }
 
@@ -594,7 +593,7 @@ function html_competencias_alumno(array $a): string
     $aid = (int)$a['id'];
     $r = record_alumno($aid);
     $m = medallas_alumno($aid);
-    $gr = grado_actual($aid);
+    $gr = grado_marcial_actual($aid); // (TuAcademia) aquí solo el cinturón; los niveles de baile, música y natación tienen su propia tarjeta
     $ult = filas('SELECT * FROM esc_competencias WHERE alumno_id = ? ORDER BY fecha DESC, id DESC LIMIT 6', [$aid]);
     if (!$r['n'] && !array_sum($m) && !$gr && !$ult) return '';
     $h = '<div class="tarjeta"><h3 style="margin-top:0">🥇 Competencias</h3><div class="cifras">';

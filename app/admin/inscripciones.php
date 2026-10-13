@@ -101,7 +101,7 @@ Motivo: " . e(post('respuesta')), 'pase_no:' . $ps['id']);
         }
         q("INSERT INTO usuarios (nombre, email, clave, rol, liga_id, equipo_id) VALUES (?,?,?, 'delegado', ?, ?)", [$s['delegado'], mb_strtolower($s['email']), $s['clave'], $lid, $eid]);
         q("UPDATE solicitudes_equipo SET estado = 'aprobado', equipo_id = ?, clave = '', respuesta = ?, revisado_por = ?, revisado_en = ? WHERE id = ?", [$eid, mb_substr(post('respuesta') ?: 'Aprobado', 0, 300), $por, $ahora, $s['id']]);
-        // (v11) Si el equipo lo mandó una escuela de TuVocalía, sus alumnos pasan como jugadores
+        // (v11) Si el equipo lo mandó una escuela de TuAcademia, sus alumnos pasan como jugadores
         $n_esc = 0;
         if (!empty($s['escuela_grupo_id']) && ($g_esc = fila('SELECT g.*, l.nombre AS escuela FROM esc_grupos g JOIN ligas l ON l.id = g.liga_id WHERE g.id = ?', [$s['escuela_grupo_id']]))) {
             $n_esc = cargar_alumnos_en_equipo((int)$g_esc['id'], $eid, $g_esc['escuela']);

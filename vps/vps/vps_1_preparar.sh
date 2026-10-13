@@ -85,7 +85,12 @@ echo "$PUERTO_WEB" > "$DESTINO/data/puerto_nginx"; chown www-data:www-data "$DES
 
 paso "5/5 Prueba"
 echo '<?php echo "TUACADEMIA-OK PHP " . PHP_VERSION;' > "$DESTINO/public/zz_prueba_vps.php"; chown www-data "$DESTINO/public/zz_prueba_vps.php"
-R="$(curl -s -H "Host: $SITIO" http://127.0.0.1:$PUERTO_WEB/zz_prueba_vps.php)"
+R=""
+for i in 1 2 3 4 5 6; do   # PHP puede tardar unos segundos en arrancar: se reintenta
+  R="$(curl -s -H "Host: $SITIO" http://127.0.0.1:$PUERTO_WEB/zz_prueba_vps.php)"
+  echo "$R" | grep -q TUACADEMIA-OK && break
+  sleep 3
+done
 rm -f "$DESTINO/public/zz_prueba_vps.php"
 if echo "$R" | grep -q TUACADEMIA-OK; then verde "Funciona: $R"; else rojo "La prueba fallo: $R"; echo "Revise: sudo tail -n 20 /var/log/nginx/tuacademia_error.log"; exit 1; fi
 ERP="$(curl -s -o /dev/null -w '%{http_code}' --resolve erp.tupassec.com:443:127.0.0.1 https://erp.tupassec.com/ -k)"

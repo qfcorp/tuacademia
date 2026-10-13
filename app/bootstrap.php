@@ -28,7 +28,7 @@ define('CFG', $cfg);
 define('PRODUCTO', in_array($cfg['producto'] ?? 'academia', ['academia', 'ligas'], true) ? $cfg['producto'] : 'academia');
 date_default_timezone_set($cfg['zona']);
 
-if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE) {
+if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE && !defined('TC_SIN_SESION')) { // (Tukán Central) el estado no abre sesión
     $https = !empty($_SERVER['HTTPS']) || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
     // Sesiones propias en data/sesiones con 12 horas de duración (un partido o una jornada completa sin que se cierre)
     $dir_ses = RAIZ . '/data/sesiones';
@@ -109,6 +109,7 @@ require APP_DIR . '/menu.php';
 require APP_DIR . '/directorio.php';
 require APP_DIR . '/vista_previa.php';
 require APP_DIR . '/idioma.php'; // (v28) idiomas: inglés, francés, portugués e italiano
+require APP_DIR . '/tukan_central.php'; // (Tukán Central) conector con el Panel Tukán Central
 cabeceras_seguridad(); // (v33)
 acad_cortar_portales_liga(); // (TuAcademia) vocal, árbitro, delegado, jugador y entradas: solo en el producto de ligas
 vigilar_vista_previa();

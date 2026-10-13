@@ -74,7 +74,7 @@ if (es_post() && !es_super() && es_usuario_demo($u) && (!demo_guardar() || in_ar
     ir($_SERVER['HTTP_REFERER'] ?? 'admin.php');
 }
 // Doble verificación obligatoria para administradores (si el superadministrador la exige)
-if (empty($u['vista_super']) && doble_verificacion_obligatoria($u) && (int)$u['totp_activo'] !== 1 && $p !== 'seguridad') {
+if (empty($u['vista_super']) && empty($_SESSION['tukan_central']) && doble_verificacion_obligatoria($u) && (int)$u['totp_activo'] !== 1 && $p !== 'seguridad') {
     flash('Por seguridad, antes de continuar active la doble verificación (código en su celular).', 'error');
     ir('admin.php?p=seguridad');
 }

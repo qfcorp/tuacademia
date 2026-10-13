@@ -22,6 +22,7 @@ encendido. Todo lo de ligas y campeonatos sigue en el código, apagado.
 | Migración de la base | `app/db.php` → `esquema_v34()` (user_version 34) |
 | Notas para Dimitry | **[BLOC_DE_NOTAS.md](BLOC_DE_NOTAS.md)** (qué se cambió, pendientes, nombres candidatos) |
 | Instalar en el VPS | [vps/vps/INSTRUCCIONES.txt](vps/vps/INSTRUCCIONES.txt) (carpeta `/var/www/tuacademia`, puerto 8096) |
+| Panel Tukán Central | `app/tukan_central.php` + `public/tukan_central.php`. Conectar en el VPS: `sudo bash /var/www/tuacademia/vps/conectar_central.sh ID SECRETO URL` (el panel central muestra el comando completo). El panel ve las academias por estado de suscripción y 8 cifras (alumnos, cursos, clases, asistencias, pensiones…). Ver BLOC_DE_NOTAS §12 |
 
 ## Probar en una computadora
 
@@ -34,7 +35,11 @@ python3 pruebas/v38/recorrido.py 1500            # abre todas las páginas busca
 TA_PRODUCTO=ligas bash pruebas/v38/reiniciar.sh  # modo ligas (como TuVocalía, con Google Play encendido)
 python3 pruebas/v38/prueba38.py                  # apps Android y Google Play (simulado)
 python3 pruebas/v38/navegador38.py               # Chromium real con la Digital Goods API simulada
+
+bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py   # conector del Panel Tukán Central (125/125; en modo ligas 121/121)
 ```
+(Para otro puerto: `TA_PUERTO=8221 TA_SIM=8222`. Si se cambia `TA_SIM`, borrar antes `pruebas/v38/cuenta_servicio.json`
+y los `.pem` para que `reiniciar.sh` los cree con el puerto nuevo.)
 
 Usuarios de prueba (clave `clave12345`): `super@prueba.com`, `escuela@prueba.com` y, después de `prueba_academia.py`,
 `baile@prueba.com`, `musica@prueba.com`, `natacion@prueba.com`.

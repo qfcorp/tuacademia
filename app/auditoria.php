@@ -79,7 +79,9 @@ function activar_auditoria(): void
         // (v24) el registro de autorizaciones ya es en sí mismo una prueba con fecha, IP y texto
         'consentimientos',
         // (v27) las conversaciones de soporte ya guardan quién escribió y cuándo
-        'soporte_mensajes'];
+        'soporte_mensajes',
+        // (Tukán Central) nonces de un solo uso de los tokens del panel central
+        'tukan_nonces'];
     foreach ($tablas as $t) {
         if (!preg_match('/^[a-z_]+$/', $t) || in_array($t, $sin_auditoria, true)) continue;
         $cols = array_filter(array_column($pdo->query("PRAGMA table_info($t)")->fetchAll(PDO::FETCH_ASSOC), 'name'), fn($x) => !in_array($x, columnas_ocultas(), true));

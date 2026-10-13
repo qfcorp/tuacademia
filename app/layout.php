@@ -24,6 +24,7 @@ function cabecera_admin(string $titulo): void
 <header class="barra">
   <div class="barra-in">
     <a class="marca" href="admin.php"><?= es_academia() ? '🎓' : '⚽' ?> <?= e(marca()) ?> <small>Panel</small></a>
+    <?= tc_enlace_volver() // (Tukán Central) «← Panel Tukán» si la sesión vino del panel central ?>
     <?= html_selector_idioma('idioma-panel') // (v28) ?>
     <?php if ($u): ?>
     <button class="menu-btn" type="button" onclick="document.body.classList.toggle('menu-abierto')" aria-label="Menú">☰</button>

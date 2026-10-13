@@ -49,6 +49,12 @@ chmod 770 "$DESTINO/data"; find "$DESTINO/data" -mindepth 1 -type d -exec chmod 
 chmod 640 "$DESTINO/app/config.php"
 chmod 775 "$DESTINO/public/uploads"
 echo "$PUERTO_WEB" > "$DESTINO/data/puerto_nginx"; chown www-data:www-data "$DESTINO/data/puerto_nginx"
+git -C "$T" log -1 --format=%h > "$DESTINO/app/VERSION" 2>/dev/null && chown www-data:www-data "$DESTINO/app/VERSION"  # version para el Panel Tukan
+# Panel Tukan Central: el comando para conectar queda en $DESTINO/vps/conectar_central.sh (de root: PHP no lo puede cambiar)
+if [ -f "$T/vps/conectar_central.sh" ]; then
+  mkdir -p "$DESTINO/vps" && cp "$T/vps/conectar_central.sh" "$DESTINO/vps/conectar_central.sh" \
+    && chown -R root:root "$DESTINO/vps" && chmod 755 "$DESTINO/vps" && chmod 644 "$DESTINO/vps/conectar_central.sh"
+fi
 docker exec "$CONTENEDOR" kill -USR2 1 >/dev/null 2>&1   # PHP toma el programa nuevo al instante
 verde "Programa copiado."
 paso "3/4 Base de datos"

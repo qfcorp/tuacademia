@@ -48,3 +48,25 @@ CUANDO SE ELIJA EL NOMBRE DEFINITIVO
   - Agregar el nuevo subdominio en el tunel (como en el paso 3) apuntando al mismo 127.0.0.1:8096.
 
 NUNCA correr en el servidor los scripts de pruebas/ (borran la base). vps_2_codigo.sh deja la marca data/.servidor para impedirlo.
+
+CONECTAR CON EL PANEL TUKAN CENTRAL (panel.tukanec.com)
+  1. Actualice el programa (trae el conector y deja el comando en /var/www/tuacademia/vps/):
+       cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps/vps/vps_2_codigo.sh
+  2. Copie el comando que muestra el Panel Tukan Central para TuAcademia y peguelo en PuTTY del VPS:
+       sudo bash /var/www/tuacademia/vps/conectar_central.sh ID SECRETO URL
+     Debe terminar con:  OK: TuAcademia esta conectado al Panel Tukan Central
+     Se puede repetir las veces que haga falta. No hace falta reiniciar nada.
+  3. (Opcional) Que el superadministrador entre SOLO desde el panel central:
+       sudo bash /var/www/tuacademia/vps/conectar_central.sh --solo-central 1
+     Las academias, profesores y padres siguen entrando igual.
+  Probar otra vez:     sudo bash /var/www/tuacademia/vps/conectar_central.sh --probar
+  Apagar el conector:  sudo bash /var/www/tuacademia/vps/conectar_central.sh --desconectar
+  EMERGENCIA (el panel central no funciona y necesita entrar como superadministrador):
+       sudo bash /var/www/tuacademia/vps/conectar_central.sh --solo-central 0
+     y entre con su correo y clave. Si ese super lo creo el panel central (no tiene clave), pongale una:
+       sudo docker exec -it -u www-data tuacademia-php php /var/www/tuacademia/app/crear_admin.php
+  La configuracion (con el secreto) queda en /var/www/tuacademia/data/tukan_central.env: no va a GitHub
+  y entra en el respaldo cifrado de cada noche.
+  Que ve el panel central: las academias (sin la demo) en prueba, activas, por vencer, vencidas y suspendidas, lo cobrado
+  por suscripciones, y alumnos activos, cursos, clases y asistencias del mes, pensiones cobradas del mes, profesores y usuarios.
+  (vps_2_codigo.sh baja el programa de GitHub: el conector tiene que estar subido a GitHub antes del paso 1.)

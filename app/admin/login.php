@@ -1,6 +1,7 @@
 <?php
 /* Inicio de sesión (con doble verificación opcional: código de 6 números del celular) */
 $error = '';
+$solo_central = get('solo_central') === '1' && tc_solo_central(); // (Tukán Central) el super entra solo desde el panel central
 $hay_usuarios = (int)valor('SELECT COUNT(*) FROM usuarios') > 0;
 $paso2 = isset($_SESSION['2fa_uid']) && (time() - (int)($_SESSION['2fa_hora'] ?? 0)) < 300;
 if (!$paso2) unset($_SESSION['2fa_uid'], $_SESSION['2fa_hora'], $_SESSION['2fa_fallos']);
@@ -11,8 +12,12 @@ if (get('cancelar') === '1') {
 
 function iniciar_sesion(array $u, string $como): never
 {
+    if ($u['rol'] === 'super' && tc_solo_central()) { // (Tukán Central) TUKAN_SOLO_CENTRAL=1
+        unset($_SESSION['2fa_uid'], $_SESSION['2fa_hora'], $_SESSION['2fa_fallos']);
+        ir('admin.php?p=login&solo_central=1');
+    }
     session_regenerate_id(true);
-    unset($_SESSION['2fa_uid'], $_SESSION['2fa_hora'], $_SESSION['2fa_fallos'], $_SESSION['liga_trabajo']);
+    unset($_SESSION['2fa_uid'], $_SESSION['2fa_hora'], $_SESSION['2fa_fallos'], $_SESSION['liga_trabajo'], $_SESSION['tukan_central']);
     $_SESSION['uid'] = (int)$u['id'];
     q('UPDATE usuarios SET ultimo_ingreso = ? WHERE id = ?', [date('Y-m-d H:i:s'), $u['id']]);
     bitacora_evento('sesion', 'Inició sesión' . $como, $u['liga_id'] ? (int)$u['liga_id'] : null, (int)$u['id']);
@@ -29,7 +34,7 @@ if (get('recuperar') !== '' && $hay_usuarios) {
             anotar_intento('recuperar');
             $email_r = mb_strtolower(post('email'), 'UTF-8');
             $ur = filter_var($email_r, FILTER_VALIDATE_EMAIL) ? fila('SELECT * FROM usuarios WHERE lower(email) = ? AND activo = 1', [$email_r]) : null;
-            if ($ur && !es_usuario_demo($ur)) recuperar_enviar_codigo($ur);
+            if ($ur && !es_usuario_demo($ur) && !($ur['rol'] === 'super' && tc_solo_central())) recuperar_enviar_codigo($ur); // (Tukán Central)
             usleep(300000);
             $_SESSION['recup_email'] = $email_r;
             ir('admin.php?p=login&recuperar=2');
@@ -111,7 +116,12 @@ if (es_post() && $hay_usuarios) {
     } else {
         $email = mb_strtolower(post('email'), 'UTF-8');
         $u = fila('SELECT * FROM usuarios WHERE lower(email) = ? AND activo = 1', [$email]);
-        if ($u && password_verify(post('clave'), $u['clave'])) {
+        if ($u && $u['rol'] === 'super' && tc_solo_central()) {
+            // (Tukán Central) TUKAN_SOLO_CENTRAL=1: el superadministrador no entra con clave (ni se revisa la clave)
+            anotar_intento('login');
+            bitacora_evento('sesion', 'Ingreso local del superadministrador BLOQUEADO: solo entra desde el Panel Tukán Central', null, (int)$u['id']);
+            $solo_central = true;
+        } elseif ($u && password_verify(post('clave'), $u['clave'])) {
             if ((int)$u['totp_activo'] === 1 && $u['totp_secreto'] !== '') {
                 $_SESSION['2fa_uid'] = (int)$u['id'];
                 $_SESSION['2fa_hora'] = time();
@@ -120,10 +130,12 @@ if (es_post() && $hay_usuarios) {
             }
             iniciar_sesion($u, '');
         }
-        usleep(800000); // frena intentos masivos
-        anotar_intento('login');
-        bitacora_evento('sesion', 'Intento de ingreso FALLIDO con el correo ' . mb_substr($email, 0, 80), $u && $u['liga_id'] ? (int)$u['liga_id'] : null, $u ? (int)$u['id'] : null);
-        $error = 'Correo o contraseña incorrectos.';
+        if (!$solo_central) {
+            usleep(800000); // frena intentos masivos
+            anotar_intento('login');
+            bitacora_evento('sesion', 'Intento de ingreso FALLIDO con el correo ' . mb_substr($email, 0, 80), $u && $u['liga_id'] ? (int)$u['liga_id'] : null, $u ? (int)$u['id'] : null);
+            $error = 'Correo o contraseña incorrectos.';
+        }
     }
 }
 if (usuario()) {
@@ -149,6 +161,10 @@ cabecera_admin('Ingresar');
   <?php else: ?>
     <h1>Ingresar</h1>
     <?php if ($error): ?><div class="aviso aviso-error"><?= e($error) ?></div><?php endif; ?>
+    <?php if ($solo_central): // (Tukán Central) ?>
+    <div class="aviso aviso-error" id="solo-central">🔒 El <b>superadministrador</b> ya no entra aquí con su clave: entra solo desde el <b>Panel Tukán Central</b>.
+      <a href="<?= e(tc_config()['url']) ?>"><b>Ir al Panel Tukán →</b></a><br><small>Los demás usuarios siguen entrando aquí como siempre.</small></div>
+    <?php endif; ?>
     <form method="post" action="admin.php?p=login">
       <?= csrf_campo() ?>
       <p><label>Correo</label><input type="email" name="email" required autofocus autocomplete="username" value="<?= e(post('email')) ?>"></p>

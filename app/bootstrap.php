@@ -104,6 +104,7 @@ require APP_DIR . '/v33.php'; // (v33) correos automáticos, contratar por trans
 require APP_DIR . '/olimpiadas.php'; // (v37) olimpiadas y juegos multideportivos
 require APP_DIR . '/play.php'; // (v38) apps Android y cobro con Google Play
 require APP_DIR . '/academia.php'; // (TuAcademia) baile, música, natación, niveles, recitales, clases particulares, DeUna, Payphone y mensajes de pensiones
+require APP_DIR . '/acad_telegram.php'; // (TuAcademia, 14-oct) avisos por Telegram a los padres
 require APP_DIR . '/demo_v28.php';
 require APP_DIR . '/menu.php';
 require APP_DIR . '/directorio.php';

@@ -279,6 +279,7 @@ function cobrar_cargos(array $liga, array $ids, string $forma, string $por, stri
     q("UPDATE esc_cargos SET estado = 'pagado', pagado_en = ?, forma_pago = ?, recibo = ?, registrado_por = ?, comprobante_estado = CASE WHEN comprobante <> '' THEN 'aprobado' ELSE comprobante_estado END
        WHERE liga_id = ? AND estado = 'pendiente' AND id IN ($in)", [$fecha ?: date('Y-m-d'), array_key_exists($forma, formas_pago()) ? $forma : 'efectivo', $recibo, $por, $liga['id']]);
     $pdo->commit();
+    acad_tg_pago_recibido($liga, $recibo, $ids); // (TuAcademia, 14-oct) aviso por Telegram a la familia (nunca falla)
     return $recibo;
 }
 
@@ -585,7 +586,7 @@ function doc_libreta_alumno(array $a, array $liga, string $per, string $volver):
   <div class="cab"><?= escudo($liga['logo'], $liga['nombre'], $liga['color'], 'escudo-grande') ?><div><h1><?= e($liga['nombre']) ?></h1><div>LIBRETA DEL ALUMNO · <?= e(mb_strtoupper(nombre_periodo_libreta($per))) ?></div></div></div>
   <div class="perfil" style="margin:10px 0"><?= foto_alumno($a, 'foto-grande') ?><div>
     <h2 style="margin:0"><?= e(nombre_alumno($a)) ?></h2>
-    <div><?= e(sub_de($a['fecha_nac'])) ?> · <?= e($a['grupo'] ?? '') ?><?= $prof ? ' · Profesor: ' . e($prof['nombre']) : '' ?></div>
+    <div><?= e(edad_o_categoria($a, $liga)) ?> · <?= e($a['grupo'] ?? '') ?><?= $prof ? ' · Profesor: ' . e($prof['nombre']) : '' ?></div>
   </div></div>
   <h2>Asistencia</h2>
   <p>Vino a <b><?= (int)$asis['v'] ?></b> de <b><?= (int)$asis['t'] ?></b> entrenamientos<?= (int)$asis['t'] ? ' (<b>' . round(100 * (int)$asis['v'] / (int)$asis['t']) . '%</b>)' : '' ?><?= (int)$asis['j'] ? ' · ' . (int)$asis['j'] . ' falta(s) justificada(s)' : '' ?>.</p>

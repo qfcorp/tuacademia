@@ -1,6 +1,6 @@
 # Bloc de notas — TuAcademia (nombre provisional)
 
-Para Dimitry. Escrito en español sencillo. Última actualización: 13 de octubre de 2026.
+Para Dimitry. Escrito en español sencillo. Última actualización: 14 de octubre de 2026 (ver **§13 Arreglos del 14 de octubre**).
 
 ---
 
@@ -129,6 +129,7 @@ Funcionan igual que en TuVocalía (grupos por categoría Sub-N, asistencia, eval
 cd tuacademia
 bash pruebas/v38/reiniciar.sh                    # base nueva (modo academia) y servidor en http://127.0.0.1:8196
 python3 pruebas/academia/prueba_academia.py      # todo lo nuevo de TuAcademia
+bash pruebas/v38/reiniciar.sh && python3 pruebas/academia/prueba_arreglos_14oct.py   # arreglos del 14-oct y avisos por Telegram (§13)
 python3 pruebas/v38/recorrido.py 1500            # abre todas las páginas de todos los paneles buscando errores de PHP
 
 TA_PRODUCTO=ligas bash pruebas/v38/reiniciar.sh  # modo ligas (como TuVocalía) con Google Play encendido
@@ -173,7 +174,8 @@ Para actualizar: `cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps
 - [ ] **Ícono de la app** de academia (el actual es la pelota de "LIGAS") y capturas para Google Play.
 - [ ] **Probar Payphone con claves reales** de una academia (está hecho y probado con un simulador).
 - [ ] **Manual en PDF** nuevo (`Manual-TuAcademia-Academias.pdf`); el manual en la web ya tiene la sección 31 de academias. Revisar el texto del manual (todavía dice "escuela deportiva" en varias partes) y las traducciones (inglés, francés, portugués e italiano no tienen los textos nuevos).
-- [ ] **Recordatorio automático por WhatsApp** (sin tocar nada): necesita la API oficial de WhatsApp (pagada, unos $0,01 por mensaje). Hoy es "con un toque".
+- [ ] **Recordatorio automático por WhatsApp** (sin tocar nada): necesita la API oficial de WhatsApp (pagada, unos $0,01 por mensaje). Hoy es "con un toque". (Por **Telegram** ya es automático: §13.)
+- [ ] **Bot de Telegram en el servidor**: para que funcionen los avisos a los padres hay que poner el token y el usuario del bot en Superadministrador → Ajustes → Bot de Telegram (§13.4).
 - [ ] **Comisión de Payphone**: hoy la academia recibe el pago completo en su cuenta de Payphone; no se cobra comisión de Tukán por esos pagos.
 - [ ] Revisar los **precios** provisionales ($19 / $29) y qué va en cada plan.
 - [ ] Torneos internos de la academia (fútbol, natación) con tabla o carriles, si los piden.
@@ -288,3 +290,74 @@ El mismo `app/tukan_central.php` sirve para TuVocalía; en modo academia solo cu
   - Cada cuenta guarda **de dónde vino** (`origen`: registro, pedido de demo, súper o panel central) y tiene **notas internas**.
 - **Límite**: 120 pedidos por minuto por conexión y 30 rechazados por minuto (después responde 429 «espere un minuto»).
 - **En el VPS** no hay que hacer nada nuevo: basta con actualizar el programa. `conectar_central.sh --probar` dice «Protocolo v2: si».
+
+## 13. Arreglos del 14 de octubre de 2026
+
+Salieron al hacer el material de ventas. Todo probado en una copia local (nunca en el servidor) y subido a `main`.
+
+### 13.1 Prueba gratis = 7 días en todo lado
+- La página en vivo decía **14 días** porque el ajuste `dias_prueba` guardado en la base del VPS no estaba en 7.
+- En el código, todos los valores por defecto pasaron de 30 a **7** (registro, portada, planes, imagen de venta, vendedores, Panel Tukán Central, Ajustes)
+  y el manual de academias ya no dice "14 días".
+- Al actualizar, la base pasa a la **versión 35** y eso deja `dias_prueba` en **7** una sola vez (después se puede cambiar en Ajustes si se quiere).
+- Además hay un comando para ponerlo en 7 y comprobarlo: `sudo bash tuacademia/vps/vps/poner_prueba_7_dias.sh`
+  (debe terminar con **OK: la pagina de registro dice "gratis por 7 dias"**).
+
+### 13.2 Textos que quedaron de ligas y escuelas
+- La pestaña dice **"Resumen de la academia"** (antes "Resumen de la escuela").
+- **Usuarios**: los perfiles de una academia ya no hablan de equipos, campeonatos, fixture ni árbitros (Secretario, Tesorero, Profesor, Equipo de apoyo);
+  la nota de abajo habla de profesores y padres, no de árbitros y delegados.
+- **Federación**: el botón y la tarjeta ya no salen en TuAcademia (la página tampoco se abre).
+- **Requisitos y documentos**: solo sale si alguna disciplina de la academia pide algo **obligatorio** (por ejemplo certificado médico en artes marciales).
+  En baile, música y natación no sale.
+- **Carnet, ficha, portal de padres e informe**: en ballet, música, natación… se ve la **edad** ("7 años") en vez de "Sub-7". En fútbol y deportes de equipo sigue "Sub-7".
+- **"Mensualidad" → "pensión"** y **"la escuela" → "la academia"** en todas las ayudas y textos del panel y del portal (ej.: "Descuento por segunda disciplina … esa pensión lleva este descuento").
+- La cinta de la demo dice "Cree su academia gratis" (antes "Cree su liga gratis"); "Recomiende y gane" y "Mi plan" ya no hablan de ligas ni campeonatos.
+
+### 13.3 Fotos de la demo
+- `app/demo/fotos_clase/clase1..6.jpg` ahora son **ilustraciones propias** de clase de ballet (2), piano, salsa, guitarra y canto (las de antes eran de fútbol).
+  El dibujo de cada una está en `app/demo/fuentes_ilustraciones/` (se pueden volver a generar).
+- La academia de demostración ahora tiene **clases de las últimas 3 semanas** con asistencia, lo que se trabajó y esas fotos (antes no tenía ninguna clase).
+  La demo se vuelve a crear sola cada madrugada, así que en el servidor se ve al día siguiente de actualizar (o al momento con el botón de reiniciar demos del súper).
+
+### 13.4 Avisos por Telegram a los padres (nuevo)
+Usa el **mismo bot y la misma cola** de Telegram que ya tenía el sistema (no hay que instalar nada).
+- **Portal de padres** → tarjeta **"Avisos por Telegram"** → botón **Conectar Telegram**. Se abre el bot, la familia toca INICIAR y queda conectada.
+  El mismo botón sirve para papá y mamá (hasta 4 Telegram por familia). Se puede **Desconectar** desde el mismo portal.
+- **Avisos automáticos** (la academia elige cuáles en **Dinero → Avisos por Telegram**):
+  - **Pensión por vencer**: N días antes (3 por defecto; se cambia ahí mismo, de 0 a 15).
+  - **Pensión vencida**: al día siguiente de vencer si sigue pendiente (solo lo que venció en los últimos 30 días, para no mandar deudas viejas al activarlo).
+  - **Pago recibido**: al cobrar en efectivo, aprobar un comprobante (DeUna / transferencia) o con tarjeta, con el número de recibo.
+  - **Falta a clase**: cuando el profesor marca "Faltó" en la asistencia (de hoy o de ayer) y en clases particulares "Faltó sin avisar".
+  - **Comunicados**: la academia escribe un mensaje para todas las familias o para un curso.
+- **Nunca se repite** un aviso (cada uno queda anotado en `acad_tg_avisos`). Si la familia ya subió el comprobante, no se le recuerda.
+- **Si Telegram falla nada se rompe**: el cobro, la asistencia o el comunicado se guardan igual; el mensaje queda en la cola y la tarea automática lo reintenta cada minuto (hasta 5 veces).
+- Los avisos de pensiones salen una vez al día (a partir de las 8:00) con la tarea automática que ya existe.
+- Requisitos: el bot configurado en **Superadministrador → Ajustes → Bot de Telegram** (token y usuario del bot) y el módulo "Avisos por Telegram" en el plan
+  (los dos planes de TuAcademia ya lo traen). Si no está el bot, la academia ve un aviso y los padres no ven el botón.
+- **Archivos**: `app/acad_telegram.php` (toda la lógica), `app/admin/avisos_padres.php` (pantalla de la academia), tarjeta en `public/familia.php`,
+  `/start famCODIGO` en `app/avisos.php`, base versión 35 en `app/db.php` (`esc_familias.tg_codigo`, `acad_tg_chats`, `acad_tg_avisos`, `ligas.acad_tg`).
+- **Textos de venta**: la portada y el módulo "Avisos por Telegram a los padres" describen exactamente esto; el plan Básico dice "Avisos a los padres por Telegram".
+
+### 13.5 Pruebas (14-oct-2026)
+| Prueba | Modo | Resultado |
+|---|---|---|
+| `pruebas/academia/prueba_arreglos_14oct.py` (nueva: 7 días, textos, fotos, Telegram simulado: conectar, por vencer, días configurables, vencida, pago, falta, particular, comunicados, activar/desactivar, sin repetir, Telegram caído, desconectar) | academia | **107/107** |
+| `pruebas/academia/prueba_academia.py` | academia | **236/236** |
+| `pruebas/academia/navegador_academia.py` | academia | **19/19** |
+| `pruebas/tukan_central/prueba_central.py` / `prueba_central_v2.py` | academia | **125/125** / **262/262** |
+| `pruebas/tukan_central/prueba_central.py` / `prueba_central_v2.py` | ligas | **121/121** / **258/258** |
+| `pruebas/v38/prueba38.py` / `navegador38.py` | ligas | **100/100** / **13/13** |
+| `pruebas/v38/recorrido.py 1500` | academia | **5.319 páginas, 0 con error de PHP** |
+
+El simulador (`pruebas/v38/simulador_google.php`) ahora también hace de **Telegram** (`'telegram_api'` en el `app/config.php` de pruebas).
+Capturas revisadas en celular (390 px) y computadora (1440 px): sin scroll de lado.
+
+### 13.6 Cómo actualizar el servidor
+Una línea a la vez en PuTTY (VPS):
+```
+cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps/vps/vps_2_codigo.sh
+sudo bash tuacademia/vps/vps/poner_prueba_7_dias.sh
+curl -s https://tuacademia.tukanec.com/registro | grep -o "gratis por [0-9]* d"
+```
+Para los avisos a los padres: Superadministrador → Ajustes → **Bot de Telegram** (token de @BotFather y usuario del bot), si todavía no está.

@@ -32,11 +32,28 @@ function perfiles_para(?array $liga): array
     $todos = perfiles();
     if (!$liga) return $todos;
     $claves = es_escuela($liga) ? ['admin', 'asistente', 'secretario', 'tesorero', 'profesor', 'staff', 'consulta'] : ['admin', 'asistente', 'secretario', 'tesorero', 'disciplina', 'comunicacion', 'consulta', 'evento'];
-    return array_intersect_key($todos, array_flip($claves));
+    $r = array_intersect_key($todos, array_flip($claves));
+    if (es_escuela($liga)) $r = array_replace($r, array_intersect_key(perfiles_escuela(), $r)); // (arreglos 14-oct) sin equipos, campeonatos ni árbitros
+    return $r;
+}
+
+/** (arreglos 14-oct) Nombres y descripciones de los perfiles para una academia o escuela (lo que de verdad ve cada uno). */
+function perfiles_escuela(): array
+{
+    $org = es_academia() ? 'academia' : 'escuela';
+    $cursos = es_academia() ? 'cursos' : 'grupos';
+    return [
+        'admin' => ['Administrador', 'Todo: alumnos, ' . $cursos . ', asistencia, pagos, profesores, parámetros y usuarios de la ' . $org . '.'],
+        'secretario' => ['Secretario', 'Alumnos, ' . $cursos . ', inscripciones, carnets, asistencia, evaluaciones y tienda (ve los pagos, pero no cobra).'],
+        'tesorero' => ['Tesorero', 'Pagos: pensiones, cobros, comprobantes, recibos, gastos, profesores y tienda (ve a los alumnos).'],
+        'profesor' => ['Profesor', 'Toma asistencia, planifica sus clases y registra evaluaciones y niveles de sus ' . $cursos . '.'],
+        'staff' => ['Equipo de apoyo', 'Psicólogo, nutricionista, fisioterapeuta o médico: ve a los alumnos y registra evaluaciones y notas de su área.'],
+    ];
 }
 
 function nombre_perfil(string $p): string
 {
+    if (($l = liga_trabajo()) && es_escuela($l) && isset(perfiles_escuela()[$p])) return perfiles_escuela()[$p][0]; // (arreglos 14-oct)
     return perfiles()[$p][0] ?? 'Administrador';
 }
 
@@ -73,7 +90,7 @@ function area_pagina(string $p): string
         // (v37)
         'olimpiadas' => 'olimpiadas',
         // (TuAcademia)
-        'mensajes' => 'cobros', 'recitales' => 'alumnos', 'particulares' => 'clases',
+        'mensajes' => 'cobros', 'recitales' => 'alumnos', 'particulares' => 'clases', 'avisos_padres' => 'cobros',
     ][$p] ?? 'config';
 }
 

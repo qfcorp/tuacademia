@@ -43,7 +43,7 @@ function cabecera_admin(string $titulo): void
   <?php endif; ?>
 </header>
 <?php if ($u && !es_super() && !empty($liga['es_demo'])): ?>
-<div class="demo-cinta">👀 Está en la <b>demostración</b> de <?= e(marca()) ?> <?= demo_guardar() ? '(puede probar y guardar; todo se borra cada madrugada)' : '(solo mirar, no se guardan cambios)' ?>. <a href="index.php?v=demo">← Entrar a otro panel</a> · <a href="<?= e(url_empezar()) ?>"><?= prueba_automatica() ? 'Cree su liga gratis' : 'Solicite su demo' ?> →</a></div>
+<div class="demo-cinta">👀 Está en la <b>demostración</b> de <?= e(marca()) ?> <?= demo_guardar() ? '(puede probar y guardar; todo se borra cada madrugada)' : '(solo mirar, no se guardan cambios)' ?>. <a href="index.php?v=demo">← Entrar a otro panel</a> · <a href="<?= e(url_empezar()) ?>"><?= prueba_automatica() ? (es_academia() ? 'Cree su academia gratis' : 'Cree su liga gratis') : 'Solicite su demo' ?> →</a></div>
 <?php endif; ?>
 <main class="contenedor">
 <?php if ($liga && $u && get('p') !== 'login' && empty($liga['es_demo']) && liga_suspendida($liga)): // (Tukán Central v2) cuenta suspendida por Tukán ?>

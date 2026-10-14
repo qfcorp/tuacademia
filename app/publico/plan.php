@@ -55,7 +55,7 @@ $contenido = function (bool $pdf) use ($pl, $ops, $incluye, $no, $extras, $tipo,
     <?php endif; ?>
     <?php if (combo_descuento() > 0): ?><h2>🤝 Combo liga + escuela</h2><p>Si también tiene una <?= $tipo === 'escuela' ? 'liga o campeonato' : 'escuela deportiva' ?>, contrate las dos con el mismo usuario y pague <b><?= e((string)(float)combo_descuento()) ?>% menos</b> en cada plan.</p><?php endif; ?>
     <?php if ((int)($pl['dominio_anual'] ?? 0) && nota_dominio() !== ''): ?><p class="suave" style="font-size:.85rem">* <?= e(nota_dominio()) ?></p><?php endif; ?>
-    <p class="suave"><?= $registro ? 'Prueba gratis de ' . (int)ajuste('dias_prueba', 30) . ' días con todos los módulos.' : 'Solicite su demo: le preparamos un acceso de prueba con todos los módulos.' ?> Precios en dólares. <?= e($url) ?></p>
+    <p class="suave"><?= $registro ? 'Prueba gratis de ' . (int)ajuste('dias_prueba', 7) . ' días con todos los módulos.' : 'Solicite su demo: le preparamos un acceso de prueba con todos los módulos.' ?> Precios en dólares. <?= e($url) ?></p>
   </div>
     <?php
 };

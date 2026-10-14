@@ -46,7 +46,7 @@ cabecera_admin('Mi plan');
     <p><?= e($sus['texto']) ?></p>
     <?php if ($sus['estado'] === 'prueba'): ?><p class="aviso aviso-info">Durante la demo tiene <b>todos los módulos</b>, menos los exclusivos de las cuentas pagadas (fixture para imprimir y esquema del campeonato, subida desde Excel y descarga de datos). Al contratar, queda con los del plan que elija.</p><?php endif; ?>
     <ul>
-      <li><?= e(texto_limite_campeonatos($liga)) ?></li>
+      <?php if (!es_academia() || !es_escuela($liga)): // (arreglos 14-oct) las academias no tienen campeonatos ?><li><?= e(texto_limite_campeonatos($liga)) ?></li><?php endif; ?>
       <?php if ($tipo === 'liga'): ?><li>Equipos: <?= (int)$lim['usados_equipos'] ?><?= $lim['equipos'] ? ' de ' . (int)$lim['equipos'] : ' (sin límite)' ?><?= $plan && (int)$plan['max_equipos_torneo'] ? ' · hasta ' . (int)$plan['max_equipos_torneo'] . ' por torneo' : '' ?></li>
       <?php else: ?><li>Alumnos: <?= (int)valor("SELECT COUNT(*) FROM esc_alumnos WHERE liga_id = ? AND estado IN ('activo','pendiente')", [$lid]) ?><?= $plan && (int)$plan['max_alumnos'] ? ' de ' . (int)$plan['max_alumnos'] : ' (sin límite)' ?></li><?php endif; ?>
     </ul>

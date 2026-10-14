@@ -1184,7 +1184,7 @@ function tc2_planes(): array
     return [
         'editable' => false,
         'planes' => $planes,
-        'ajustes' => ['dias_prueba' => (int)ajuste('dias_prueba', 30), 'dias_demo' => (int)ajuste('dias_demo', 7), 'dias_gracia' => (int)ajuste('dias_gracia', 7),
+        'ajustes' => ['dias_prueba' => (int)ajuste('dias_prueba', 7), 'dias_demo' => (int)ajuste('dias_demo', 7), 'dias_gracia' => (int)ajuste('dias_gracia', 7),
                       'dias_gracia_demo' => (int)ajuste('dias_gracia_demo', 0), 'registro_abierto' => prueba_automatica()],
     ];
 }

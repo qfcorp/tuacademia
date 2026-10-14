@@ -523,6 +523,63 @@ function crear_esquema(PDO $pdo): void
         }
         $pdo->exec('PRAGMA user_version = 34');
     }
+    if ($version < 35) {
+        $pdo->beginTransaction();
+        try {
+            esquema_v35($pdo);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+        $pdo->exec('PRAGMA user_version = 35');
+    }
+}
+
+/*
+ * Versión 35 (TuAcademia, arreglos del 14-oct-2026):
+ *  - AVISOS POR TELEGRAM A LOS PADRES: esc_familias.tg_codigo (código para conectar), acad_tg_chats (los Telegram conectados
+ *    de cada familia; pueden ser papá y mamá), ligas.acad_tg (qué avisos manda la academia) y acad_tg_avisos (lo ya avisado,
+ *    para no repetir nunca el mismo aviso).
+ *  - Prueba gratis de 7 días: en TuAcademia se deja el ajuste dias_prueba en 7 una sola vez (antes podía haber quedado en 14 o 30).
+ */
+function esquema_v35(PDO $pdo): void
+{
+    $cols = fn(string $t) => array_column($pdo->query("PRAGMA table_info($t)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+    if (!in_array('tg_codigo', $cols('esc_familias'), true)) $pdo->exec("ALTER TABLE esc_familias ADD COLUMN tg_codigo TEXT NOT NULL DEFAULT ''");
+    if (!in_array('acad_tg', $cols('ligas'), true)) $pdo->exec("ALTER TABLE ligas ADD COLUMN acad_tg TEXT NOT NULL DEFAULT ''");
+    $pdo->exec(<<<SQL
+CREATE TABLE IF NOT EXISTS acad_tg_chats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    familia_id INTEGER NOT NULL REFERENCES esc_familias(id) ON DELETE CASCADE,
+    chat_id TEXT NOT NULL,
+    nombre TEXT NOT NULL DEFAULT '',
+    creado TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (familia_id, chat_id)
+);
+CREATE TABLE IF NOT EXISTS acad_tg_avisos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    liga_id INTEGER NOT NULL REFERENCES ligas(id) ON DELETE CASCADE,
+    familia_id INTEGER,
+    tipo TEXT NOT NULL,
+    clave TEXT NOT NULL UNIQUE,
+    texto TEXT NOT NULL DEFAULT '',
+    chats INTEGER NOT NULL DEFAULT 0,
+    creado TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_acad_tg_avisos_liga ON acad_tg_avisos(liga_id, tipo, creado);
+SQL);
+    // Texto del plan Básico: solo si sigue igual al de fábrica (si el superadministrador lo cambió, no se toca)
+    $pdo->prepare("UPDATE planes SET descripcion = ? WHERE slug = 'academia-basico' AND descripcion = ?")->execute([
+        "Mensajes de cobro por WhatsApp\nAvisos a los padres por Telegram\nDeUna y transferencia con comprobante\nNiveles con certificado QR",
+        "Mensajes de cobro por WhatsApp\nDeUna y transferencia con comprobante\nNiveles con certificado QR"]);
+    $pdo->prepare('INSERT INTO novedades (titulo, texto, para, enlace, version, fecha) SELECT ?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM novedades WHERE titulo = ?)')->execute([
+        '🔔 Avisos por Telegram a los padres', 'Los padres conectan su Telegram desde su portal y les llegan solos los avisos de pensión por vencer y vencida, pago recibido, falta a clase y sus comunicados. Usted elige cuáles en Dinero → Avisos por Telegram.',
+        'escuelas', 'admin.php?p=avisos_padres', 'academia', '2026-10-14', '🔔 Avisos por Telegram a los padres']);
+    if (PRODUCTO === 'academia') {
+        $pdo->exec("INSERT OR REPLACE INTO ajustes (clave, valor) VALUES ('dias_prueba', '7')");
+        $pdo->exec("INSERT OR IGNORE INTO ajustes (clave, valor) VALUES ('dias_demo', '7')");
+    }
 }
 
 /*
@@ -713,7 +770,7 @@ SQL);
                           VALUES (?,?,?,?,0,?,?,0,0,0,0,?,?,?,?,?,?,1)');
     foreach ([
         ['Básico', 'academia-basico', 19, 95, 190, 'carnets,esc_familias,avisos,acad_niveles', 'Alumnos, cursos, asistencia, pensiones y portal de padres',
-            "Mensajes de cobro por WhatsApp\nDeUna y transferencia con comprobante\nNiveles con certificado QR", 0, 10],
+            "Mensajes de cobro por WhatsApp\nAvisos a los padres por Telegram\nDeUna y transferencia con comprobante\nNiveles con certificado QR", 0, 10],
         ['Completo', 'academia-completo', 29, 145, 290, '*', 'Toda la academia: recitales, clases particulares, profesores y más',
             "Recitales y presentaciones con cobro de vestuario\nClases particulares con paquetes\nPago con tarjeta (Payphone)\nSoporte prioritario por WhatsApp", 1, 11],
     ] as [$nom, $slug, $pm, $ps, $pa, $mods, $esl, $desc, $dest, $ord]) {
@@ -2634,7 +2691,7 @@ function ajustes_por_defecto(): array
     return [
         'marca' => 'TuAcademia',
         'empresa' => 'Tukán Software',
-        'dias_prueba' => 30,
+        'dias_prueba' => 7, // (arreglos 14-oct) prueba gratis de 7 días en todo lado
         'dias_gracia' => 7,
         'dias_gracia_demo' => 0, // (v33) la demo se bloquea al vencer
         'url_sitio' => '', // (v33) dirección pública recordada (para correos y avisos desde la tarea automática)

@@ -1,5 +1,5 @@
 <?php
-/* (v11) RESUMEN DE LA ESCUELA */
+/* (v11) RESUMEN DE LA ESCUELA (en TuAcademia: de la academia) */
 $liga = requiere_liga();
 $lid = (int)$liga['id'];
 preparar_escuela($lid);
@@ -21,7 +21,7 @@ $hoy_grupos = array_filter($grupos, fn($g) => in_array((string)$dia, explode(','
 $cumple = filas("SELECT id, nombres, apellidos, fecha_nac FROM esc_alumnos WHERE liga_id = ? AND estado = 'activo' AND fecha_nac <> '' AND strftime('%m-%d', fecha_nac) BETWEEN ? AND ? ORDER BY strftime('%m-%d', fecha_nac)",
     [$lid, date('m-d'), date('m-d', strtotime('+7 days'))]);
 $lesionados = filas("SELECT l.*, a.nombres, a.apellidos FROM esc_lesiones l JOIN esc_alumnos a ON a.id = l.alumno_id WHERE a.liga_id = ? AND l.alta = '' ORDER BY l.fecha DESC LIMIT 10", [$lid]);
-cabecera_admin('Resumen de la escuela');
+cabecera_admin(es_academia() ? 'Resumen de la academia' : 'Resumen de la escuela'); // (arreglos 14-oct)
 ?>
 <h1>🎓 <?= e($liga['nombre']) ?></h1>
 <div class="cifras">

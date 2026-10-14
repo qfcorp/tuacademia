@@ -191,6 +191,7 @@ function traer_equipo_a_federacion(array $f, int $equipo_id, ?int $torneo_id = n
 function html_tarjeta_afiliacion(array $liga): string
 {
     if (es_federacion($liga) || !puede('config')) return '';
+    if (es_academia() && empty($liga['federacion_id'])) return ''; // (arreglos 14-oct) en TuAcademia no hay federaciones (salvo una afiliación que ya existía)
     $f = !empty($liga['federacion_id']) ? fila('SELECT * FROM ligas WHERE id = ?', [(int)$liga['federacion_id']]) : null;
     ob_start(); ?>
     <div class="tarjeta" id="federacion">

@@ -877,7 +877,7 @@ function doc_informe_alumno(array $a, array $liga, string $per, string $volver):
   <div class="cab"><?= escudo($liga['logo'], $liga['nombre'], $liga['color'], 'escudo-grande') ?><div><h1><?= e($liga['nombre']) ?></h1><div>INFORME DE DESARROLLO DEL ALUMNO · <?= e(mb_strtoupper(nombre_periodo_libreta($per))) ?></div></div></div>
   <div class="perfil" style="margin:10px 0"><?= foto_alumno($a, 'foto-grande') ?><div>
     <h2 style="margin:0;font-size:18px"><?= e(nombre_alumno($a)) ?></h2>
-    <div><?= e(sub_de($a['fecha_nac'])) ?><?= $a['fecha_nac'] ? ' · ' . edad($a['fecha_nac']) . ' años' : '' ?> · <?= e($a['grupo'] ?? '') ?><?= $prof ? ' · Profesor: ' . e($prof['nombre']) : '' ?><?= $a['posicion'] ? ' · ' . e($a['posicion']) : '' ?></div>
+    <div><?php $eoc = edad_o_categoria($a, $liga); ?><?= e($eoc) ?><?= $a['fecha_nac'] && str_starts_with($eoc, 'Sub-') ? ' · ' . edad($a['fecha_nac']) . ' años' : '' // (arreglos 14-oct) ?> · <?= e($a['grupo'] ?? '') ?><?= $prof ? ' · Profesor: ' . e($prof['nombre']) : '' ?><?= $a['posicion'] ? ' · ' . e($a['posicion']) : '' ?></div>
     <div>En el trimestre vino a <b><?= (int)$asis['v'] ?></b> de <b><?= (int)$asis['t'] ?></b> entrenamientos<?= (int)$asis['t'] ? ' (<b>' . round(100 * (int)$asis['v'] / (int)$asis['t']) . '%</b>)' : '' ?><?= (int)$asis['j'] ? ' · ' . (int)$asis['j'] . ' falta(s) justificada(s)' : '' ?>.</div>
   </div></div>
   <?= panel_desarrollo($a, $liga, true) ?>

@@ -23,6 +23,7 @@ $beneficios = [
     ['🎭', 'Recitales ordenados', 'Arme el recital por coreografía u obra, con los alumnos de cada una, sus tallas, los ensayos y el cobro de vestuario que llega al portal de cada familia.'],
     ['🎹', 'Clases particulares', 'Paquetes de clases con saldo: al marcar la asistencia, la clase se descuenta sola y el padre ve cuántas le quedan.'],
     ['👨‍👩‍👧', 'Padres informados', 'Cada familia ve en su celular la asistencia, lo que debe, los recibos, el nivel y las evaluaciones de sus hijos.'],
+    ['🔔', 'Avisos solos por Telegram', 'Los padres que conectan su Telegram reciben solos el recordatorio de la pensión, el aviso de pago recibido, si su hijo faltó a clase y sus comunicados.'],
 ];
 $funciones = [
     ['👦', 'Alumnos con ficha completa', 'Foto, fecha de nacimiento, ficha médica, representante, instrumento, talla de vestuario o carril.'],
@@ -34,6 +35,7 @@ $funciones = [
     ['🎭', 'Recitales y presentaciones', 'Coreografías u obras, participantes, tallas, ensayos y cobro de vestuario e inscripción.'],
     ['🎹', 'Paquetes de clases', 'Paquetes de 4, 8 o 12 clases con horario 1 a 1 y saldo que baja solo.'],
     ['📲', 'Mensajes de hoy por WhatsApp', 'Recordatorios de pensiones listos para enviar y marcados como enviados.'],
+    ['🔔', 'Avisos por Telegram', 'Pensión por vencer o vencida, pago recibido, falta a clase y comunicados: llegan solos a los padres que conectan su Telegram. Usted elige cuáles.'],
     ['🧑‍🏫', 'Profesores y rol de pago', 'Clases dictadas, pago mensual, por clase o por alumno, y rol de pago.'],
     ['📏', 'Evaluaciones y desarrollo', 'Tests de flexibilidad, lectura musical o 25 metros libre, con gráficos de avance.'],
     ['🪪', 'Carnet con QR', 'Carnet del alumno con foto y código QR, también en el celular de los padres.'],

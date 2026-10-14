@@ -43,7 +43,8 @@ function tg_api(string $metodo, array $params = [], int $espera = 20): array
 {
     $token = (string)ajuste('tg_token');
     if ($token === '') return ['ok' => false, 'description' => 'Falta el token del bot'];
-    $url = 'https://api.telegram.org/bot' . $token . '/' . $metodo;
+    // (TuAcademia, 14-oct) En pruebas, app/config.php puede apuntar a un Telegram simulado con 'telegram_api'
+    $url = rtrim((string)(CFG['telegram_api'] ?? 'https://api.telegram.org'), '/') . '/bot' . $token . '/' . $metodo;
     $cuerpo = json_encode($params);
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
@@ -106,7 +107,10 @@ function tg_leer_mensajes(): int
         $chat = (string)$msg['chat']['id'];
         $texto = trim((string)$msg['text']);
         $n++;
-        if (preg_match('/^\/start(?:@\w+)?\s+([a-f0-9]{16})$/i', $texto, $m)) {
+        if (preg_match('/^\/start(?:@\w+)?\s+fam([a-f0-9]{16})$/i', $texto, $m)) {
+            // (TuAcademia, 14-oct) Telegram de una familia (portal de padres)
+            try { acad_tg_vincular_familia($chat, $m[1], $msg); } catch (Throwable $ex) { error_log('telegram familia: ' . $ex->getMessage()); }
+        } elseif (preg_match('/^\/start(?:@\w+)?\s+([a-f0-9]{16})$/i', $texto, $m)) {
             $u = fila('SELECT * FROM usuarios WHERE tg_codigo = ? AND activo = 1', [strtolower($m[1])]);
             if ($u) {
                 q("UPDATE usuarios SET tg_chat = ?, tg_codigo = '' WHERE id = ?", [$chat, $u['id']]);

@@ -30,6 +30,7 @@ function modulos_sistema(string $tipo = ''): array
             'pagos_tarjeta' => ['Cobros con tarjeta', 'Los padres pagan las mensualidades con tarjeta de crédito o débito desde su celular; el recibo sale solo y usted ve cada pago en su reporte.'],
             'dominio' => ['Dominio propio', 'La página de su escuela con su propia dirección (www.suescuela.com) en vez de tuacademia.tukanec.com/su-escuela.'],
         ];
+        if (es_academia()) $esc['avisos'] = ['Avisos por Telegram a los padres', 'Los padres conectan su Telegram desde su portal y les llegan solos los avisos de pensión por vencer y vencida, pago recibido, falta a clase y los comunicados de la academia. Usted elige cuáles se envían.']; // (arreglos 14-oct)
         foreach ($esc as $k => [$n, $d]) if (isset($r[$k])) { $r[$k][1] = $n; $r[$k][3] = $d; }
     }
     return $r;

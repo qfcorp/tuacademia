@@ -5,7 +5,7 @@ $abierto = (int)ajuste('registro_abierto', 0) === 1;
 if (!$abierto) {
     ir('index.php?v=solicitar' . (get('tipo') === 'escuela' ? '&tipo=escuela' : '') . (get('plan') !== '' ? '&plan=' . (int)get('plan') : '') . (get('ref') !== '' ? '&ref=' . rawurlencode(get('ref')) : ''));
 }
-$dias = (int)ajuste('dias_prueba', 30);
+$dias = (int)ajuste('dias_prueba', 7);
 $planes = filas('SELECT * FROM planes WHERE activo = 1 ORDER BY orden, precio_mensual');
 $errores = [];
 

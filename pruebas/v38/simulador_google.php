@@ -38,6 +38,21 @@ if ($ruta === '/api/button/V2/Confirm') {
     $E['payphone'][$pid]['confirmado'] = ($E['payphone'][$pid]['confirmado'] ?? 0) + 1;
     $r(200, ['transactionStatus' => $pp['estado'], 'amount' => $pp['monto'], 'clientTransactionId' => (string)($cuerpo['clientTxId'] ?? ''), 'transactionId' => (int)$pid, 'statusCode' => $pp['estado'] === 'Approved' ? 3 : 2]);
 }
+// (TuAcademia, 14-oct) Telegram simulado: POST /botTOKEN/METODO. La prueba pone en $E['telegram']:
+//   'falla' => true (responde 500, como si Telegram estuviera caído), 'updates' => [...] (lo que devuelve getUpdates).
+// Cada sendMessage / sendPhoto queda guardado en $E['telegram']['enviados'].
+if (preg_match('#^/bot([^/]+)/(\w+)$#', $ruta, $m)) {
+    $E += ['telegram' => []];
+    $E['telegram'] += ['enviados' => [], 'updates' => [], 'falla' => false];
+    if (!empty($E['telegram']['falla'])) $r(500, ['ok' => false, 'description' => 'Telegram simulado caído']);
+    if ($m[2] === 'getUpdates') { $u = $E['telegram']['updates']; $E['telegram']['updates'] = []; $r(200, ['ok' => true, 'result' => $u]); }
+    if ($m[2] === 'sendMessage' || $m[2] === 'sendPhoto') {
+        $E['telegram']['enviados'][] = ['chat_id' => (string)($cuerpo['chat_id'] ?? ''), 'text' => (string)($cuerpo['text'] ?? $cuerpo['caption'] ?? ''), 'token' => $m[1]];
+        $r(200, ['ok' => true, 'result' => ['message_id' => count($E['telegram']['enviados'])]]);
+    }
+    if ($m[2] === 'getMe') $r(200, ['ok' => true, 'result' => ['id' => 1, 'is_bot' => true, 'username' => 'TuAcademiaBot']]);
+    $r(404, ['ok' => false, 'description' => 'método no simulado']);
+}
 $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 if (!preg_match('/^Bearer (.+)$/', $auth, $m) || !in_array($m[1], $E['emitidos'], true)) $r(401, ['error' => ['code' => 401, 'message' => 'Request had invalid authentication credentials.']]);
 if (!preg_match('#^/androidpublisher/v3/applications/([^/]+)(/.*)$#', $ruta, $m)) $r(404, ['error' => ['message' => 'ruta desconocida']]);

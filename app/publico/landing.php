@@ -6,7 +6,7 @@ $ligas_vitrina = filas("SELECT l.nombre, l.slug, l.logo, l.color, l.ciudad FROM 
 $n_partidos = (int)valor("SELECT COUNT(*) FROM partidos WHERE estado IN ('jugado','wo')");
 $wa = telefono_wa((string)ajuste('ventas_whatsapp'));
 $registro = prueba_automatica();
-$dias = (int)ajuste('dias_prueba', 30);
+$dias = (int)ajuste('dias_prueba', 7);
 $enlace_wa = $wa ? 'https://wa.me/' . $wa . '?text=' . rawurlencode('Hola, quiero información de ' . marca() . ($ver_escuelas ? ' para mi escuela deportiva' : ' para mi liga')) : '';
 
 $funciones = [

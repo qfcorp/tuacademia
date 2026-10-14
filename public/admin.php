@@ -22,7 +22,8 @@ $validas = ['login', 'salir', 'inicio', 'ligas', 'usuarios', 'clave', 'config', 
     'modulos', 'requisito_doc', 'requisitos', // (v35)
     'olimpiadas', // (v37)
     'google_play', // (v38)
-    'mensajes', 'recitales', 'particulares']; // (TuAcademia)
+    'mensajes', 'recitales', 'particulares', // (TuAcademia)
+    'avisos_padres']; // (TuAcademia, 14-oct) avisos por Telegram a los padres
 if (!in_array($p, $validas, true)) {
     $p = 'inicio';
 }

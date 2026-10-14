@@ -21,7 +21,7 @@ function url_empezar(string $tipo = '', ?int $plan = null): string
 /** Texto del botón principal. */
 function texto_empezar(bool $corto = false): string
 {
-    if (prueba_automatica()) return $corto ? 'Prueba gratis' : '🎁 Prueba gratis ' . (int)ajuste('dias_prueba', 30) . ' días';
+    if (prueba_automatica()) return $corto ? 'Prueba gratis' : '🎁 Prueba gratis ' . (int)ajuste('dias_prueba', 7) . ' días';
     return $corto ? 'Demo gratis' : '🎁 Demo gratis de ' . (int)ajuste('dias_demo', 7) . ' días'; // (v27)
 }
 

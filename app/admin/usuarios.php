@@ -94,11 +94,12 @@ cabecera_admin('Usuarios');
 <?php if ($super): ?>
 <p class="suave">Cada liga tiene sus propios usuarios. Un usuario de liga solo ve los datos de su liga, y según su <b>perfil</b> solo ve ciertos menús. También puede administrar los usuarios de una liga desde <b>Ligas → Editar</b>.</p>
 <?php else: ?>
-<p class="suave">Cree un usuario para cada persona de la directiva. Cada <b>perfil</b> ve solo sus menús:</p>
+<p class="suave">Cree un usuario para cada persona <?= $liga_propia && es_escuela($liga_propia) ? 'que trabaja en la ' . (es_academia() ? 'academia' : 'escuela') : 'de la directiva' ?>. Cada <b>perfil</b> ve solo sus menús:</p>
 <div class="tabla-scroll"><table>
   <?php foreach ($super ? perfiles() : perfiles_para($liga_propia) as [$pn, $pd]): ?><tr><td><b><?= e($pn) ?></b></td><td><?= e($pd) ?></td></tr><?php endforeach; ?>
 </table></div>
-<p class="suave">Los <b>árbitros</b> se crean en Árbitros → Acceso y los <b>delegados</b> en Equipos → el equipo → Acceso del delegado.</p>
+<?php if ($liga_propia && es_escuela($liga_propia)): // (arreglos 14-oct) ?><p class="suave">Los <b>profesores</b> también se pueden crear desde Profesores → el profesor → Acceso del profesor. Los <b>padres</b> no necesitan usuario: entran al portal de padres con su cédula.</p>
+<?php else: ?><p class="suave">Los <b>árbitros</b> se crean en Árbitros → Acceso y los <b>delegados</b> en Equipos → el equipo → Acceso del delegado.</p><?php endif; ?>
 <?php endif; ?>
 <div class="tabla-scroll"><table>
   <tr><th>Nombre</th><th>Correo</th><th>Rol / perfil</th><?php if ($super): ?><th>Liga</th><?php endif; ?><th>Estado</th><th>Seguridad</th><th>Acciones</th></tr>

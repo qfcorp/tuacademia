@@ -26,7 +26,7 @@ doc_inicio('Carnets ' . $liga['nombre'], 'admin.php?p=alumnos');
   <div class="carnet-e">
     <div class="ce-cab"><?php if ($liga['logo']): ?><img src="<?= e($liga['logo']) ?>" alt=""><?php endif; ?><?= e($liga['nombre']) ?></div>
     <div class="ce-foto"><?= foto_alumno($a, 'x') ?></div>
-    <div class="ce-datos"><div class="ce-nombre"><?= e(nombre_alumno($a)) ?></div><div><?= e(sub_de($a['fecha_nac'])) ?> · <?= e(implode(' ', array_map(fn($d) => icono_deporte_escuela($d), deportes_alumno($a, $liga)))) ?> <?= e($a['grupo'] ?? '') ?><?= ($gr_c = grado_actual((int)$a['id'])) ? ' · 🥋 ' . e($gr_c['grado']) : '' ?></div>
+    <div class="ce-datos"><div class="ce-nombre"><?= e(nombre_alumno($a)) ?></div><div><?= e(edad_o_categoria($a, $liga)) // (arreglos 14-oct) ?> · <?= e(implode(' ', array_map(fn($d) => icono_deporte_escuela($d), deportes_alumno($a, $liga)))) ?> <?= e($a['grupo'] ?? '') ?><?= ($gr_c = grado_actual((int)$a['id'])) ? ' · 🥋 ' . e($gr_c['grado']) : '' ?></div>
       <?php if ($a['cedula']): ?><div>C.I. <?= e($a['cedula']) ?></div><?php endif; ?><div>Nac.: <?= e($a['fecha_nac'] ? date('d/m/Y', strtotime($a['fecha_nac'])) : '') ?></div>
       <?php if ($a['tipo_sangre']): ?><div>Sangre: <b><?= e($a['tipo_sangre']) ?></b></div><?php endif; ?>
       <div>Emerg.: <?= e($a['emergencia_telefono'] ?: $a['representante_telefono']) ?></div><div>Año <?= date('Y') ?></div></div>

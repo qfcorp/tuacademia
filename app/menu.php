@@ -62,6 +62,7 @@ function menu_panel(): array
         $di = [];
         if (puede('cobros')) $di[] = $it('admin.php?p=cobros', 'Pagos', '💵', ['cobros', 'esc_recibo'], es_academia() ? 'Pensiones, cobros, comprobantes y recibos' : 'Mensualidades, cobros y recibos', (int)valor("SELECT COUNT(*) FROM esc_cargos WHERE liga_id = ? AND estado = 'pendiente' AND comprobante_estado = 'pendiente'", [$lid]), true);
         if (puede('cobros')) $di[] = $it('admin.php?p=mensajes', 'Mensajes de hoy', '📲', ['mensajes'], 'Recordatorios de pensiones por WhatsApp', acad_mensajes_pendientes($liga), true); // (TuAcademia)
+        if (puede('cobros') && es_academia() && modulo_menu($liga, 'avisos')) $di[] = $it('admin.php?p=avisos_padres', 'Avisos por Telegram', '🔔', ['avisos_padres'], 'Avisos automáticos y comunicados a los padres'); // (TuAcademia, 14-oct)
         if (puede('cobros') && modulo_menu($liga, 'contabilidad')) $di[] = $it('admin.php?p=contabilidad', 'Contabilidad', '📒', ['contabilidad'], 'Ingresos, gastos y facturas del SRI');
         if (puede('profesores') && modulo_menu($liga, 'esc_profesores')) $di[] = $it('admin.php?p=profesores', 'Profesores', '🧑‍🏫', ['profesores'], 'Entrenadores y su rol de pago');
         if (puede('tienda') && modulo_menu($liga, 'esc_tienda')) $di[] = $it('admin.php?p=tienda', 'Tienda', '🛒', ['tienda'], 'Uniformes y productos');
@@ -101,7 +102,7 @@ function menu_panel(): array
     if ($liga) {
         if (!es_super() && puede('usuarios')) $cf[] = $it('admin.php?p=usuarios', 'Usuarios', '👥', ['usuarios'], 'Quién entra al panel y con qué perfil');
         if (puede('bitacora')) $cf[] = $it('admin.php?p=bitacora', 'Bitácora', '📜', ['bitacora'], 'Quién hizo cada cambio');
-        if (puede('equipos') || puede('alumnos') || puede('campeonatos')) $cf[] = $it('admin.php?p=requisitos', 'Requisitos y documentos', '📋', ['requisitos'], 'Quién debe datos o documentos de su deporte'); // (v35)
+        if ((puede('equipos') || puede('alumnos') || puede('campeonatos')) && acad_requisitos_aplican($liga)) $cf[] = $it('admin.php?p=requisitos', 'Requisitos y documentos', '📋', ['requisitos'], 'Quién debe datos o documentos de su deporte'); // (v35)
         if (puede('config')) $cf[] = $it('admin.php?p=datos', 'Protección de datos', '🔒', ['datos'], 'Autorizaciones y solicitudes (LOPDP)', solicitudes_derechos_pendientes((int)$liga['id']));
         if (!es_super() && puede('config')) $cf[] = $it('admin.php?p=mi_plan', 'Mi plan', '⭐', ['mi_plan'], 'Plan, módulos y pagos');
         // (v27) Subida masiva y descarga de todos los datos (cuentas pagadas; la pantalla explica si no está disponible)
@@ -110,7 +111,7 @@ function menu_panel(): array
         // (v28) Federación: la cuenta de la federación la tiene arriba; las ligas, para afiliarse
         if (puede('config') || puede('finanzas') || puede('cobros')) $cf[] = $it('admin.php?p=indicadores', 'Indicadores', '📈', ['indicadores'], 'Cómo va su ' . (es_escuela($liga) ? 'escuela' : 'liga') . ' mes a mes');
         if (!es_super() && puede('config')) $cf[] = $it('admin.php?p=referidos', 'Recomiende y gane', '🤝', ['referidos'], 'Meses gratis por cada cuenta que recomiende');
-        if (puede('config') && !es_federacion($liga)) $cf[] = $it('admin.php?p=federacion', 'Federación', '🏛', ['federacion'], ($fd = federacion_de($liga)) ? 'Afiliada a ' . $fd['nombre'] : 'Afiliarse a una federación');
+        if (puede('config') && !es_federacion($liga) && !es_academia()) $cf[] = $it('admin.php?p=federacion', 'Federación', '🏛', ['federacion'], ($fd = federacion_de($liga)) ? 'Afiliada a ' . $fd['nombre'] : 'Afiliarse a una federación');
         if ($cf) $g['config'] = ['titulo' => 'Configuración', 'ico' => '⚙️', 'items' => $cf];
     }
     if (es_super()) {

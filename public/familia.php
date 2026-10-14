@@ -21,7 +21,7 @@ if (es_post()) {
     $accion = post('accion');
     try {
         if ($accion === 'crear_clave') {
-            $f = fila("SELECT * FROM esc_familias WHERE codigo = ? AND codigo <> ''", [strtoupper(post('c'))]) ?? throw new RuntimeException('El código ya se usó o no es válido. Pida uno nuevo a la escuela.');
+            $f = fila("SELECT * FROM esc_familias WHERE codigo = ? AND codigo <> ''", [strtoupper(post('c'))]) ?? throw new RuntimeException('El código ya se usó o no es válido. Pida uno nuevo a la ' . (es_academia() ? 'academia.' : 'escuela.'));
             if (!preg_match('/^\d{4,6}$/', post('pin')) || post('pin') !== post('pin2')) throw new RuntimeException('La clave debe tener de 4 a 6 números y repetirse igual.');
             q("UPDATE esc_familias SET pin = ?, codigo = '', ultimo = ? WHERE id = ?", [password_hash(post('pin'), PASSWORD_DEFAULT), date('Y-m-d H:i'), $f['id']]);
             session_regenerate_id(true);
@@ -34,16 +34,23 @@ if (es_post()) {
             $ced = strtoupper(preg_replace('/\s+/', '', post('cedula')));
             $ok = null;
             foreach (filas("SELECT * FROM esc_familias WHERE cedula = ? AND pin <> ''", [$ced]) as $f) if (password_verify(post('pin'), $f['pin'])) { $ok = $f; break; }
-            if (!$ok) { anotar_intento('familia'); usleep(800000); throw new RuntimeException('Cédula o clave incorrecta. Si no tiene clave, pida a la escuela su código de acceso.'); }
+            if (!$ok) { anotar_intento('familia'); usleep(800000); throw new RuntimeException('Cédula o clave incorrecta. Si no tiene clave, pida a la ' . (es_academia() ? 'academia' : 'escuela') . ' su código de acceso.'); }
             session_regenerate_id(true);
             $_SESSION['familia'] = (int)$ok['id'];
             q('UPDATE esc_familias SET ultimo = ? WHERE id = ?', [date('Y-m-d H:i'), $ok['id']]);
             ir('familia.php');
         }
         if ($accion === 'salir') { unset($_SESSION['familia']); ir('familia.php'); }
+        // (TuAcademia, 14-oct) Dejar de recibir los avisos por Telegram (se desconectan todos los Telegram de la familia y el enlace cambia)
+        if ($accion === 'tg_desconectar' && $fam) {
+            q('DELETE FROM acad_tg_chats WHERE familia_id = ?', [$fam['id']]);
+            q("UPDATE esc_familias SET tg_codigo = '' WHERE id = ?", [$fam['id']]);
+            flash('Listo: ya no recibirá avisos por Telegram. Puede volver a conectarlo cuando quiera.');
+            ir('familia.php#telegram');
+        }
         if ($accion === 'pagar_tarjeta' && $fam) {
             // (v12) La familia paga con tarjeta las mensualidades marcadas (TuAcademia cobra y transfiere a la escuela)
-            if (!org_cobra_con_tarjeta($liga)) throw new RuntimeException('La escuela no recibe pagos con tarjeta por ahora.');
+            if (!org_cobra_con_tarjeta($liga)) throw new RuntimeException((es_academia() ? 'La academia' : 'La escuela') . ' no recibe pagos con tarjeta por ahora.');
             $ids = array_map('intval', (array)($_POST['cargos'] ?? []));
             $cs = $ids ? filas("SELECT c.*, a.nombres, a.apellidos FROM esc_cargos c JOIN esc_alumnos a ON a.id = c.alumno_id WHERE c.id IN (" . implode(',', $ids) . ") AND a.liga_id = ? AND a.representante_cedula = ? AND c.estado = 'pendiente'", [$fam['liga_id'], $fam['cedula']]) : [];
             if (!$cs) throw new RuntimeException('Marque los valores que va a pagar.');
@@ -73,7 +80,7 @@ if (es_post()) {
             $ruta = subir_comprobante('foto');
             q("UPDATE esc_cargos SET comprobante = ?, comprobante_estado = 'pendiente', comprobante_forma = ?, comprobante_fecha = ? WHERE id = ?", [$ruta, post('forma') === 'deuna' ? 'deuna' : 'transferencia', date('Y-m-d H:i'), $c['id']]);
             aviso_admins($liga, '📤 <b>Comprobante de pago</b> de una familia: ' . e($c['descripcion']) . ' · ' . dinero($c['monto'] - $c['descuento']), 'escomp:' . (int)$c['id']);
-            flash('Comprobante enviado. La escuela lo revisará y le emitirá el recibo.');
+            flash('Comprobante enviado. La ' . (es_academia() ? 'academia' : 'escuela') . ' lo revisará y le emitirá el recibo.');
             ir('familia.php#pagos');
         }
     } catch (RuntimeException $ex) {
@@ -113,7 +120,7 @@ if (!$fam):
         <p><label>Su cédula (representante)</label><input type="text" name="cedula" required inputmode="numeric" maxlength="20"></p>
         <p><label>Clave</label><input type="password" name="pin" required inputmode="numeric" maxlength="6"></p>
         <button class="btn btn-grande">Entrar</button></form>
-      <p class="suave" style="font-size:.85rem">¿Primera vez? Pida a la escuela su código de acceso.</p>
+      <p class="suave" style="font-size:.85rem">¿Primera vez? Pida a la <?= es_academia() ? 'academia' : 'escuela' ?> su código de acceso.</p>
     <?php endif; ?>
   </div>
 <?php pie_publico(); exit; endif;
@@ -137,6 +144,7 @@ $pend_todos = org_cobra_con_tarjeta($liga) ? filas("SELECT c.*, a.nombres FROM e
 <?php endif; ?>
 <?php if (!$hijos): ?><div class="tarjeta">No encontramos alumnos a su nombre. Comuníquese con la <?= es_academia() ? 'academia' : 'escuela' ?>.</div><?php endif; ?>
 <?= html_pagar_familia($liga, $fam) // (TuAcademia) pagar por DeUna, transferencia o tarjeta (Payphone) ?>
+<?= get('h') === '' ? acad_tg_tarjeta_familia($liga, $fam) : '' // (TuAcademia, 14-oct) conectar el Telegram de la familia ?>
 <?php
 // (v17) Vista de un hijo: diario de entrenamientos, desarrollo con gráficos o partidos
 $hv = (int)get('h');
@@ -151,7 +159,7 @@ $pest_hijo = function (array $a, string $v) use ($con_club): string {
 };
 if ($hijo):
     $a = $hijo; $aid = (int)$a['id']; ?>
-  <div class="perfil tarjeta"><?= foto_alumno($a, 'foto-grande') ?><div><h2 style="margin:0"><?= e(nombre_alumno($a)) ?></h2><p style="margin:.3rem 0"><?= e(sub_de($a['fecha_nac'])) ?><?= ($a['grupo'] ?? '') !== '' && !str_starts_with((string)$a['grupo'], sub_de($a['fecha_nac'])) ? ' · ' . e($a['grupo']) : '' ?><?= $a['grupo'] ? ' · ' . e(texto_horario($a)) : '' ?></p><?= html_deportes_alumno($a, $liga) ?></div></div>
+  <div class="perfil tarjeta"><?= foto_alumno($a, 'foto-grande') ?><div><h2 style="margin:0"><?= e(nombre_alumno($a)) ?></h2><p style="margin:.3rem 0"><?= e(edad_o_categoria($a, $liga)) ?><?= ($a['grupo'] ?? '') !== '' && !str_starts_with((string)$a['grupo'], sub_de($a['fecha_nac'])) ? ' · ' . e($a['grupo']) : '' ?><?= $a['grupo'] ? ' · ' . e(texto_horario($a)) : '' ?></p><?= html_deportes_alumno($a, $liga) ?></div></div>
   <?= $pest_hijo($a, $vista) ?>
   <?php if ($vista === 'diario'):
       $pag = max(0, (int)get('pag'));
@@ -188,7 +196,7 @@ if ($hijo):
   <div class="tarjeta">
     <div class="perfil"><?= foto_alumno($a, 'foto-grande') ?><div>
       <h2 style="margin:0"><?= e(nombre_alumno($a)) ?> <?= $a['estado'] === 'pendiente' ? '<span class="estado-chip chip-pend">Inscripción en revisión</span>' : '' ?></h2>
-      <p style="margin:.3rem 0"><?= e(sub_de($a['fecha_nac'])) ?><?= ($a['grupo'] ?? '') !== '' && !str_starts_with((string)$a['grupo'], sub_de($a['fecha_nac'])) ? ' · ' . e($a['grupo']) : '' ?><?= $a['grupo'] ? ' · ' . e(texto_horario($a)) : '' ?></p><?= html_deportes_alumno($a, $liga) ?>
+      <p style="margin:.3rem 0"><?= e(edad_o_categoria($a, $liga)) ?><?= ($a['grupo'] ?? '') !== '' && !str_starts_with((string)$a['grupo'], sub_de($a['fecha_nac'])) ? ' · ' . e($a['grupo']) : '' ?><?= $a['grupo'] ? ' · ' . e(texto_horario($a)) : '' ?></p><?= html_deportes_alumno($a, $liga) ?>
       <p style="margin:.3rem 0">Asistencia (90 días): <b><?= $as['pct'] !== null ? $as['pct'] . '%' : '—' ?></b> · Pagos: <?= chip_pago($ep['estado']) ?><?= $ins ? ' · 🏅 ' . count($ins) . ' insignia(s)' : '' ?></p>
       <?php if ($a['estado'] === 'activo'): ?><div class="acciones">
         <a class="btn btn-chico" href="familia.php?h=<?= (int)$a['id'] ?>&amp;v=diario">📖 Entrenamientos</a>

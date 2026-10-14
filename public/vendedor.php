@@ -35,7 +35,7 @@ $coms = filas('SELECT c.*, l.nombre AS liga FROM comisiones c JOIN ligas l ON l.
 $planes = filas('SELECT * FROM planes WHERE activo = 1 ORDER BY orden, precio_mensual');
 $enlace = enlace_vendedor($v);
 $texto_wa = '¡Hola! Te recomiendo ' . marca() . ': el sistema para manejar tu liga o escuela desde el celular (fixture, tabla, goleadores, vocalía en vivo, carnets con QR y finanzas). '
-    . (prueba_automatica() ? 'Pruébalo gratis ' . (int)ajuste('dias_prueba', 30) . ' días aquí: ' : 'Pide tu demo aquí y te preparan un acceso de prueba: ') . $enlace;
+    . (prueba_automatica() ? 'Pruébalo gratis ' . (int)ajuste('dias_prueba', 7) . ' días aquí: ' : 'Pide tu demo aquí y te preparan un acceso de prueba: ') . $enlace;
 ?><!doctype html>
 <html lang="es">
 <head>

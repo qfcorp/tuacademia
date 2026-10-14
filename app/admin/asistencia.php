@@ -53,6 +53,7 @@ if (es_post() && post('accion') === 'guardar') {
     }
     foreach ($fotos as $ruta) q('INSERT INTO esc_sesion_fotos (sesion_id, archivo, descripcion, publica, subido_por) VALUES (?,?,?,?,?)', [$sid, $ruta, mb_substr(post('foto_desc'), 0, 150), post('fotos_publicas') === '1' ? 1 : 0, $por]);
     $pdo->commit();
+    acad_tg_faltas_sesion($liga, $sid); // (TuAcademia, 14-oct) aviso de falta a la familia por Telegram (nunca falla)
     $vinieron = (int)valor("SELECT COUNT(*) FROM esc_asistencia WHERE sesion_id = ? AND estado IN ('P','T')", [$sid]);
     flash('Asistencia guardada: vinieron ' . $vinieron . ' de ' . $n . '.' . ($fotos ? ' Se subieron ' . count($fotos) . ' foto(s).' : ''));
     ir('admin.php?p=asistencia&g=' . (int)$g['id'] . '&fecha=' . $f);

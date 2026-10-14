@@ -47,6 +47,8 @@ if ((int)date('G') >= 8 && ajuste('tarea_diaria') !== date('Y-m-d')) {
     // (v11) Mensualidades del mes de cada escuela (se crean una sola vez)
     foreach (filas("SELECT * FROM ligas WHERE tipo = 'escuela' AND activa = 1") as $esc) {
         try { generar_mensualidades($esc); } catch (Throwable $ex) { error_log('escuela: ' . $ex->getMessage()); }
+        // (TuAcademia, 14-oct) Avisos por Telegram a los padres: pensión por vencer y vencida (no se repiten)
+        try { acad_tg_avisos_pensiones($esc); } catch (Throwable $ex) { error_log('avisos padres: ' . $ex->getMessage()); }
     }
     q("DELETE FROM acciones_offline WHERE creado < datetime('now', '-60 days')");
     q("DELETE FROM intentos WHERE creado < datetime('now', '-2 days')");

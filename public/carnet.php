@@ -26,7 +26,7 @@ if (preg_match('/^[0-9a-f]{20}$/', get('a'))) {
   <div class="estado-grande" style="background:<?= $color ?>"><?= $ok ? '✓ ALUMNO ACTIVO' : '✗ NO ACTIVO' ?></div>
   <div class="carnet-foto"><?= foto_alumno($al, 'foto-verif') ?></div>
   <h1 style="text-align:center;margin:.4rem 0"><?= e(nombre_alumno($al)) ?></h1>
-  <p style="text-align:center;margin:0"><?= e($esc['nombre']) ?> · <?= e(sub_de($al['fecha_nac'])) ?><?= $al['grupo'] ? ' · ' . e($al['grupo']) : '' ?></p>
+  <p style="text-align:center;margin:0"><?= e($esc['nombre']) ?> · <?= e(edad_o_categoria($al, $esc)) // (arreglos 14-oct) ?><?= $al['grupo'] ? ' · ' . e($al['grupo']) : '' ?></p>
   <div style="text-align:center"><?= html_deportes_alumno($al, $esc) ?></div>
   <?php if ($al['cedula'] !== ''): ?><p style="text-align:center">C.I. <?= e(cedula_oculta($al['cedula'])) ?></p><?php endif; ?>
   <?php if ($al['tipo_sangre'] || $al['alergias']): ?><p style="text-align:center">🩺 <?= e(trim(($al['tipo_sangre'] ? 'Sangre ' . $al['tipo_sangre'] : '') . ($al['alergias'] ? ' · Alergias: ' . $al['alergias'] : ''))) ?></p><?php endif; ?>

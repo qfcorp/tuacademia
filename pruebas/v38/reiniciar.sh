@@ -18,7 +18,7 @@ fi
 MODO="${TA_PRODUCTO:-academia}"
 if [ -f "$REPO/app/config.php" ] && ! grep -q "SOLO PRUEBAS" "$REPO/app/config.php"; then echo "app/config.php no es de pruebas: no lo toco"; exit 1; fi
 if [ "$MODO" = "ligas" ]; then EXTRA="'producto' => 'ligas', 'google_play' => true, 'huella_firma' => '11:22:33:44:55:66:77:88:99:00:AA:BB:CC:DD:EE:FF:11:22:33:44:55:66:77:88:99:00:AA:BB:CC:DD:EE:FF',"; else EXTRA="'producto' => 'academia',"; fi
-printf "<?php\n// SOLO PRUEBAS (lo creó pruebas/v38/reiniciar.sh). En el servidor este archivo NO debe tener play_api.\nreturn [%s 'play_api' => 'http://127.0.0.1:%s', 'payphone_api' => 'http://127.0.0.1:%s'];\n" "$EXTRA" "$SIM" "$SIM" > "$REPO/app/config.php"
+printf "<?php\n// SOLO PRUEBAS (lo creó pruebas/v38/reiniciar.sh). En el servidor este archivo NO debe tener play_api.\nreturn [%s 'play_api' => 'http://127.0.0.1:%s', 'payphone_api' => 'http://127.0.0.1:%s', 'telegram_api' => 'http://127.0.0.1:%s'];\n" "$EXTRA" "$SIM" "$SIM" "$SIM" > "$REPO/app/config.php"
 cd "$REPO"
 pkill -f "php -S 127.0.0.1:$PUERTO" || true; pkill -f "php -S 127.0.0.1:$SIM" || true; sleep 0.5
 rm -rf data && mkdir -p data

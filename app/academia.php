@@ -158,6 +158,36 @@ function acad_tiene_familia(?array $liga, string $fam): bool
     return false;
 }
 
+/**
+ * (arreglos 14-oct) ¿Tiene sentido «Requisitos y documentos»? En TuAcademia solo si alguna disciplina de sus cursos pide algo
+ * OBLIGATORIO (por ejemplo certificado médico en artes marciales o ciclismo). Baile, música y natación no piden nada obligatorio.
+ */
+function acad_requisitos_aplican(?array $liga): bool
+{
+    if (!es_academia() || !$liga || !es_escuela($liga)) return true;
+    foreach (deportes_de_escuela($liga) as $d) {
+        $req = requisitos_modulo(modulo_de_deporte_escuela($d));
+        if (in_array(2, $req['campos'], true) || array_filter($req['docs'], fn($x) => (int)$x['obligatorio'] === 1)) return true;
+    }
+    return false;
+}
+
+/**
+ * (arreglos 14-oct) Edad o categoría que se muestra del alumno (carnet, portal de padres, ficha, libreta).
+ * En TuAcademia, si el alumno no está en un deporte de equipo (ballet, piano, natación…) se muestra su edad real ("7 años");
+ * en fútbol, básquet, vóley… se sigue mostrando la categoría "Sub-7". En TuVocalía (ligas) siempre "Sub-N".
+ */
+function edad_o_categoria(array $a, ?array $liga = null): string
+{
+    if (!es_academia() || empty($a['id'])) return sub_de((string)($a['fecha_nac'] ?? ''));
+    try {
+        foreach (deportes_alumno($a, $liga) as $d) if (tipo_club_deporte($d) === 'equipo' && familia_deporte($d) !== 'otro' && !es_familia_arte(familia_deporte($d))) return sub_de((string)$a['fecha_nac']);
+    } catch (Throwable) {
+    }
+    $e = edad((string)($a['fecha_nac'] ?? ''));
+    return $e === null ? '—' : $e . ($e === 1 ? ' año' : ' años');
+}
+
 /** ¿Se piden posición y pie hábil? Solo si la academia tiene deportes de equipo. */
 function acad_muestra_posicion(?array $liga): bool
 {
@@ -430,6 +460,12 @@ function acad_reemplazos(string $estilo): array
         ['/\bdisciplina adicional\b/u', 'disciplina adicional'],
         ['/\bmultideporte\b/u', 'de varias disciplinas'],
         ['/\bEscuela deportiva\b/u', 'Academia'], ['/\bescuela deportiva\b/u', 'academia'], ['/\bescuelas deportivas\b/u', 'academias'],
+        // (arreglos 14-oct) «pensión» en vez de «mensualidad» y «la academia» en vez de «la escuela» en todos los textos del panel y del portal
+        ['/\bMensualidades\b/u', 'Pensiones'], ['/\bmensualidades\b/u', 'pensiones'], ['/\bMensualidad\b/u', 'Pensión'], ['/\bmensualidad\b/u', 'pensión'],
+        ['/\b(la|La|su|Su|esta|Esta|una|Una|toda|Toda|cada|Cada|misma|nueva|Nueva) escuela\b/u', '$1 academia'],
+        ['/\b(las|Las|sus|Sus|otras|Otras) escuelas\b/u', '$1 academias'],
+        ['/\bResumen de la escuela\b/u', 'Resumen de la academia'],
+        ['/\bsegundo disciplina\b/u', 'segunda disciplina'],
     ];
     if ($estilo === 'arte' || $estilo === 'mixto') {
         $r = array_merge($r, [
@@ -452,7 +488,7 @@ function acad_cambiar_palabras(string $html, string $estilo): string
 {
     $rs = acad_reemplazos($estilo);
     $cambiar = function (string $t) use ($rs): string {
-        if (!preg_match('/[Dd]eporte|[Ee]ntren|[Ee]scuela|Sub-|cancha/u', $t)) return $t;
+        if (!preg_match('/[Dd]eporte|[Ee]ntren|[Ee]scuela|Sub-|cancha|ensualidad/u', $t)) return $t;
         foreach ($rs as [$p, $x]) $t = is_callable($x) ? preg_replace_callback($p, $x, $t) : preg_replace($p, $x, $t);
         return $t;
     };
@@ -1026,6 +1062,7 @@ function marcar_clase_particular(array $liga, int $aid, string $estado, string $
         $pdo->rollBack();
         throw $e;
     }
+    if ($estado === 'falto') acad_tg_falta_particular($liga, $aid, $fecha, $hora, $cid); // (TuAcademia, 14-oct) aviso por Telegram
     $pq2 = $pq ? fila('SELECT * FROM acad_paquetes_alumno WHERE id = ?', [$pq['id']]) : null;
     return ['clase_id' => $cid, 'descontado' => (bool)($descuenta && $pq), 'saldo' => $pq2 ? (int)$pq2['clases_total'] - (int)$pq2['clases_usadas'] : null, 'paquete' => $pq2, 'sin_paquete' => $descuenta && !$pq];
 }
@@ -1150,6 +1187,43 @@ function html_pagar_familia(?array $liga, ?array $fam): string
  * pensiones (algunas vencidas para «Mensajes de hoy») y una familia con dos hijas para el portal de padres.
  * Se borra y se vuelve a crear cada madrugada (tareas.php → crear_demos()). Nombres y datos inventados.
  * ============================================================ */
+/**
+ * (arreglos 14-oct) Clases dictadas de las últimas 3 semanas en la academia de demostración, con asistencia, lo que se trabajó
+ * y fotos de ejemplo de baile y música (ilustraciones propias en app/demo/fotos_clase: ballet, piano, salsa, guitarra, canto).
+ */
+function acad_demo_clases(int $lid, array $cursos, array $gids, array $alumnos, array $prof): void
+{
+    $dir = RAIZ . '/data/fotos/demo';
+    if (!is_dir($dir)) @mkdir($dir, 0775, true);
+    $foto = function (string $n) use ($dir): string {
+        $src = APP_DIR . '/demo/fotos_clase/' . $n;
+        // Se copia también si ya había una foto vieja con ese nombre (las de fútbol de antes)
+        if (is_file($src) && (!is_file($dir . '/' . $n) || md5_file($src) !== md5_file($dir . '/' . $n))) @copy($src, $dir . '/' . $n);
+        return is_file($dir . '/' . $n) ? 'fotos/demo/' . $n : '';
+    };
+    $fotos = ['ballet' => ['clase1.jpg', 'clase6.jpg'], 'salsa' => ['clase3.jpg'], 'piano' => ['clase2.jpg'], 'guitarra' => ['clase4.jpg', 'clase5.jpg']];
+    $temas = ['ballet' => ['Pliés y tendus en la barra', 'Port de bras y equilibrio', 'Saltos pequeños en el centro'], 'salsa' => ['Paso básico y vueltas', 'Figuras en pareja', 'Coreografía del recital'],
+        'piano' => ['Escalas de Do y Sol', 'Lectura a primera vista', 'Para Elisa, primera parte'], 'guitarra' => ['Acordes de Do, Sol y Re', 'Rasgueo de balada', 'Canción completa con voz']];
+    foreach ($gids as $i => $g) {
+        $dias = explode(',', (string)$cursos[$i][5]);
+        $n = 0;
+        for ($d = 21; $d >= 1; $d--) {
+            $f = date('Y-m-d', strtotime("-$d days"));
+            if (!in_array((string)date('N', strtotime($f)), $dias, true)) continue;
+            $tema = $temas[$g['d']][$n % 3] ?? 'Clase';
+            q("INSERT OR IGNORE INTO esc_sesiones (grupo_id, fecha, profesor_id, profesor_asistio, objetivo, contenido, visible_familia, estado, registrado_por) VALUES (?,?,?,1,?,?,1,'dictada','Demo')",
+                [$g['id'], $f, $prof[$cursos[$i][4]], $tema, 'Calentamiento, trabajo del día y repaso para el recital.']);
+            $sid = (int)valor('SELECT id FROM esc_sesiones WHERE grupo_id = ? AND fecha = ?', [$g['id'], $f]);
+            foreach ($alumnos[$g['id']] ?? [] as $k => $aid) q('INSERT OR IGNORE INTO esc_asistencia (sesion_id, alumno_id, estado) VALUES (?,?,?)', [$sid, $aid, ($k + $n) % 9 === 4 ? 'A' : (($k + $n) % 11 === 6 ? 'T' : 'P')]);
+            $lista = $fotos[$g['d']] ?? [];
+            if ($lista && $n % 2 === 0 && ($ruta = $foto($lista[intdiv($n, 2) % count($lista)])) !== '') {
+                q("INSERT INTO esc_sesion_fotos (sesion_id, archivo, descripcion, publica, subido_por) VALUES (?,?,?,1,'Demo')", [$sid, $ruta, 'Así trabajamos hoy']);
+            }
+            $n++;
+        }
+    }
+}
+
 function crear_academia_demo(): int
 {
     return sin_auditoria(function (): int {
@@ -1220,6 +1294,7 @@ function crear_academia_demo(): int
                 }
             }
         }
+        acad_demo_clases($lid, $cursos, $gids, $alumnos, $prof); // (arreglos 14-oct) clases de las últimas semanas con asistencia y fotos de baile y música
         codigo_familia($lid, $fam_ced);
         q("UPDATE esc_familias SET pin = ? WHERE liga_id = ? AND cedula = ?", [password_hash(DEMO_CLAVE, PASSWORD_DEFAULT), $lid, $fam_ced]);
         // Pensiones de este mes y del anterior: casi todas pagadas, algunas vencidas y otras por vencer (para «Mensajes de hoy»)

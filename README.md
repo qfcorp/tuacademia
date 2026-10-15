@@ -37,7 +37,7 @@ python3 pruebas/v38/prueba38.py                  # apps Android y Google Play (s
 python3 pruebas/v38/navegador38.py               # Chromium real con la Digital Goods API simulada
 
 bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py      # conector del Panel Tukán Central v1 (125/125; en modo ligas 121/121)
-bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central_v2.py   # conector v2 (262/262; en modo ligas 258/258)
+bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central_v2.py   # conector v2 con el anexo A (343/343; en modo ligas 338/338)
 ```
 (Para otro puerto: `TA_PUERTO=8221 TA_SIM=8222`. Si se cambia `TA_SIM`, borrar antes `pruebas/v38/cuenta_servicio.json`
 y los `.pem` para que `reiniciar.sh` los cree con el puerto nuevo.)

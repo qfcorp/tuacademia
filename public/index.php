@@ -93,7 +93,11 @@ if ($slug === '') {
     }
     exit;
 }
-$liga = fila('SELECT * FROM ligas WHERE slug = ? AND activa = 1', [$slug]);
+$liga = fila('SELECT * FROM ligas WHERE slug = ?', [$slug]);
+if ($liga && (int)$liga['activa'] !== 1) {
+    cortar_liga_publica($liga, false, true); // (Anexo A) en la papelera → 404; PAUSADA → «temporalmente no disponible» (suspendida: 404 como antes)
+    $liga = null;
+}
 if (!$liga) {
     http_response_code(404);
     cabecera_publica('Liga no encontrada');

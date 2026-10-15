@@ -105,7 +105,7 @@ cabecera_admin('Vendedores');
 <?php endif; ?>
 
 <?php if ($ver):
-    $ligas_v = filas('SELECT l.*, p.nombre AS plan FROM ligas l LEFT JOIN planes p ON p.id = l.plan_id WHERE l.vendedor_id = ? ORDER BY l.nombre', [$ver['id']]);
+    $ligas_v = filas("SELECT l.*, p.nombre AS plan FROM ligas l LEFT JOIN planes p ON p.id = l.plan_id WHERE l.vendedor_id = ? AND COALESCE(l.eliminada, '') = '' ORDER BY l.nombre", [$ver['id']]); // (Anexo A)
     $coms = filas('SELECT c.*, l.nombre AS liga FROM comisiones c JOIN ligas l ON l.id = c.liga_id WHERE c.vendedor_id = ? ORDER BY (c.estado = \'pendiente\') DESC, c.id DESC LIMIT 200', [$ver['id']]);
     $pend = array_filter($coms, fn($c) => $c['estado'] === 'pendiente');
     $acceso = fila("SELECT * FROM usuarios WHERE vendedor_id = ? AND rol = 'vendedor'", [$ver['id']]);

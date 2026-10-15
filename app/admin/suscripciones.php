@@ -39,7 +39,7 @@ if (es_post() && post('accion') === 'anular_pago') {
 
 $ligas = filas('SELECT l.*, p.nombre AS plan, p.precio_mensual, p.precio_anual, (SELECT COUNT(*) FROM equipos e WHERE e.liga_id = l.id) AS n_eq,
                        (SELECT MAX(u.ultimo_ingreso) FROM usuarios u WHERE u.liga_id = l.id) AS ultimo
-                FROM ligas l LEFT JOIN planes p ON p.id = l.plan_id ORDER BY CASE WHEN l.vence = \'\' THEN 1 ELSE 0 END, l.vence');
+                FROM ligas l LEFT JOIN planes p ON p.id = l.plan_id WHERE COALESCE(l.eliminada, \'\') = \'\' ORDER BY CASE WHEN l.vence = \'\' THEN 1 ELSE 0 END, l.vence'); // (Anexo A) sin la papelera
 $por_estado = ['prueba' => 0, 'activa' => 0, 'gracia' => 0, 'vencida' => 0, 'sin_limite' => 0];
 foreach ($ligas as &$l) {
     $l['sus'] = estado_suscripcion($l);
@@ -48,7 +48,7 @@ foreach ($ligas as &$l) {
 unset($l);
 $mes = (float)valor("SELECT COALESCE(SUM(monto),0) FROM pagos_suscripcion WHERE substr(fecha,1,7) = ?", [date('Y-m')]);
 $anio = (float)valor("SELECT COALESCE(SUM(monto),0) FROM pagos_suscripcion WHERE substr(fecha,1,4) = ?", [date('Y')]);
-$pagos = filas('SELECT ps.*, l.nombre AS liga, p.nombre AS plan FROM pagos_suscripcion ps JOIN ligas l ON l.id = ps.liga_id LEFT JOIN planes p ON p.id = ps.plan_id ORDER BY ps.id DESC LIMIT 50');
+$pagos = filas("SELECT ps.*, l.nombre AS liga, p.nombre AS plan FROM pagos_suscripcion ps JOIN ligas l ON l.id = ps.liga_id LEFT JOIN planes p ON p.id = ps.plan_id WHERE COALESCE(l.eliminada, '') = '' ORDER BY ps.id DESC LIMIT 50"); // (Anexo A) sin la papelera
 $planes = filas('SELECT * FROM planes ORDER BY orden');
 $sel = (int)get('liga');
 $chip = ['sin_limite' => 'chip-ok', 'activa' => 'chip-ok', 'prueba' => 'chip-pend', 'gracia' => 'chip-mal', 'vencida' => 'chip-mal'];

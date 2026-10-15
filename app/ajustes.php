@@ -242,7 +242,8 @@ function liga_por_dominio(): ?array
     $host = strtolower(preg_replace('/:\d+$/', '', (string)($_SERVER['HTTP_HOST'] ?? '')));
     $host = preg_replace('/^www\./', '', $host);
     if ($host === '' || !str_contains($host, '.')) return null;
-    $liga = fila("SELECT * FROM ligas WHERE dominio <> '' AND (lower(dominio) = ? OR lower(dominio) = ?) AND activa = 1", [$host, 'www.' . $host]);
+    // (Anexo A) una cuenta PAUSADA se sigue reconociendo por su dominio (muestra «temporalmente no disponible»); la de la papelera no
+    $liga = fila("SELECT * FROM ligas WHERE dominio <> '' AND (lower(dominio) = ? OR lower(dominio) = ?) AND (activa = 1 OR (es_demo = 0 AND suspendida_tipo <> '' AND COALESCE(eliminada, '') = ''))", [$host, 'www.' . $host]);
     return $liga;
 }
 

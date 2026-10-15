@@ -275,11 +275,11 @@ chk(r.status_code == 200 and r.headers.get('Content-Type', '').startswith('appli
 chk(cap.get('ok') is True and cap.get('protocolo') == 2 and cap.get('accion') == 'capacidades' and cap.get('producto') == PRODUCTO and re.search(r'[+-]\d\d:\d\d$', cap.get('generado', '')),
     'capacidades: ok, protocolo 2, accion, producto y generado con zona')
 OPS = ['crear_demo', 'extender_prueba', 'registrar_pago', 'anular_pago', 'aprobar_comprobante', 'rechazar_comprobante', 'suspender', 'reactivar', 'cambiar_plan',
-       'nueva_clave_dueno', 'nota_interna', 'atender_solicitud', 'responder_ticket']
-chk(cap.get('ejecutar') == OPS, 'capacidades: las 13 operaciones de TuVocalía/TuAcademia (sin guardar_plan ni cancelar)')
+       'nueva_clave_dueno', 'nota_interna', 'atender_solicitud', 'responder_ticket', 'pausar', 'borrar_cliente', 'restaurar_cliente']
+chk(cap.get('ejecutar') == OPS, 'capacidades: las 16 operaciones de TuVocalía/TuAcademia, con las del anexo A (sin guardar_plan ni cancelar)')
 chk(set(cap.get('acciones', [])) == {'capacidades', 'estado', 'sso', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar'}, 'capacidades: las 12 acciones')
 chk(cap.get('sso_ir') is True and cap.get('rutas_sso') == ['/admin.php'] and cap.get('unico') is False and cap.get('moneda') == 'USD' and cap.get('zona_horaria') == 'America/Guayaquil', 'capacidades: sso_ir, rutas, moneda y zona')
-chk(cap.get('meses_libres') is True and cap.get('planes_editar') is False and cap.get('limites', {}).get('dias_prueba_max') == 90 and cap.get('revision') == 1, 'capacidades: meses libres, planes no editables, límites')
+chk(cap.get('meses_libres') is True and cap.get('planes_editar') is False and cap.get('limites', {}).get('dias_prueba_max') == 90 and cap.get('revision') == 2, 'capacidades: meses libres, planes no editables, límites (revisión 2: anexo A)')
 chk(len(cap.get('tipos_solicitud', [])) == 11 and 'cambio_plan' not in cap.get('tipos_solicitud', []), 'capacidades: 11 tipos de solicitud')
 campos_demo = [c['campo'] for c in cap.get('formularios', {}).get('crear_demo', [])]
 chk(campos_demo == (['ciudad', 'disciplina'] if ACADEMIA else ['tipo', 'ciudad']), 'capacidades: campos propios de crear_demo ' + str(campos_demo))
@@ -734,6 +734,289 @@ chk('@' not in json.dumps(e, ensure_ascii=False).replace('"producto"', ''), 'est
 cl2 = pedir('clientes', {'por_pagina': 200})
 chk(cl2.get('contadores') == {'total': e['negocios']['total'], 'prueba': e['negocios']['prueba'], 'activo': e['negocios']['activos'], 'por_vencer': e['negocios']['por_vencer'],
                               'vencido': e['negocios']['vencidos'], 'suspendido': e['negocios']['suspendidos']}, 'después de las operaciones: clientes.contadores sigue igual a estado.negocios')
+
+# ---------- 9b) Anexo A: pausar, borrar (papelera), restaurar y borrado definitivo ----------
+FIXA = r'''
+$acad = tc_producto()[2];
+$T = $acad ? 'escuela' : 'liga';
+guardar_ajuste('ventas_whatsapp', '0991234567');
+$ins = function (string $t, array $v): int {
+    foreach (db()->query("PRAGMA table_info($t)")->fetchAll() as $c) {
+        if ((int)$c['notnull'] === 1 && $c['dflt_value'] === null && (int)$c['pk'] === 0 && !array_key_exists($c['name'], $v)) {
+            $ty = strtoupper((string)$c['type']);
+            $v[$c['name']] = str_contains($ty, 'INT') ? 0 : (str_contains($ty, 'REAL') ? 0.0 : 'x');
+        }
+    }
+    q('INSERT INTO ' . $t . ' (' . implode(', ', array_keys($v)) . ') VALUES (' . implode(', ', array_fill(0, count($v), '?')) . ')', array_values($v));
+    return (int)db()->lastInsertId();
+};
+$r = [];
+foreach (['BO' => 'Anexo Borrar', 'OT' => 'Anexo Otra', 'PA' => 'Anexo Pausar', 'PB' => 'Anexo Pausa Borrar', 'CR' => 'Anexo Cron'] as $k => $n) {
+    $lid = $ins('ligas', ['nombre' => $n . ' ' . $k, 'slug' => 'anexo-' . strtolower($k) . '-' . bin2hex(random_bytes(3)), 'vence' => date('Y-m-d', strtotime('+40 days')), 'es_prueba' => 0,
+        'activa' => 1, 'es_demo' => 0, 'tipo' => $T, 'plan_id' => (int)valor('SELECT id FROM planes ORDER BY id LIMIT 1'), 'contacto_nombre' => 'Dueño ' . $k,
+        'contacto_telefono' => '0998877' . sprintf('%03d', count($r)), 'contacto_email' => strtolower($k) . '@anexo.ejemplo.com', 'ciudad' => 'Quito']);
+    $u = $ins('usuarios', ['nombre' => 'Dueño ' . $k, 'email' => strtolower($k) . '@anexo.ejemplo.com', 'clave' => password_hash('clave12345', PASSWORD_DEFAULT), 'rol' => 'liga', 'liga_id' => $lid, 'perfil' => 'admin', 'activo' => 1]);
+    $e1 = $ins('equipos', ['liga_id' => $lid, 'nombre' => 'Equipo A ' . $k]);
+    $e2 = $ins('equipos', ['liga_id' => $lid, 'nombre' => 'Equipo B ' . $k]);
+    $j1 = $ins('jugadores', ['equipo_id' => $e1, 'nombres' => 'Juan', 'apellidos' => 'Uno ' . $k]);
+    $ins('jugadores', ['equipo_id' => $e1, 'nombres' => 'Pedro', 'apellidos' => 'Dos ' . $k]);
+    $ins('jugadores', ['equipo_id' => $e2, 'nombres' => 'Luis', 'apellidos' => 'Tres ' . $k]);
+    $t = $ins('torneos', ['liga_id' => $lid, 'nombre' => 'Torneo ' . $k, 'temporada' => date('Y')]);
+    $pt = $ins('partidos', ['torneo_id' => $t, 'local_id' => $e1, 'visitante_id' => $e2]);
+    $ins('eventos', ['partido_id' => $pt, 'equipo_id' => $e1, 'jugador_id' => $j1, 'tipo' => 'gol', 'minuto' => 10]);
+    $ins('eventos', ['partido_id' => $pt, 'equipo_id' => $e1, 'jugador_id' => $j1, 'tipo' => 'gol', 'minuto' => 20]);
+    $g = $ins('esc_grupos', ['liga_id' => $lid, 'nombre' => 'Grupo ' . $k]);
+    $a1 = $ins('esc_alumnos', ['liga_id' => $lid, 'nombres' => 'Ana', 'apellidos' => 'Alumna ' . $k, 'estado' => 'activo']);
+    $a2 = $ins('esc_alumnos', ['liga_id' => $lid, 'nombres' => 'Eva', 'apellidos' => 'Alumna ' . $k, 'estado' => 'activo']);
+    $se = $ins('esc_sesiones', ['grupo_id' => $g, 'fecha' => date('Y-m-d')]);
+    $ins('esc_asistencia', ['sesion_id' => $se, 'alumno_id' => $a1, 'estado' => 'P']);
+    $ins('esc_asistencia', ['sesion_id' => $se, 'alumno_id' => $a2, 'estado' => 'T']);
+    $ins('esc_cargos', ['liga_id' => $lid, 'alumno_id' => $a1, 'descripcion' => 'Pensión', 'monto' => 30, 'tipo' => 'mensualidad', 'estado' => 'pendiente']);
+    $ins('esc_cargos', ['liga_id' => $lid, 'alumno_id' => $a2, 'descripcion' => 'Pensión', 'monto' => 30, 'tipo' => 'mensualidad', 'estado' => 'pendiente']);
+    $ins('pagos_suscripcion', ['liga_id' => $lid, 'plan_id' => (int)valor('SELECT id FROM planes ORDER BY id LIMIT 1'), 'monto' => 77.0, 'meses' => 1, 'desde' => date('Y-m-d', strtotime('-10 days')),
+        'hasta' => date('Y-m-d', strtotime('+40 days')), 'forma_pago' => 'transferencia', 'fecha' => date('Y-m-d', strtotime('-10 days')), 'registrado_por' => 'Super Prueba']);
+    $tk = $ins('soporte_tickets', ['liga_id' => $lid, 'autor' => 'Dueño ' . $k, 'email' => strtolower($k) . '@anexo.ejemplo.com', 'tipo' => 'problema', 'asunto' => 'Ayuda ' . $k,
+        'prioridad' => 'normal', 'estado' => 'nuevo', 'sin_leer_super' => 1, 'creado' => date('Y-m-d H:i:s'), 'actualizado' => date('Y-m-d H:i:s')]);
+    $ins('soporte_mensajes', ['ticket_id' => $tk, 'de' => 'cliente', 'autor' => 'Dueño ' . $k, 'texto' => 'Hola ' . $k, 'creado' => date('Y-m-d H:i:s')]);
+    $ins('telegram_cola', ['liga_id' => $lid, 'chat_id' => '12345', 'texto' => 'Aviso pendiente ' . $k]);
+    $r[$k] = ['id' => $lid, 'usuario' => $u, 'ticket' => $tk];
+}
+echo json_encode($r);
+'''
+AX = json.loads(php(FIXA))
+AID = {k: str(v['id']) for k, v in AX.items()}
+ESPERADO = {'ligas': 1, 'usuarios': 1, 'equipos': 2, 'jugadores': 3, 'torneos': 1, 'partidos': 1, 'eventos': 2, 'esc_grupos': 1, 'esc_alumnos': 2, 'esc_sesiones': 1,
+            'esc_asistencia': 2, 'esc_cargos': 2, 'pagos_suscripcion': 1, 'soporte_tickets': 1, 'soporte_mensajes': 1, 'telegram_cola': 1}
+ligaA = lambda k: pj('fila("SELECT * FROM ligas WHERE id = ?", [' + AID[k] + '])')
+slugA = {k: ligaA(k)['slug'] for k in AID}
+CUENTA_TABLAS = 'json_encode(array_combine(array_keys(papelera_plan()), array_map(fn($t) => (int)valor("SELECT COUNT(*) FROM \\"$t\\""), array_keys(papelera_plan()))))'
+def filas_de(k):  # filas de una cuenta por tabla (con la misma regla que la papelera)
+    return json.loads(php('echo json_encode(papelera_marcar(' + AID[k] + ', papelera_plan()));') or '{}')
+def totales():
+    return json.loads(php('echo ' + CUENTA_TABLAS + ';') or '{}')
+sin_log = lambda x: {t: n for t, n in x.items() if t not in ('bitacora', 'tukan_central_operaciones')}
+def estado_v1():
+    return j(get1('estado', token1()))
+
+cap = pedir('capacidades')
+chk([o['valor'] for o in cap.get('tipos_pausa', [])] == ['falta_pago', 'pedido_cliente', 'revision', 'abuso', 'otro'] and cap.get('papelera') is True
+    and 'estado' in cap.get('filtros_clientes', []) and cap.get('limites', {}).get('papelera_dias') == 30, 'anexo A: capacidades con tipos de pausa, papelera y filtro estado')
+
+# --- pausar ---
+r, d = ejecutar('pausar', {'motivo': 'No pagó'}, AID['PA'])
+chk(es_error(r, 'invalido', 422) and d.get('campo') == 'datos.tipo', 'pausar sin tipo → 422 datos.tipo')
+r, d = ejecutar('pausar', {'tipo': 'vacaciones', 'motivo': 'No pagó'}, AID['PA'])
+chk(es_error(r, 'invalido', 422) and d.get('campo') == 'datos.tipo', 'pausar con tipo desconocido → 422 datos.tipo')
+r, d = ejecutar('pausar', {'tipo': 'falta_pago', 'motivo': 'x'}, AID['PA'])
+chk(es_error(r, 'invalido', 422) and d.get('campo') == 'datos.motivo', 'pausar con motivo de 1 letra → 422 datos.motivo')
+r, d = ejecutar('pausar', {'tipo': 'falta_pago', 'motivo': 'x' * 301}, AID['PA'])
+chk(es_error(r, 'invalido', 422) and d.get('campo') == 'datos.motivo', 'pausar con motivo de 301 letras → 422 datos.motivo')
+s_pa, _ = entrar('pa@anexo.ejemplo.com')   # sesión abierta antes de pausar
+tok_pa = csrf(s_pa.get(B + 'admin.php?p=clave').text)
+oid_p = op_id()
+r, d = ejecutar('pausar', {'tipo': 'falta_pago', 'motivo': 'Falta el pago de octubre'}, AID['PA'], oid_p)
+L = ligaA('PA')
+chk(r.status_code == 200 and L['activa'] == 0 and L['suspendida_tipo'] == 'falta_pago' and L['suspendida_motivo'] == 'Falta el pago de octubre' and L['suspendida_en'] != '',
+    'pausar: suspensión real con tipo, motivo y fecha')
+chk(d.get('cliente', {}).get('estado') == 'suspendido' and d['cliente'].get('estado_detalle') == 'pausada' and (d['cliente'].get('pausa') or {}).get('tipo') == 'falta_pago'
+    and d.get('resultado', {}).get('tipo') == 'falta_pago', 'pausar: el cliente devuelto dice pausada con su tipo')
+r2, d2 = ejecutar('pausar', {'tipo': 'falta_pago', 'motivo': 'Falta el pago de octubre'}, AID['PA'], oid_p)
+chk(d2.get('repetida') is True, 'pausar repetido con el mismo operacion_id → repetida')
+r2, d2 = ejecutar('pausar', {'tipo': 'falta_pago', 'motivo': 'Falta el pago de octubre'}, AID['PA'])
+chk(r2.status_code == 200 and d2.get('sin_cambios') is True, 'pausar otra vez igual → sin_cambios')
+chk(bitacora_central('Pausó la cuenta (Falta de pago)') >= 1, 'pausar: auditado en la bitácora con el correo del Central')
+p = s_pa.get(B + 'admin.php')
+chk(p.status_code == 403 and 'Tu cuenta está pausada' in p.text and 'Falta el pago de octubre' in p.text and 'wa.me/593991234567' in p.text,
+    'pausar: el usuario (con la sesión abierta) ve «Tu cuenta está pausada» con el motivo y el WhatsApp de Tukán')
+s2, p = entrar('pa@anexo.ejemplo.com')
+chk('Tu cuenta está pausada' in p.text and 'id="cuenta-pausada"' in p.text, 'pausar: al entrar con su clave ve la pantalla de pausa')
+p = s_pa.post(B + 'admin.php?p=equipos', data={'csrf': tok_pa, 'accion': 'guardar', 'nombre': 'No debe'}, headers={'CF-Connecting-IP': ip()})
+chk(tok_pa != '' and p.status_code == 403 and 'Tu cuenta está pausada' in p.text and int(php('echo (int)valor("SELECT COUNT(*) FROM equipos WHERE nombre = \'No debe\'");')) == 0, 'pausar: no puede guardar nada')
+p = requests.get(B + 'index.php', params={'l': slugA['PA']})
+chk(p.status_code == 503 and 'temporalmente no disponible' in p.text, 'pausar: su página pública dice «temporalmente no disponible»')
+r, d = ejecutar('pausar', {'tipo': 'abuso', 'motivo': 'Fraude con tarjetas robadas'}, AID['PA'])
+chk(r.status_code == 200 and d.get('sin_cambios') is False and ligaA('PA')['suspendida_tipo'] == 'abuso', 'pausar: se puede cambiar el tipo y el motivo')
+p = s2.get(B + 'admin.php')
+chk('Tu cuenta está pausada' in p.text and 'Fraude' not in p.text and 'Estamos revisando su cuenta' in p.text, 'pausa por abuso: el cliente ve un texto general, no el motivo')
+fs = pedir('cliente', {'id': AID['PA']}).get('cliente', {})
+acc = {a['accion']: a for a in fs.get('acciones_posibles', [])}
+chk('reactivar' in acc and 'pausar' in acc and 'borrar_cliente' in acc and 'suspender' not in acc and fs.get('pausa', {}).get('motivo_cliente', '').startswith('Estamos revisando'),
+    'cliente pausado: acciones reactivar / cambiar la pausa / borrar')
+chk(any('Pausó la cuenta' in x.get('texto', '') for x in fs.get('registro', [])), 'cliente pausado: el historial de la ficha dice quién pausó y cuándo')
+fo = pedir('cliente', {'id': AID['OT']}).get('cliente', {})
+acc_o = {a['accion']: a for a in fo.get('acciones_posibles', [])}
+chk('pausar' in acc_o and [c['campo'] for c in acc_o['pausar']['campos']] == ['tipo', 'motivo'] and 'borrar_cliente' in acc_o
+    and [c['campo'] for c in acc_o['borrar_cliente']['campos']] == ['confirmar', 'motivo'] and acc_o['borrar_cliente']['estilo'] == 'peligro' and 'restaurar_cliente' not in acc_o,
+    'cliente normal: acciones pausar (tipo, motivo) y borrar (confirmar, motivo)')
+r, d = ejecutar('reactivar', {}, AID['PA'])
+L = ligaA('PA')
+chk(r.status_code == 200 and L['activa'] == 1 and L['suspendida_tipo'] == '' and L['suspendida_motivo'] == '' and d.get('cliente', {}).get('pausa') is None, 'reactivar: quita la pausa')
+chk(s2.get(B + 'admin.php').status_code == 200 and requests.get(B + 'index.php', params={'l': slugA['PA']}).status_code == 200, 'reactivar: vuelve a entrar y su página pública vuelve')
+
+# --- borrar_cliente (papelera) ---
+e0 = estado_v1()
+cl0 = pedir('clientes', {'por_pagina': 200})
+fin0 = pedir('finanzas', {})
+chk(all(filas_de('BO').get(t) == n for t, n in ESPERADO.items()), 'papelera: el plan sacado del esquema encuentra todas las filas de la cuenta ' + str({t: filas_de('BO').get(t) for t in ESPERADO}))
+s_bo, _ = entrar('bo@anexo.ejemplo.com')
+chk(s_bo.get(B + 'admin.php').status_code == 200, 'antes de borrar: el dueño entra')
+antes_bo = filas_de('BO')   # después de entrar (al abrir el panel, el programa puede crear cosas, p. ej. las pensiones del mes)
+r, d = ejecutar('borrar_cliente', {'confirmar': 'Anexo Borrar', 'motivo': 'Pidió la baja'}, AID['BO'])
+chk(es_error(r, 'invalido', 422) and d.get('campo') == 'datos.confirmar', 'borrar_cliente con el nombre mal escrito → 422 datos.confirmar')
+r, d = ejecutar('borrar_cliente', {'motivo': 'Pidió la baja'}, AID['BO'])
+chk(es_error(r, 'invalido', 422) and d.get('campo') == 'datos.confirmar', 'borrar_cliente sin confirmar → 422 datos.confirmar')
+r, d = ejecutar('borrar_cliente', {'confirmar': 'Anexo Borrar BO'}, AID['BO'])
+chk(es_error(r, 'invalido', 422) and d.get('campo') == 'datos.motivo', 'borrar_cliente sin motivo → 422 datos.motivo')
+chk(ligaA('BO')['eliminada'] == '', 'borrar_cliente con errores: no borra nada')
+oid_b = op_id()
+r, d = ejecutar('borrar_cliente', {'confirmar': 'Anexo Borrar BO', 'motivo': 'Pidió la baja por correo'}, AID['BO'], oid_b)
+L = ligaA('BO')
+copia = d.get('copia') or ''
+chk(r.status_code == 200 and d.get('ok') is True and copia.startswith('data/borrados/' + AID['BO'] + '_') and copia.endswith('.json.gz')
+    and d.get('borrar_definitivo_el') == (HOY + timedelta(days=30)).isoformat() and d.get('resultado', {}).get('copia') == copia,
+    'borrar_cliente: responde ok, copia (fuera de public/) y borrar_definitivo_el (30 días)')
+chk(L['eliminada'] != '' and L['activa'] == 0 and L['eliminada_activa'] == 1 and L['eliminada_motivo'] == 'Pidió la baja por correo' and L['eliminada_hasta'] == d.get('borrar_definitivo_el')
+    and L['eliminada_copia'] == copia and 'Dimitry' in L['eliminada_por'], 'borrar_cliente: borrado lógico con motivo, quién y fecha')
+chk(d.get('cliente', {}).get('papelera', {}).get('motivo') == 'Pidió la baja por correo' and d['cliente'].get('estado_detalle') == 'papelera', 'borrar_cliente: el cliente devuelto está en la papelera')
+ruta = os.path.join(REPO, copia)
+import gzip
+try:
+    cop = json.loads(gzip.open(ruta).read().decode())
+except Exception as ex:
+    cop = {}
+    print('   copia ilegible:', ex)
+chk(cop.get('formato') == 'tukan-papelera-1' and cop.get('cuenta', {}).get('id') == int(AID['BO']) and cop.get('motivo') == 'Pidió la baja por correo', 'copia: gzip JSON legible con la cuenta y el motivo')
+cnt = {t: len(x.get('filas', [])) for t, x in cop.get('tablas', {}).items()}
+chk(sin_log(cnt) == sin_log(antes_bo) and cop.get('conteo') == cnt and cnt.get('bitacora', 0) >= antes_bo.get('bitacora', 0), 'copia: tiene TODAS las filas de la cuenta, tabla por tabla (' + str(sum(cnt.values())) + ' filas)')
+if sin_log(cnt) != sin_log(antes_bo):
+    print('   copia:', {t: (cnt.get(t), antes_bo.get(t)) for t in set(cnt) | set(antes_bo) if cnt.get(t) != antes_bo.get(t)})
+chk(all(cnt.get(t) == n for t, n in ESPERADO.items()), 'copia: incluye las tablas hijas (jugadores, eventos, asistencia, mensajes de soporte…)')
+jug = cop.get('tablas', {}).get('jugadores', {})
+chk(jug and sorted(r_[jug['columnas'].index('apellidos')] for r_ in jug['filas']) == ['Dos BO', 'Tres BO', 'Uno BO'], 'copia: las filas tienen sus datos (jugadores de la cuenta, ninguno de otra)')
+dump = json.dumps(cop.get('tablas', {}), ensure_ascii=False)
+chk(not any(x in dump for x in ('Anexo Otra OT', 'ot@anexo.ejemplo.com', 'Uno OT', 'Alumna OT', 'Ayuda OT', 'Equipo A OT')), 'copia: no trae nada de otra cuenta')
+chk(os.path.isfile(ruta) and not ruta.startswith(os.path.join(REPO, 'public')) and requests.get(B + copia).status_code == 404 and requests.get(B + '../' + copia).status_code in (400, 404),
+    'copia: guardada fuera de la carpeta pública (no se puede bajar por la web)')
+r2, d2 = ejecutar('borrar_cliente', {'confirmar': 'Anexo Borrar BO', 'motivo': 'Pidió la baja por correo'}, AID['BO'], oid_b)
+chk(d2.get('repetida') is True and d2.get('copia') == copia, 'borrar_cliente repetido con el mismo operacion_id → repetida, misma copia')
+r2, d2 = ejecutar('borrar_cliente', {'confirmar': AID['BO'], 'motivo': 'Otra vez'}, AID['BO'])
+chk(r2.status_code == 200 and d2.get('sin_cambios') is True and d2.get('copia') == copia and len([f for f in os.listdir(os.path.join(REPO, 'data', 'borrados')) if f.startswith(AID['BO'] + '_')]) == 1,
+    'borrar_cliente de uno que ya está en la papelera (confirmando con el id) → sin_cambios, sin otra copia')
+chk(bitacora_central('Borró la cuenta (a la papelera') >= 1, 'borrar_cliente: auditado en la bitácora')
+# desaparece de todo
+e1 = estado_v1()
+cl1 = pedir('clientes', {'por_pagina': 200})
+chk(e1['negocios']['total'] == e0['negocios']['total'] - 1 and cl1.get('total') == cl0.get('total') - 1 and AID['BO'] not in [c['id'] for c in cl1.get('clientes', [])],
+    'papelera: ya no sale en estado ni en clientes')
+chk(cl1.get('contadores') == {'total': e1['negocios']['total'], 'prueba': e1['negocios']['prueba'], 'activo': e1['negocios']['activos'], 'por_vencer': e1['negocios']['por_vencer'],
+                              'vencido': e1['negocios']['vencidos'], 'suspendido': e1['negocios']['suspendidos']} and cl1.get('papelera_total') == 1, 'papelera: contadores = estado.negocios y papelera_total = 1')
+pp = pedir('clientes', {'filtros': {'estado': 'papelera'}})
+pp2 = pedir('clientes', {'estado': 'papelera'})
+c_bo = (pp.get('clientes') or [{}])[0]
+chk(pp.get('total') == 1 and c_bo.get('id') == AID['BO'] and c_bo.get('papelera', {}).get('hasta') == d.get('borrar_definitivo_el') and c_bo['papelera'].get('motivo') == 'Pidió la baja por correo'
+    and c_bo['papelera'].get('desde', '').startswith(HOY.isoformat()) and [a['accion'] for a in c_bo.get('acciones_posibles', [])] == ['restaurar_cliente'] and pp2.get('total') == 1,
+    'clientes con filtros.estado = papelera: lo lista con papelera {desde, hasta, motivo} y Restaurar')
+chk(pp.get('contadores') == cl1.get('contadores'), 'clientes papelera: los contadores siguen siendo los de los clientes normales')
+fb = pedir('cliente', {'id': AID['BO']}).get('cliente', {})
+chk(fb.get('papelera', {}).get('copia') == copia and [a['accion'] for a in fb.get('acciones_posibles', [])] == ['restaurar_cliente'], 'cliente (ficha) de la papelera: solo Restaurar')
+chk(es_error(ejecutar('registrar_pago', {'plan': str(fx['pl']), 'meses': 1}, AID['BO'])[0], 'no_encontrado', 404) and es_error(ejecutar('pausar', {'tipo': 'otro', 'motivo': 'abc'}, AID['BO'])[0], 'no_encontrado', 404),
+    'papelera: las demás operaciones dan 404')
+sols = pedir('solicitudes', {'estado': 'todas'}).get('solicitudes', [])
+chk(not any(s_.get('cliente_id') == AID['BO'] for s_ in sols) and any(s_.get('cliente_id') == AID['OT'] for s_ in sols), 'papelera: sus tickets y avisos ya no salen en solicitudes (los de otra cuenta sí)')
+fin1 = pedir('finanzas', {})
+mrr_bo = next((c['mensual_estimado'] for c in cl0.get('clientes', []) if c['id'] == AID['BO']), 0)
+chk(fin1.get('totales', {}).get('ingresos') == fin0.get('totales', {}).get('ingresos') and abs(fin1.get('mrr', 0) - (fin0.get('mrr', 0) - mrr_bo)) < 0.01,
+    'finanzas: lo que pagó antes de borrarla sigue en los meses pasados y sale del MRR')
+r = requests.get(B + 'index.php', params={'l': slugA['BO']})
+chk(r.status_code == 404, 'papelera: su página pública da 404')
+chk(s_bo.get(B + 'admin.php', allow_redirects=False).headers.get('Location', '') == 'admin.php?p=login', 'papelera: la sesión que tenía abierta ya no sirve')
+s3, p = entrar('bo@anexo.ejemplo.com')
+chk('Correo o contraseña incorrectos' in p.text and s3.get(B + 'admin.php', allow_redirects=False).status_code in (302, 303), 'papelera: el dueño ya no puede entrar')
+chk(php('tg_encolar(' + AID['BO'] + ', "999", "no debe salir"); echo (int)valor("SELECT COUNT(*) FROM telegram_cola WHERE texto = \'no debe salir\'");') == '0'
+    and php('echo (int)valor("SELECT COUNT(*) FROM telegram_cola WHERE liga_id = ? AND enviado = \'\' AND intentos < 5", [' + AID['BO'] + ']);') == '0',
+    'papelera: no se le encolan avisos de Telegram y los pendientes ya no salen')
+chk(php('echo enviar_correo("bo@anexo.ejemplo.com", "x", "x", ["x"], null, ' + AID['BO'] + ') ? "si" : "no";') == 'no', 'papelera: no se le mandan correos')
+s_su, _ = entrar('super@prueba.com')
+p = s_su.get(B + 'admin.php?p=ligas')
+pz = s_su.get(B + 'admin.php?p=ligas&papelera=1')
+chk('Anexo Borrar BO' not in p.text and 'Papelera (1)' in p.text and 'Anexo Borrar BO' in pz.text and 'Pidió la baja por correo' in pz.text and 'Restaurar' in pz.text,
+    'súper panel: no sale en Ligas; filtro Papelera con Restaurar')
+for pag in ('suscripciones', 'usuarios', 'embudo', 'negocio'):
+    tx = s_su.get(B + 'admin.php?p=' + pag).text
+    chk('Anexo Borrar BO' not in tx and 'bo@anexo.ejemplo.com' not in tx, 'súper panel: tampoco sale en ' + pag)
+    if 'Anexo Borrar BO' in tx or 'bo@anexo.ejemplo.com' in tx:
+        i = max(tx.find('Anexo Borrar BO'), tx.find('bo@anexo.ejemplo.com'))
+        print('   →', re.sub(r'\s+', ' ', tx[max(0, i - 300):i + 100]))
+chk(s_su.get(B + 'admin.php?p=ligas&entrar=' + AID['BO'], allow_redirects=False).headers.get('Location', '').endswith('papelera=1'), 'súper panel: no se puede entrar a una cuenta de la papelera')
+# restaurar
+r, d = ejecutar('restaurar_cliente', {}, AID['OT'])
+chk(r.status_code == 200 and d.get('sin_cambios') is True, 'restaurar_cliente de uno que no está en la papelera → sin_cambios')
+oid_r = op_id()
+r, d = ejecutar('restaurar_cliente', {}, AID['BO'], oid_r)
+L = ligaA('BO')
+chk(r.status_code == 200 and L['eliminada'] == '' and L['activa'] == 1 and d.get('cliente', {}).get('id') == AID['BO'] and d['cliente'].get('papelera') is None, 'restaurar_cliente: vuelve tal cual (activa)')
+chk(sin_log(filas_de('BO')) == sin_log(antes_bo), 'restaurar_cliente: no se perdió ninguna fila')
+chk(ejecutar('restaurar_cliente', {}, AID['BO'], oid_r)[1].get('repetida') is True and ejecutar('restaurar_cliente', {}, AID['BO'])[1].get('sin_cambios') is True, 'restaurar_cliente: idempotente')
+chk(requests.get(B + 'index.php', params={'l': slugA['BO']}).status_code == 200 and entrar('bo@anexo.ejemplo.com')[0].get(B + 'admin.php').status_code == 200
+    and estado_v1()['negocios']['total'] == e0['negocios']['total'], 'restaurar_cliente: vuelve su página, su acceso y sus cifras')
+chk(bitacora_central('Restauró la cuenta desde la papelera') >= 1, 'restaurar_cliente: auditado')
+# una pausada que se borra y se restaura vuelve PAUSADA
+ejecutar('pausar', {'tipo': 'pedido_cliente', 'motivo': 'Vacaciones de fin de año'}, AID['PB'])
+r, d = ejecutar('borrar_cliente', {'confirmar': 'Anexo Pausa Borrar PB', 'motivo': 'Prueba'}, AID['PB'])
+chk(r.status_code == 200 and requests.get(B + 'index.php', params={'l': slugA['PB']}).status_code == 404, 'pausada y borrada: su página da 404 (no «no disponible»)')
+r, d = ejecutar('restaurar_cliente', {}, AID['PB'])
+L = ligaA('PB')
+chk(L['activa'] == 0 and L['suspendida_tipo'] == 'pedido_cliente' and L['suspendida_motivo'] == 'Vacaciones de fin de año' and d.get('cliente', {}).get('estado_detalle') == 'pausada',
+    'pausada, borrada y restaurada: sigue pausada con su motivo')
+# súper panel: restaurar desde la papelera
+ejecutar('borrar_cliente', {'confirmar': 'Anexo Pausa Borrar PB', 'motivo': 'Prueba 2'}, AID['PB'])
+pz = s_su.get(B + 'admin.php?p=ligas&papelera=1')
+p = s_su.post(B + 'admin.php?p=ligas', data={'csrf': csrf(pz.text), 'accion': 'restaurar', 'id': AID['PB']}, headers={'CF-Connecting-IP': ip()})
+chk(ligaA('PB')['eliminada'] == '' and 'salió de la papelera' in p.text, 'súper panel: Restaurar desde la papelera')
+
+# --- borrado definitivo (fecha simulada) ---
+r, d = ejecutar('borrar_cliente', {'confirmar': 'Anexo Borrar BO', 'motivo': 'Ahora sí'}, AID['BO'])
+copia2 = d.get('copia') or ''
+exp2 = json.loads(gzip.open(os.path.join(REPO, copia2)).read().decode()) if copia2 else {}
+otra_antes = filas_de('OT')
+tot1 = totales()
+pr = json.loads(php('echo json_encode(papelera_purgar(date("Y-m-d", strtotime("+29 days"))));') or '{}')
+chk(pr.get('cuentas') == [] and ligaA('BO') is not None, 'borrado definitivo: a los 29 días todavía no')
+pr = json.loads(php('echo json_encode(papelera_purgar(date("Y-m-d", strtotime("+30 days"))));') or '{}')
+tot2 = totales()
+chk(AID['BO'] in [str(k) for k in (pr.get('cuentas') or {})] and ligaA('BO') is None, 'borrado definitivo: a los 30 días (fecha simulada) la tarea la borra de verdad')
+dif = {t: tot1.get(t, 0) - tot2.get(t, 0) for t in tot1 if tot1.get(t, 0) != tot2.get(t, 0)}
+exp_c = {t: len(x['filas']) for t, x in exp2.get('tablas', {}).items()}
+chk(sin_log(dif) == sin_log(exp_c), 'borrado definitivo: se borraron exactamente las filas de la copia (ni una más ni una menos) ' + str(sin_log(dif)))
+chk(filas_de('OT') == otra_antes, 'borrado definitivo: la otra cuenta quedó intacta')
+huerf = php('echo json_encode(db()->query("PRAGMA foreign_key_check")->fetchAll());')
+chk(huerf in ('[]', ''), 'borrado definitivo: no quedan filas huérfanas (PRAGMA foreign_key_check)')
+quedan = php('$n = 0; foreach (db()->query("SELECT name FROM sqlite_master WHERE type = \'table\'")->fetchAll(PDO::FETCH_COLUMN) as $t) { $c = array_column(db()->query("PRAGMA table_info(\\"$t\\")")->fetchAll(), "name"); if (in_array("liga_id", $c) && $t !== "bitacora") $n += (int)valor("SELECT COUNT(*) FROM \\"$t\\" WHERE liga_id = ?", [' + AID['BO'] + ']); } echo $n;')
+chk(quedan == '0', 'borrado definitivo: ninguna tabla con liga_id tiene filas de esa cuenta (salvo la bitácora, que el programa no deja borrar)')
+chk(exp2.get('conteo', {}).get('bitacora', 0) > 0, 'borrado definitivo: las líneas de la bitácora de esa cuenta van en la copia')
+chk(php('echo valor("SELECT estado FROM ligas_borradas WHERE cuenta_id = ? ORDER BY id DESC LIMIT 1", [' + AID['BO'] + ']);') == 'borrada' and os.path.isfile(os.path.join(REPO, copia2)),
+    'borrado definitivo: queda anotado y la copia se guarda')
+chk(es_error(ejecutar('restaurar_cliente', {}, AID['BO'])[0], 'no_encontrado', 404) and requests.get(B + 'index.php', params={'l': slugA['BO']}).status_code == 404, 'borrado definitivo: ya no se puede restaurar (404)')
+chk(int(php("echo (int)valor(\"SELECT COUNT(*) FROM bitacora WHERE descripcion LIKE 'Borrado definitivo de la cuenta Anexo Borrar BO%' AND liga_id IS NULL\");")) == 1
+    and int(php("echo (int)valor(\"SELECT COUNT(*) FROM bitacora WHERE tabla = 'jugadores' AND operacion = 'eliminar' AND antes LIKE '%Uno BO%'\");")) == 0,
+    'borrado definitivo: anotado en la bitácora, sin copiar los datos borrados en ella')
+# la tarea automática real (app/tareas.php) hace el borrado definitivo
+r, d = ejecutar('borrar_cliente', {'confirmar': 'Anexo Cron CR', 'motivo': 'Prueba de la tarea'}, AID['CR'])
+php('q("UPDATE ligas SET eliminada_hasta = ? WHERE id = ?", [date("Y-m-d", strtotime("-1 day")), ' + AID['CR'] + ']); guardar_ajuste("papelera_revision", "");')
+viejo = os.path.join(REPO, 'data', 'borrados', '999999_20240101-000000.json.gz')
+with gzip.open(viejo, 'wb') as f_:
+    f_.write(b'{}')
+subprocess.run(['php', 'app/tareas.php'], cwd=REPO, capture_output=True, text=True, timeout=120)
+chk(ligaA('CR') is None and not os.path.exists(viejo) and os.path.isfile(os.path.join(REPO, d.get('copia') or 'x')), 'tarea automática (app/tareas.php): borra la cuenta vencida en la papelera y las copias de más de 1 año')
+# aislamiento: en modo academia, una liga que quedó de TuVocalía no se puede borrar ni pausar desde el Central
+if ACADEMIA:
+    chk(es_error(ejecutar('borrar_cliente', {'confirmar': 'V2 Liga Que Quedo', 'motivo': 'abc'}, ID['K'])[0], 'no_encontrado', 404)
+        and es_error(ejecutar('pausar', {'tipo': 'otro', 'motivo': 'abc'}, ID['K'])[0], 'no_encontrado', 404), 'modo academia: una liga no se borra ni se pausa (404)')
+chk(es_error(ejecutar('borrar_cliente', {'confirmar': 'V2 Demo Del Sistema', 'motivo': 'abc'}, ID['DEMO'])[0], 'no_encontrado', 404), 'la demo del sistema no se puede borrar (404)')
+e9 = estado_v1()
+cl9 = pedir('clientes', {'por_pagina': 200})
+chk(cl9.get('contadores') == {'total': e9['negocios']['total'], 'prueba': e9['negocios']['prueba'], 'activo': e9['negocios']['activos'], 'por_vencer': e9['negocios']['por_vencer'],
+                              'vencido': e9['negocios']['vencidos'], 'suspendido': e9['negocios']['suspendidos']}, 'anexo A: al final, clientes.contadores = estado.negocios')
 
 # ---------- 10) Pantallas del programa con las mismas reglas (Ventas, Embudo) ----------
 s, rr = entrar('super@prueba.com')

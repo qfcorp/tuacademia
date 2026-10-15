@@ -24,6 +24,7 @@ $i = strlen($c) === 12 ? fila("SELECT i.*, x.fecha, x.lugar, x.examinador, x.dis
                                  FROM esc_examen_inscritos i JOIN esc_examenes x ON x.id = i.examen_id JOIN esc_alumnos a ON a.id = i.alumno_id
                                  WHERE i.certificado = ? AND i.resultado = 'aprobado' AND x.estado = 'cerrado'", [$c]) : null;
 $esc = $i ? fila('SELECT * FROM ligas WHERE id = ?', [$i['lid']]) : null;
+cortar_liga_publica($esc, false, true); // (Anexo A) en la papelera → 404; pausada → «temporalmente no disponible»
 if (!$i || !$esc) {
     http_response_code(404);
     cabecera_publica('Certificado no válido');

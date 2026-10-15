@@ -72,6 +72,7 @@ function correo_texto(string $titulo, array $parrafos, ?array $boton = null, str
 function enviar_correo(string $para, string $asunto, string $titulo, array $parrafos, ?array $boton = null, ?int $liga_id = null): bool
 {
     if (!smtp_configurado() || !filter_var($para, FILTER_VALIDATE_EMAIL)) return false;
+    if ($liga_id && liga_id_eliminada($liga_id)) return false; // (Anexo A) cuenta en la papelera: no se le mandan correos
     try {
         smtp_enviar($para, $asunto, correo_texto($titulo, $parrafos, $boton), correo_html($titulo, $parrafos, $boton));
         return true;

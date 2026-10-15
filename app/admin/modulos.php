@@ -123,7 +123,7 @@ if (es_post()) {
 }
 
 // Números por módulo
-$cuentas = filas("SELECT l.id, l.nombre, l.tipo, l.deportes, l.modalidad, l.deporte_escuela, l.es_demo, l.es_prueba, l.vence, l.plan_id, l.activa, l.es_federacion, p.nombre AS plan FROM ligas l LEFT JOIN planes p ON p.id = l.plan_id ORDER BY l.es_demo, l.nombre");
+$cuentas = filas("SELECT l.id, l.nombre, l.tipo, l.deportes, l.modalidad, l.deporte_escuela, l.es_demo, l.es_prueba, l.vence, l.plan_id, l.activa, l.es_federacion, p.nombre AS plan FROM ligas l LEFT JOIN planes p ON p.id = l.plan_id WHERE COALESCE(l.eliminada, '') = '' ORDER BY l.es_demo, l.nombre"); // (Anexo A) sin la papelera
 $stats = [];
 foreach ($mods as $k => $m) $stats[$k] = ['pagadas' => 0, 'prueba' => 0, 'demo' => 0, 'campeonatos' => 0, 'grupos' => 0, 'ingreso' => 0.0];
 foreach ($cuentas as $l) {

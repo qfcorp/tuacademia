@@ -54,6 +54,10 @@ if ($u['rol'] === 'delegado') {
 if ($u['rol'] === 'vendedor') {
     ir('vendedor.php');
 }
+// (Anexo A) Cuenta PAUSADA por Tukán: sus usuarios ven «Tu cuenta está pausada» con el motivo y el WhatsApp de Tukán
+if ($u['rol'] !== 'super' && empty($u['vista_super']) && liga_pausada(liga_trabajo())) {
+    pantalla_cuenta_pausada(liga_trabajo());
+}
 // (v16) Combo liga + escuela: el administrador pasa de una cuenta a la otra con su mismo usuario
 if (get('combo') !== '' && $u['rol'] === 'liga') {
     $propia = (int)($u['liga_propia'] ?? $u['liga_id']);

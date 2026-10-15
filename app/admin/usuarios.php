@@ -74,8 +74,8 @@ if (es_post()) {
 }
 
 if ($super) {
-    $usuarios = filas('SELECT u.*, l.nombre AS liga FROM usuarios u LEFT JOIN ligas l ON l.id = u.liga_id ORDER BY u.rol DESC, l.nombre, u.nombre');
-    $ligas = filas('SELECT id, nombre FROM ligas ORDER BY nombre');
+    $usuarios = filas("SELECT u.*, l.nombre AS liga FROM usuarios u LEFT JOIN ligas l ON l.id = u.liga_id WHERE COALESCE(l.eliminada, '') = '' ORDER BY u.rol DESC, l.nombre, u.nombre"); // (Anexo A) sin los de la papelera
+    $ligas = filas("SELECT id, nombre FROM ligas WHERE COALESCE(eliminada, '') = '' ORDER BY nombre"); // (Anexo A) sin la papelera
 } else {
     $usuarios = filas("SELECT u.*, NULL AS liga FROM usuarios u WHERE u.liga_id = ? AND u.rol = 'liga' ORDER BY (u.perfil <> 'admin'), u.nombre", [$liga_propia['id']]);
     $ligas = [];

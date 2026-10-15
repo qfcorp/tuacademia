@@ -66,6 +66,7 @@ if (es_post()) {
 }
 
 $liga = $j ? fila('SELECT * FROM ligas WHERE id = ?', [$j['liga_id']]) : null;
+cortar_liga_publica($liga, false, true); // (Anexo A) en la papelera → 404; pausada → «temporalmente no disponible»
 exigir_modulo_portal($liga, 'carnets'); // (v12) módulo del plan
 cabecera_publica($j ? 'Mi carnet · ' . nombre_jugador($j) : 'Mi carnet', $liga);
 foreach (tomar_flash() as [$tipo, $msg]) echo '<div class="aviso aviso-' . e($tipo) . '">' . e($msg) . '</div>';

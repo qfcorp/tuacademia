@@ -9,7 +9,11 @@ if (get('salir_liga') === '1') {
     ir('admin.php?p=ligas');
 }
 if (get('entrar') !== '') {
-    $l = fila('SELECT id FROM ligas WHERE id = ?', [(int)get('entrar')]);
+    $l = fila('SELECT id, eliminada FROM ligas WHERE id = ?', [(int)get('entrar')]);
+    if ($l && liga_eliminada($l)) { // (Anexo A) una cuenta de la papelera no se abre: primero se restaura
+        flash('Esa cuenta está en la papelera. Restáurela para poder entrar.', 'error');
+        ir('admin.php?p=ligas&papelera=1');
+    }
     if ($l) {
         $_SESSION['liga_trabajo'] = (int)$l['id'];
     }
@@ -18,6 +22,13 @@ if (get('entrar') !== '') {
 
 if (es_post()) {
     $accion = post('accion', 'guardar');
+    if ($accion === 'restaurar') { // (Anexo A) sacar una cuenta de la papelera (vuelve tal cual estaba)
+        $l = fila('SELECT * FROM ligas WHERE id = ?', [(int)post('id')]) ?? throw new RuntimeException('Esa cuenta ya no existe (quizás ya se borró de verdad).');
+        $su = usuario();
+        if (restaurar_cuenta($l, $su['nombre'] . ' <' . $su['email'] . '>')) flash($l['nombre'] . ' salió de la papelera y quedó tal cual estaba.');
+        else flash($l['nombre'] . ' no estaba en la papelera.', 'error');
+        ir('admin.php?p=ligas&papelera=1');
+    }
     if ($accion === 'eliminar') {
         $l = fila('SELECT * FROM ligas WHERE id = ?', [(int)post('id')]);
         if ($l && post('confirmar') === $l['nombre']) {
@@ -137,6 +148,10 @@ if (es_post()) {
 }
 
 $editar = get('editar') !== '' ? fila('SELECT * FROM ligas WHERE id = ?', [(int)get('editar')]) : null;
+if ($editar && liga_eliminada($editar)) { // (Anexo A) en la papelera: solo se puede restaurar
+    flash('«' . $editar['nombre'] . '» está en la papelera. Restáurela para poder editarla.', 'error');
+    ir('admin.php?p=ligas&papelera=1');
+}
 $nueva = get('nueva') === '1';
 $planes = filas('SELECT * FROM planes ORDER BY orden, precio_mensual');
 
@@ -356,12 +371,14 @@ if ($nueva): ?>
 <?php else:
     // (v14.2) Ligas y escuelas en la misma lista, con filtro por tipo
     $filtro = in_array(get('tipo'), ['liga', 'escuela'], true) ? get('tipo') : '';
+    $ver_papelera = get('papelera') === '1'; // (Anexo A) filtro Papelera: cuentas borradas desde el Panel Tukán (30 días para restaurarlas)
+    $papelera = filas("SELECT * FROM ligas WHERE COALESCE(eliminada, '') <> '' ORDER BY eliminada DESC");
     $todas = filas('SELECT l.*, p.nombre AS plan, (SELECT COUNT(*) FROM equipos e WHERE e.liga_id = l.id) AS n_equipos,
                            (SELECT COUNT(*) FROM usuarios u WHERE u.liga_id = l.id) AS n_usuarios,
                            (SELECT COUNT(*) FROM esc_alumnos a WHERE a.liga_id = l.id AND a.estado = \'activo\') AS n_alumnos,
                            (SELECT COUNT(*) FROM esc_grupos g WHERE g.liga_id = l.id AND g.activo = 1) AS n_grupos,
                            (SELECT COUNT(*) FROM esc_profesores pr WHERE pr.liga_id = l.id AND pr.activo = 1) AS n_profes
-                    FROM ligas l LEFT JOIN planes p ON p.id = l.plan_id ORDER BY l.nombre');
+                    FROM ligas l LEFT JOIN planes p ON p.id = l.plan_id WHERE COALESCE(l.eliminada, \'\') = \'\' ORDER BY l.nombre');
     $n_esc = count(array_filter($todas, fn($x) => ($x['tipo'] ?? 'liga') === 'escuela'));
     $ligas = $filtro === '' ? $todas : array_values(array_filter($todas, fn($x) => (($x['tipo'] ?? 'liga') === 'escuela') === ($filtro === 'escuela')));
     $chip = ['sin_limite' => 'chip-ok', 'activa' => 'chip-ok', 'prueba' => 'chip-pend', 'gracia' => 'chip-mal', 'vencida' => 'chip-mal'];
@@ -375,7 +392,24 @@ if ($nueva): ?>
     <a class="<?= $filtro === '' ? 'activa' : '' ?>" href="admin.php?p=ligas">Todas (<?= count($todas) ?>)</a>
     <a class="<?= $filtro === 'liga' ? 'activa' : '' ?>" href="admin.php?p=ligas&amp;tipo=liga">🏆 Ligas (<?= count($todas) - $n_esc ?>)</a>
     <a class="<?= $filtro === 'escuela' ? 'activa' : '' ?>" href="admin.php?p=ligas&amp;tipo=escuela">🎓 Escuelas (<?= $n_esc ?>)</a>
+    <a class="<?= $ver_papelera ? 'activa' : '' ?>" href="admin.php?p=ligas&amp;papelera=1" id="pestana-papelera">🗑️ Papelera (<?= count($papelera) ?>)</a>
   </nav>
+  <?php if ($ver_papelera): // (Anexo A) ?>
+    <p class="suave">Cuentas borradas desde el Panel Tukán: nadie puede entrar, no salen en las listas y su página pública da «no encontrado». Se guardó una copia completa de cada una. Pasados 30 días se borran de verdad (la copia se guarda 1 año).</p>
+    <?php if (!$papelera): ?><div class="tarjeta">La papelera está vacía.</div><?php endif; ?>
+    <div class="rejilla">
+    <?php foreach ($papelera as $l): ?>
+      <div class="tarjeta papelera-cuenta">
+        <div class="eq-celda"><strong><?= e($l['nombre']) ?></strong> <span class="etiqueta gris">🗑️ en la papelera</span></div>
+        <p class="suave" style="margin:.4rem 0">Borrada el <?= e(substr($l['eliminada'], 0, 16)) ?><?= $l['eliminada_por'] !== '' ? ' por ' . e($l['eliminada_por']) : '' ?>.<br>Motivo: <?= e($l['eliminada_motivo']) ?><br>Se borra de verdad el <b><?= e($l['eliminada_hasta']) ?></b>.<br><small>Copia: <?= e($l['eliminada_copia']) ?></small></p>
+        <form method="post" action="admin.php?p=ligas" onsubmit="return confirm('¿Restaurar <?= e(addslashes($l['nombre'])) ?>? Vuelve tal cual estaba.')">
+          <?= csrf_campo() ?><input type="hidden" name="accion" value="restaurar"><input type="hidden" name="id" value="<?= (int)$l['id'] ?>">
+          <button class="btn btn-chico" type="submit">♻️ Restaurar</button>
+        </form>
+      </div>
+    <?php endforeach; ?>
+    </div>
+  <?php else: ?>
   <?php if (!$ligas): ?>
     <div class="tarjeta"><?= $filtro === 'escuela' ? 'Aún no hay escuelas. Cree la primera con el botón <b>+ Nueva escuela</b>.' : 'Aún no hay ligas. Cree la primera con el botón <b>+ Nueva liga</b>.' ?></div>
   <?php endif; ?>
@@ -400,5 +434,6 @@ if ($nueva): ?>
       </div>
     <?php endforeach; ?>
   </div>
+  <?php endif; // (Anexo A) fin de «no es la papelera» ?>
 <?php endif;
 pie_admin();

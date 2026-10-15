@@ -5,6 +5,7 @@
  *  - Envía los avisos pendientes por Telegram
  *  - Una vez al día: avisos de suscripciones por vencer y limpieza
  *  - (v10) Envía las notificaciones "Seguir a mi equipo" y reinicia la liga de demostración cada madrugada
+ *  - (Anexo A) Papelera: borrado definitivo de las cuentas con 30 días en la papelera y de las copias de más de 1 año
  * Manual:  sudo -u www-data php /var/www/tuacademia/app/tareas.php
  */
 if (PHP_SAPI !== 'cli') exit;
@@ -36,6 +37,11 @@ if ((int)ajuste('demo_activa', 0) === 1 && (int)date('G') >= 3 && ajuste('demo_r
     } catch (Throwable $ex) {
         error_log('demo: ' . $ex->getMessage());
     }
+}
+// (Tukán Central v2, Anexo A) Papelera: una vez al día borra de verdad las cuentas que cumplieron 30 días y las copias de más de 1 año
+if (ajuste('papelera_revision') !== date('Y-m-d')) {
+    guardar_ajuste('papelera_revision', date('Y-m-d'));
+    try { papelera_purgar(); } catch (Throwable $ex) { error_log('papelera: ' . $ex->getMessage()); }
 }
 if ((int)date('G') >= 8 && ajuste('tarea_diaria') !== date('Y-m-d')) {
     guardar_ajuste('tarea_diaria', date('Y-m-d'));

@@ -11,6 +11,7 @@
  *  - venta_registrar_pago()      registra un pago (vigencia, comisión, referidos, correo al cliente)
  *  - anular_pago_suscripcion()   borra un pago y devuelve la fecha de vencimiento a la del pago anterior
  *  - cambiar_plan_cuenta(), suspender_cuenta(), reactivar_cuenta(), nueva_clave_dueno_cuenta()
+ *    (pausar_cuenta(), borrar_cuenta(), restaurar_cuenta() y la papelera están en app/papelera.php)
  *  - responder_solicitud_derecho()  responde una solicitud LOPDP (la usa Protección de datos)
  */
 
@@ -206,16 +207,16 @@ function cambiar_plan_cuenta(array $l, int $plan_id): bool
 function suspender_cuenta(array $l, string $motivo): bool
 {
     if (liga_suspendida($l)) return false;
-    q('UPDATE ligas SET activa = 0, suspendida_motivo = ? WHERE id = ?', [mb_substr(trim($motivo), 0, 200), $l['id']]);
+    q("UPDATE ligas SET activa = 0, suspendida_motivo = ?, suspendida_tipo = '', suspendida_en = ? WHERE id = ?", [mb_substr(trim($motivo), 0, 200), date('Y-m-d H:i:s'), $l['id']]);
     bitacora_evento('suscripcion', 'Suspendió la cuenta ' . $l['nombre'] . ': ' . mb_substr(trim($motivo), 0, 200), (int)$l['id']);
     return true;
 }
 
-/** Quita la suspensión (queda en el estado que le toque por fechas). false si no estaba suspendida. */
+/** Quita la suspensión o la pausa (queda en el estado que le toque por fechas). false si no estaba suspendida. */
 function reactivar_cuenta(array $l): bool
 {
     if (!liga_suspendida($l)) return false;
-    q("UPDATE ligas SET activa = 1, suspendida_motivo = '' WHERE id = ?", [$l['id']]);
+    q("UPDATE ligas SET activa = 1, suspendida_motivo = '', suspendida_tipo = '', suspendida_en = '' WHERE id = ?", [$l['id']]);
     bitacora_evento('suscripcion', 'Reactivó la cuenta ' . $l['nombre'], (int)$l['id']);
     return true;
 }

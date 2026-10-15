@@ -10,6 +10,7 @@ require __DIR__ . '/../app/bootstrap.php';
 if (preg_match('/^[0-9a-f]{20}$/', get('a'))) {
     $al = fila("SELECT a.*, g.nombre AS grupo FROM esc_alumnos a LEFT JOIN esc_grupos g ON g.id = a.grupo_id WHERE a.carnet_token = ?", [get('a')]);
     $esc = $al ? fila('SELECT * FROM ligas WHERE id = ?', [$al['liga_id']]) : null;
+    cortar_liga_publica($esc, false, true); // (Anexo A) en la papelera → 404; pausada → «temporalmente no disponible»
     if (!$al || !$esc) {
         http_response_code(404);
         cabecera_publica('Carnet no válido');
@@ -52,6 +53,7 @@ if (!$j) {
     exit;
 }
 $liga = fila('SELECT * FROM ligas WHERE id = ?', [$j['liga_id']]);
+cortar_liga_publica($liga, false, true); // (Anexo A) en la papelera → 404; pausada → «temporalmente no disponible»
 sincronizar_liga((int)$liga['id']);
 $st = estado_jugador($j);
 $colores = ['habilitado' => '#1a9e5c', 'suspendido' => '#d7263d', 'baja' => '#6b7572'];

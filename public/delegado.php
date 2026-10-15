@@ -17,6 +17,7 @@ if (!$eq) {
     exit('Su usuario no tiene un equipo asignado. Comuníquese con la liga.');
 }
 $liga = fila('SELECT * FROM ligas WHERE id = ?', [$eq['liga_id']]);
+cortar_liga_publica($liga, true, true); // (Anexo A) en la papelera → 404; pausada → «temporalmente no disponible» (su personal: «Tu cuenta está pausada»)
 exigir_modulo_portal($liga, 'inscripcion'); // (v12) módulo del plan
 $eid = (int)$eq['id'];
 $s = get('s', 'plantilla');

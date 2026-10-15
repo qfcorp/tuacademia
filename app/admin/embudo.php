@@ -17,8 +17,8 @@ if (es_post()) {
 
 $hoy = date('Y-m-d');
 $solicitudes = filas("SELECT * FROM solicitudes_demo WHERE estado = 'nueva' ORDER BY id DESC LIMIT 100");
-$activas = filas("SELECT * FROM ligas WHERE es_prueba = 1 AND es_demo = 0 AND vence >= ? ORDER BY vence", [$hoy]);
-$vencidas = filas("SELECT * FROM ligas WHERE es_prueba = 1 AND es_demo = 0 AND vence <> '' AND vence < ? AND vence >= ? ORDER BY vence DESC", [$hoy, date('Y-m-d', strtotime('-60 days'))]);
+$activas = filas("SELECT * FROM ligas WHERE es_prueba = 1 AND es_demo = 0 AND COALESCE(eliminada, '') = '' AND vence >= ? ORDER BY vence", [$hoy]); // (Anexo A) sin la papelera
+$vencidas = filas("SELECT * FROM ligas WHERE es_prueba = 1 AND es_demo = 0 AND COALESCE(eliminada, '') = '' AND vence <> '' AND vence < ? AND vence >= ? ORDER BY vence DESC", [$hoy, date('Y-m-d', strtotime('-60 days'))]);
 $convertidas = (int)valor("SELECT COUNT(DISTINCT liga_id) FROM pagos_suscripcion WHERE fecha >= ?", [date('Y-m-d', strtotime('-30 days'))]);
 $n_sol30 = (int)valor('SELECT COUNT(*) FROM solicitudes_demo WHERE creado >= ?', [date('Y-m-d', strtotime('-30 days'))]);
 

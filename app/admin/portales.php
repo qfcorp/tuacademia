@@ -7,7 +7,7 @@ if (es_post()) {
     ir(iniciar_vista_previa(post('tipo'), (int)post('id'), post('modo') === 'probar'));
 }
 
-$ligas = filas("SELECT id, nombre, es_demo, COALESCE(tipo, 'liga') AS tipo FROM ligas ORDER BY CASE WHEN COALESCE(tipo, 'liga') = 'escuela' THEN 1 ELSE 0 END, nombre");
+$ligas = filas("SELECT id, nombre, es_demo, COALESCE(tipo, 'liga') AS tipo FROM ligas WHERE COALESCE(eliminada, '') = '' ORDER BY CASE WHEN COALESCE(tipo, 'liga') = 'escuela' THEN 1 ELSE 0 END, nombre");
 $lid = (int)get('liga', (string)(liga_trabajo()['id'] ?? 0));
 if (!in_array($lid, array_map('intval', array_column($ligas, 'id')), true)) $lid = (int)($ligas[0]['id'] ?? 0);
 $es_demo = (int)(array_column($ligas, 'es_demo', 'id')[$lid] ?? 0) === 1;

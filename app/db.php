@@ -104,12 +104,20 @@ class BdLigas extends PDO
  *  - ligas.suspendida_motivo: por qué se suspendió (activa = 0 → la cuenta no puede trabajar).
  *  - tukan_central_operaciones: cada «ejecutar» del panel central (para no duplicar pagos ni días si se reintenta).
  *  - tukan_central_atenciones: recordatorios y avisos ya atendidos desde el panel central.
+ *  - (Anexo A, pausar y borrar) ligas.suspendida_tipo / suspendida_en: tipo de la pausa (falta_pago, pedido_cliente, revision,
+ *    abuso, otro; vacío = suspensión simple) y desde cuándo. ligas.eliminada (fecha y hora: está en la PAPELERA),
+ *    eliminada_motivo, eliminada_por, eliminada_hasta (día del borrado definitivo), eliminada_copia (archivo en data/borrados/)
+ *    y eliminada_activa (lo que tenía «activa» antes, para restaurarla tal cual). Tabla ligas_borradas: registro de cada
+ *    cuenta que pasó por la papelera (no tiene «liga_id» a propósito: no es un dato de la cuenta y no se borra con ella).
  */
 function esquema_tukan_central(PDO $pdo): void
 {
     $cols = array_column($pdo->query('PRAGMA table_info(ligas)')->fetchAll(PDO::FETCH_ASSOC), 'name');
     if (!$cols) return;
-    $nuevas = ['origen' => "TEXT NOT NULL DEFAULT ''", 'notas_admin' => "TEXT NOT NULL DEFAULT ''", 'suspendida_motivo' => "TEXT NOT NULL DEFAULT ''"];
+    $nuevas = ['origen' => "TEXT NOT NULL DEFAULT ''", 'notas_admin' => "TEXT NOT NULL DEFAULT ''", 'suspendida_motivo' => "TEXT NOT NULL DEFAULT ''",
+        'suspendida_tipo' => "TEXT NOT NULL DEFAULT ''", 'suspendida_en' => "TEXT NOT NULL DEFAULT ''", 'eliminada' => "TEXT NOT NULL DEFAULT ''",
+        'eliminada_motivo' => "TEXT NOT NULL DEFAULT ''", 'eliminada_por' => "TEXT NOT NULL DEFAULT ''", 'eliminada_hasta' => "TEXT NOT NULL DEFAULT ''",
+        'eliminada_copia' => "TEXT NOT NULL DEFAULT ''", 'eliminada_activa' => 'INTEGER NOT NULL DEFAULT 1'];
     foreach ($nuevas as $c => $def) {
         if (in_array($c, $cols, true)) continue;
         try {
@@ -126,7 +134,7 @@ function esquema_tukan_central(PDO $pdo): void
                 ELSE 'super' END WHERE origen = ''");
         }
     }
-    $hay = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('tukan_central_operaciones', 'tukan_central_atenciones')")->fetchAll(PDO::FETCH_COLUMN);
+    $hay = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('tukan_central_operaciones', 'tukan_central_atenciones', 'ligas_borradas')")->fetchAll(PDO::FETCH_COLUMN);
     if (!in_array('tukan_central_operaciones', $hay, true)) {
         $pdo->exec("CREATE TABLE IF NOT EXISTS tukan_central_operaciones (
             operacion_id TEXT PRIMARY KEY,
@@ -150,6 +158,21 @@ function esquema_tukan_central(PDO $pdo): void
             email TEXT NOT NULL,
             nombre TEXT,
             momento TEXT NOT NULL
+        )");
+    }
+    if (!in_array('ligas_borradas', $hay, true)) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS ligas_borradas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cuenta_id INTEGER NOT NULL,
+            nombre TEXT NOT NULL,
+            motivo TEXT NOT NULL DEFAULT '',
+            por TEXT NOT NULL DEFAULT '',
+            eliminada TEXT NOT NULL,
+            borrar_el TEXT NOT NULL,
+            copia TEXT NOT NULL DEFAULT '',
+            filas INTEGER NOT NULL DEFAULT 0,
+            estado TEXT NOT NULL DEFAULT 'papelera',
+            terminado TEXT NOT NULL DEFAULT ''
         )");
     }
 }

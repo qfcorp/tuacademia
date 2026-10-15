@@ -31,6 +31,7 @@ function tg_liga_activa(array $liga): bool
 function tg_encolar(?int $liga_id, string $chat, string $texto, string $foto = '', ?string $clave = null): void
 {
     if ($chat === '' || $texto === '') return;
+    if ($liga_id && liga_id_eliminada($liga_id)) return; // (Anexo A) cuenta en la papelera: no se le mandan avisos
     try {
         q('INSERT OR IGNORE INTO telegram_cola (liga_id, chat_id, texto, foto_url, clave) VALUES (?,?,?,?,?)', [$liga_id, $chat, mb_substr($texto, 0, 3900), $foto, $clave]);
     } catch (Throwable) {
@@ -68,7 +69,8 @@ function tg_procesar_cola(int $max = 40): int
 {
     if (!tg_activo()) return 0;
     $enviados = 0;
-    foreach (filas("SELECT * FROM telegram_cola WHERE enviado = '' AND intentos < 5 ORDER BY id LIMIT $max") as $m) {
+    // (Anexo A) los de una cuenta en la papelera no salen
+    foreach (filas("SELECT * FROM telegram_cola WHERE enviado = '' AND intentos < 5 AND (liga_id IS NULL OR liga_id NOT IN (SELECT id FROM ligas WHERE COALESCE(eliminada, '') <> '')) ORDER BY id LIMIT $max") as $m) {
         $r = ['ok' => false];
         if ($m['foto_url'] !== '') {
             $r = tg_api('sendPhoto', ['chat_id' => $m['chat_id'], 'photo' => $m['foto_url'], 'caption' => mb_substr($m['texto'], 0, 1000), 'parse_mode' => 'HTML']);

@@ -21,6 +21,7 @@ if (!$p) {
 }
 $pid = (int)$p['id'];
 $liga = fila('SELECT * FROM ligas WHERE id = ?', [$p['liga_id']]);
+cortar_liga_publica($liga, true, true); // (Anexo A) en la papelera → 404; pausada → «temporalmente no disponible» (su personal: «Tu cuenta está pausada»)
 exigir_modulo_portal($liga, 'vocalia'); // (v12) módulo del plan
 $_SESSION['vocal_partidos'] = array_values(array_unique(array_merge($_SESSION['vocal_partidos'] ?? [], [$pid])));
 $url = 'vocal.php?k=' . $k;

@@ -15,19 +15,25 @@
  * - Sin ID o sin secreto (o secreto de menos de 32 caracteres) el conector está APAGADO: tukan_central.php da 404
  *   (código «sin_configurar») y todo sigue como antes (TUKAN_SOLO_CENTRAL tampoco hace nada).
  * - Tablas propias (se crean solas, ver esquema_tukan_central() en app/db.php): tukan_nonces, tukan_central_operaciones,
- *   tukan_central_atenciones; columnas ligas.origen, ligas.notas_admin, ligas.suspendida_motivo.
+ *   tukan_central_atenciones, ligas_borradas; columnas ligas.origen, ligas.notas_admin, ligas.suspendida_motivo y (Anexo A) suspendida_tipo,
+ *   suspendida_en y eliminada* (papelera).
+ * - (Anexo A, 15 oct 2026) pausar · reactivar · borrar_cliente · restaurar_cliente (app/papelera.php): la pausa reutiliza la suspensión
+ *   real con tipo y motivo; borrar = copia completa en data/borrados/ + papelera de 30 días + borrado definitivo por la tarea automática.
+ *   Las cuentas de la papelera no salen en estado, clientes (salvo con estado «papelera»), solicitudes ni finanzas (sus pagos de
+ *   antes de borrarla sí quedan en los meses pasados).
  * - Las reglas de negocio son las del programa (app/cuentas_super.php y las funciones de siempre): el panel solo pide.
  * - Todo «ejecutar» deja una línea en la bitácora («Panel Tukán Central · Nombre <correo>», operación tukan_central).
  */
 
 const TC_PROTOCOLO = 1;          // estado y sso siguen siendo v1
 const TC_PROTOCOLO_MAX = 2;
-const TC_REVISION = 1;           // sube cuando se agregan cosas al v2 sin romper nada
+const TC_REVISION = 2;           // sube cuando se agregan cosas al v2 sin romper nada (2: Anexo A, pausar y papelera)
 const TC_LIMITE_MINUTO = 120;    // pedidos por minuto por IP (todos)
 const TC_LIMITE_RECHAZOS = 30;   // pedidos rechazados (401) por minuto por IP
 const TC_ACCIONES_V2 = ['capacidades', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar'];
 const TC_OPERACIONES = ['crear_demo', 'extender_prueba', 'registrar_pago', 'anular_pago', 'aprobar_comprobante', 'rechazar_comprobante',
-    'suspender', 'reactivar', 'cambiar_plan', 'nueva_clave_dueno', 'nota_interna', 'atender_solicitud', 'responder_ticket'];
+    'suspender', 'reactivar', 'cambiar_plan', 'nueva_clave_dueno', 'nota_interna', 'atender_solicitud', 'responder_ticket',
+    'pausar', 'borrar_cliente', 'restaurar_cliente']; // (Anexo A)
 const TC_TIPOS_SOLICITUD = ['registro_nuevo', 'demo_pedida', 'comprobante', 'soporte', 'derechos_datos', 'pago_automatico',
     'seguimiento_prueba', 'renovacion', 'dominio_gratis', 'comision_vendedor', 'liquidacion_pendiente'];
 const TC_ESTADOS = ['prueba', 'activo', 'por_vencer', 'vencido', 'suspendido'];
@@ -109,10 +115,19 @@ function tc_producto(): array
     return $es_tuacademia ? ['tuacademia', 'TuAcademia', $acad] : ['tuvocalia', 'TuVocalía', false];
 }
 
-/** (TuAcademia) en modo academia solo las academias (tipo escuela) son clientes. Filtro SQL sobre «l» (ligas). */
-function tc_solo(): string
+/**
+ * Filtro SQL sobre «l» (ligas) de las cuentas que son clientes: sin las de la PAPELERA (Anexo A) y, en modo academia (TuAcademia),
+ * solo las academias (tipo escuela). $con_papelera: también las de la papelera (finanzas de meses pasados, «clientes» papelera).
+ */
+function tc_solo(bool $con_papelera = false): string
 {
-    return tc_producto()[2] ? " AND COALESCE(l.tipo, 'liga') = 'escuela'" : '';
+    return (tc_producto()[2] ? " AND COALESCE(l.tipo, 'liga') = 'escuela'" : '') . ($con_papelera ? '' : " AND COALESCE(l.eliminada, '') = ''");
+}
+
+/** (Anexo A) Pagos de una cuenta de la papelera: solo cuentan los de ANTES de borrarla (hasta ese día). $col = columna de la fecha del pago. */
+function tc_pago_antes_de_borrar(string $col): string
+{
+    return " AND (COALESCE(l.eliminada, '') = '' OR substr($col, 1, 10) <= substr(l.eliminada, 1, 10))";
 }
 
 /* ---------- Token (protocolo §3) ---------- */
@@ -493,10 +508,11 @@ function tc_estado(): array
     usort($pruebas7, fn($a, $b) => strcmp($a['vence'], $b['vence']));
     usort($vencidos, fn($a, $b) => strcmp($a['desde'], $b['desde']));
 
-    $ingresos = function (string $ym) use ($solo): ?float {
+    $solo_p = tc_solo(true) . tc_pago_antes_de_borrar('p.fecha'); // (Anexo A) lo que pagó antes de ir a la papelera sigue contando
+    $ingresos = function (string $ym) use ($solo_p): ?float {
         try {
             return round((float)valor("SELECT COALESCE(SUM(p.monto), 0) FROM pagos_suscripcion p JOIN ligas l ON l.id = p.liga_id
-                                       WHERE COALESCE(l.es_demo, 0) = 0$solo AND substr(p.fecha, 1, 7) = ?", [$ym]), 2);
+                                       WHERE COALESCE(l.es_demo, 0) = 0$solo_p AND substr(p.fecha, 1, 7) = ?", [$ym]), 2);
         } catch (Throwable) {
             return null;
         }
@@ -528,9 +544,9 @@ function tc_estado(): array
             'Campeonatos activos' => tc_cuenta("SELECT COUNT(*) FROM torneos t {$r('t.liga_id')} AND t.estado <> 'finalizado'"),
             'Equipos'             => tc_cuenta("SELECT COUNT(*) FROM equipos e {$r('e.liga_id')}"),
             'Partidos este mes'   => tc_cuenta("SELECT COUNT(*) FROM partidos p JOIN torneos t ON t.id = p.torneo_id {$r('t.liga_id')} AND substr(p.fecha, 1, 7) = ?", [$mes]),
-            'Escuelas'            => tc_cuenta("SELECT COUNT(*) FROM ligas l WHERE COALESCE(l.es_demo, 0) = 0 AND COALESCE(l.tipo, 'liga') = 'escuela'"),
+            'Escuelas'            => tc_cuenta("SELECT COUNT(*) FROM ligas l WHERE COALESCE(l.es_demo, 0) = 0$solo AND COALESCE(l.tipo, 'liga') = 'escuela'"),
             'Alumnos activos'     => tc_cuenta("SELECT COUNT(*) FROM esc_alumnos a {$r('a.liga_id')} AND a.estado = 'activo'"),
-            'Usuarios'            => tc_cuenta('SELECT COUNT(*) FROM usuarios u LEFT JOIN ligas l ON l.id = u.liga_id WHERE u.activo = 1 AND COALESCE(l.es_demo, 0) = 0'),
+            'Usuarios'            => tc_cuenta("SELECT COUNT(*) FROM usuarios u LEFT JOIN ligas l ON l.id = u.liga_id WHERE u.activo = 1 AND COALESCE(l.es_demo, 0) = 0 AND COALESCE(l.eliminada, '') = ''"),
         ];
     }
     $extra = array_filter($extra, fn($v) => $v !== null);
@@ -733,7 +749,7 @@ function tc2_capacidades(): array
     $periodos = [];
     foreach (periodos_plan() as $k => [$m]) $periodos[] = ['periodo' => $k, 'meses' => $m];
     $estados_detalle = ['prueba' => 'Demo', 'activa' => 'Activa', 'sin_limite' => 'Sin vencimiento', 'gracia' => 'En gracia',
-        'vencida' => 'Vencida', 'prueba_vencida' => 'Demo terminada', 'suspendida' => 'Suspendida'];
+        'vencida' => 'Vencida', 'prueba_vencida' => 'Demo terminada', 'suspendida' => 'Suspendida', 'pausada' => 'Pausada', 'papelera' => 'En la papelera'];
     return [
         'revision' => TC_REVISION, 'nombre' => $nombre, 'version' => tc_version(),
         'unico' => false, 'moneda' => 'USD', 'zona_horaria' => date_default_timezone_get(),
@@ -748,10 +764,20 @@ function tc2_capacidades(): array
         'meses_libres' => true,
         'metodos_pago' => $metodos,
         'planes_editar' => false,
-        'filtros_clientes' => ['buscar', 'estados', 'plan', 'tipo', 'vence_desde', 'vence_hasta', 'alta_desde', 'alta_hasta', 'sin_uso_dias', 'origen', 'ids', 'orden'],
+        'filtros_clientes' => ['buscar', 'estados', 'estado', 'plan', 'tipo', 'vence_desde', 'vence_hasta', 'alta_desde', 'alta_hasta', 'sin_uso_dias', 'origen', 'ids', 'orden'],
         'formularios' => ['crear_demo' => tc2_form_crear_demo()],
-        'limites' => ['por_pagina_max' => 200, 'meses_finanzas_max' => 24, 'dias_prueba_max' => 90],
+        'limites' => ['por_pagina_max' => 200, 'meses_finanzas_max' => 24, 'dias_prueba_max' => 90, 'papelera_dias' => PAPELERA_DIAS, 'copia_dias' => PAPELERA_COPIA_DIAS],
+        'tipos_pausa' => tc2_opciones(tipos_pausa()),
+        'papelera' => true,
     ];
+}
+
+/** [clave => nombre] → [{valor, etiqueta}]. */
+function tc2_opciones(array $x): array
+{
+    $r = [];
+    foreach ($x as $k => $v) $r[] = ['valor' => (string)$k, 'etiqueta' => (string)$v];
+    return $r;
 }
 
 /** Campos propios del formulario «Crear demo» (los comunes los pone el Central). */
@@ -788,9 +814,10 @@ function tc2_tipo(array $l): array
 /**
  * Resúmenes de los clientes (§4.3), en orden de id. $ids: solo esos. Con pocas consultas (no una por cliente).
  */
-function tc2_clientes_resumen(?array $ids = null): array
+function tc2_clientes_resumen(?array $ids = null, bool $papelera = false): array
 {
-    $solo = tc_solo();
+    // (Anexo A) $papelera: SOLO las cuentas de la papelera (sin ella, nunca salen)
+    $solo = tc_solo(true) . ($papelera ? " AND COALESCE(l.eliminada, '') <> ''" : " AND COALESCE(l.eliminada, '') = ''");
     $ligas = filas("SELECT l.*, p.nombre AS plan_nombre FROM ligas l LEFT JOIN planes p ON p.id = l.plan_id WHERE COALESCE(l.es_demo, 0) = 0$solo ORDER BY l.id");
     if ($ids !== null) {
         $q = array_flip(array_map('strval', $ids));
@@ -815,6 +842,8 @@ function tc2_clientes_resumen(?array $ids = null): array
     $r = [];
     foreach ($ligas as $l) {
         $id = (int)$l['id'];
+        $en_papelera = liga_eliminada($l);
+        if ($en_papelera) $l['activa'] = (int)$l['eliminada_activa']; // el estado que tenía (y que vuelve a tener si se restaura)
         $x = tc2_estado_de($l);
         $s = $x['s'];
         [$tipo, $tipo_n] = tc2_tipo($l);
@@ -830,11 +859,18 @@ function tc2_clientes_resumen(?array $ids = null): array
             ? ['Alumnos' => (int)($alumnos[$id] ?? 0), $acad ? 'Cursos' : 'Grupos' => (int)($grupos[$id] ?? 0)]
             : ['Equipos' => (int)($equipos[$id] ?? 0), 'Campeonatos' => (int)($torneos[$id] ?? 0)];
         $ult = (string)($act[$id]['u'] ?? '');
-        $mensual = $x['estado'] !== 'suspendido' && $s['estado'] === 'activa' && isset($ultimo[$id])
+        $mensual = !$en_papelera && $x['estado'] !== 'suspendido' && $s['estado'] === 'activa' && isset($ultimo[$id])
             ? round((float)$ultimo[$id]['monto'] / max(1, (int)$ultimo[$id]['meses']), 2) : 0.0;
+        $tipo_pausa = (string)($l['suspendida_tipo'] ?? '');
         $texto = $x['estado'] === 'suspendido'
-            ? 'Suspendida' . (($l['suspendida_motivo'] ?? '') !== '' ? ': ' . $l['suspendida_motivo'] : '') . ($vence ? ' (vence el ' . $vence . ')' : '')
+            ? ($tipo_pausa !== '' ? 'Pausada (' . (tipos_pausa()[$tipo_pausa] ?? $tipo_pausa) . ')' : 'Suspendida') . (($l['suspendida_motivo'] ?? '') !== '' ? ': ' . $l['suspendida_motivo'] : '') . ($vence ? ' (vence el ' . $vence . ')' : '')
             : $s['texto'];
+        if ($x['estado'] === 'suspendido' && $tipo_pausa !== '') $x['detalle'] = 'pausada';
+        if ($en_papelera) {
+            $texto = 'En la papelera desde el ' . substr((string)$l['eliminada'], 0, 10) . '; se borra de verdad el ' . $l['eliminada_hasta'] . ($l['eliminada_motivo'] !== '' ? '. Motivo: ' . $l['eliminada_motivo'] : '');
+            $x['detalle'] = 'papelera';
+            $x['bloqueado'] = true;
+        }
         $r[$id] = [
             'id' => (string)$id,
             'nombre' => (string)$l['nombre'],
@@ -864,9 +900,14 @@ function tc2_clientes_resumen(?array $ids = null): array
             'origen' => $origen,
             'vendedor' => !empty($l['vendedor_id']) && isset($vend[$l['vendedor_id']]) ? ['id' => (string)$l['vendedor_id'], 'nombre' => (string)$vend[$l['vendedor_id']]] : null,
             'uso' => $uso,
-            'ir' => '/admin.php?p=ligas&editar=' . $id,
-            'ir_trabajar' => '/admin.php?p=ligas&entrar=' . $id,
+            'ir' => $en_papelera ? '/admin.php?p=ligas&papelera=1' : '/admin.php?p=ligas&editar=' . $id,
+            'ir_trabajar' => $en_papelera ? null : '/admin.php?p=ligas&entrar=' . $id,
             'actualizado' => tc2_momento($cambio[$id]['f'] ?? '', true) ?? tc2_momento($l['creado'], true),
+            // (Anexo A) pausa y papelera (null si no aplica)
+            'pausa' => $x['estado'] === 'suspendido' && $tipo_pausa !== '' ? ['tipo' => $tipo_pausa, 'tipo_nombre' => tipos_pausa()[$tipo_pausa] ?? $tipo_pausa,
+                        'motivo' => tc2_txt($l['suspendida_motivo']), 'motivo_cliente' => texto_motivo_pausa($l), 'desde' => tc2_momento($l['suspendida_en'] ?? '')] : null,
+            'papelera' => $en_papelera ? ['desde' => tc2_momento($l['eliminada']), 'hasta' => (string)$l['eliminada_hasta'], 'motivo' => tc2_txt($l['eliminada_motivo']),
+                        'por' => tc2_txt($l['eliminada_por']), 'copia' => (string)$l['eliminada_copia']] : null,
         ];
     }
     return $r;
@@ -882,6 +923,16 @@ function tc2_normalizar(string $s): string
 /** Acción «clientes» (§5.4). */
 function tc2_clientes(array $d): array
 {
+    // (Anexo A) los filtros pueden venir sueltos (como siempre) o dentro de «filtros»; «estado: papelera» lista la papelera
+    if (isset($d['filtros'])) {
+        if (!is_array($d['filtros']) || ($d['filtros'] !== [] && array_is_list($d['filtros']))) throw tc2_mal('filtros', '«filtros» debe ser un objeto.');
+        $d += $d['filtros'];
+    }
+    $est1 = $d['estado'] ?? null;
+    if ($est1 !== null && $est1 !== '' && !in_array($est1, array_merge(TC_ESTADOS, ['papelera']), true)) throw tc2_mal('estado', 'Estado válido: ' . implode(', ', TC_ESTADOS) . ' o papelera.');
+    $papelera = $est1 === 'papelera' || (is_array($d['estados'] ?? null) && in_array('papelera', $d['estados'], true));
+    if (is_array($d['estados'] ?? null)) $d['estados'] = array_values(array_diff($d['estados'], ['papelera']));
+    if (!$papelera && is_string($est1) && $est1 !== '') $d['estados'] = array_values(array_unique(array_merge($d['estados'] ?? [], [$est1])));
     $pagina = tc2_entero($d, 'pagina', 1, 1, 100000);
     $por_pagina = tc2_entero($d, 'por_pagina', 50, 1, 200);
     $buscar = $d['buscar'] ?? '';
@@ -908,6 +959,11 @@ function tc2_clientes(array $d): array
     $todos = tc2_clientes_resumen();
     $cont = ['total' => count($todos), 'prueba' => 0, 'activo' => 0, 'por_vencer' => 0, 'vencido' => 0, 'suspendido' => 0];
     foreach ($todos as $c) $cont[$c['estado']]++;
+    $en_papelera = tc2_clientes_resumen(null, true);
+    if ($papelera) {
+        $todos = $en_papelera;
+        foreach ($todos as $k => $c) $todos[$k]['acciones_posibles'] = [tc2_boton_restaurar($c)];
+    }
     $b = tc2_normalizar(trim($buscar));
     $bd = preg_replace('/\D/', '', $buscar);
     $limite_uso = $sin_uso !== null ? date('c', strtotime('-' . $sin_uso . ' days')) : null;
@@ -933,6 +989,7 @@ function tc2_clientes(array $d): array
     return [
         'total' => $total, 'pagina' => $pagina, 'por_pagina' => $por_pagina, 'paginas' => max(1, (int)ceil($total / $por_pagina)),
         'contadores' => $cont,
+        'papelera_total' => count($en_papelera),
         'clientes' => array_slice($lista, ($pagina - 1) * $por_pagina, $por_pagina),
     ];
 }
@@ -953,16 +1010,16 @@ function tc2_cumple_filtros(array $c, array $estados, mixed $plan, mixed $tipo, 
     return true;
 }
 
-/** Fila de «ligas» de un cliente (sin la demo del sistema; en modo academia solo academias), o null. */
-function tc2_liga(string $id): ?array
+/** Fila de «ligas» de un cliente (sin la demo del sistema ni la papelera; en modo academia solo academias), o null. $papelera: también las de la papelera. */
+function tc2_liga(string $id, bool $papelera = false): ?array
 {
     if (!ctype_digit($id)) return null;
-    return fila('SELECT * FROM ligas l WHERE l.id = ? AND COALESCE(l.es_demo, 0) = 0' . tc_solo(), [(int)$id]);
+    return fila('SELECT * FROM ligas l WHERE l.id = ? AND COALESCE(l.es_demo, 0) = 0' . tc_solo($papelera), [(int)$id]);
 }
 
-function tc2_liga_o_404(string $id): array
+function tc2_liga_o_404(string $id, bool $papelera = false): array
 {
-    return tc2_liga($id) ?? throw new TcError('no_encontrado', 'Ese cliente ya no existe en el programa (quizás lo borraron). Actualice la lista.', 404);
+    return tc2_liga($id, $papelera) ?? throw new TcError('no_encontrado', 'Ese cliente ya no existe en el programa (quizás lo borraron). Actualice la lista.', 404);
 }
 
 /** Planes que se le pueden poner a una cuenta: [codigo => fila]. */
@@ -1044,6 +1101,13 @@ function tc2_acciones_cliente(array $l, array $c): array
         $b[] = tc2_boton('suspender', 'Suspender', 'peligro', '¿Suspender ' . $n . '? No podrá trabajar y su página pública se oculta.', ['cliente_id' => $id],
             [tc2_campo('motivo', 'Motivo', 'texto', true, ['min' => 5, 'max' => 200])]);
     }
+    // (Anexo A) pausar (con tipo y motivo; si ya está pausada, se puede cambiar el motivo) y borrar (a la papelera)
+    $b[] = tc2_boton('pausar', $c['pausa'] ? 'Cambiar motivo de la pausa' : 'Pausar', 'peligro', $c['pausa'] ? null : '¿Pausar ' . $n . '? Sus usuarios verán «Tu cuenta está pausada» y su página pública queda temporalmente no disponible.',
+        ['cliente_id' => $id], tc2_campos_pausa($c['pausa']));
+    $b[] = tc2_boton('borrar_cliente', 'Borrar', 'peligro', '¿Borrar ' . $n . '? Se guarda una copia y queda ' . PAPELERA_DIAS . ' días en la papelera; después se borra de verdad.', ['cliente_id' => $id], [
+        tc2_campo('confirmar', 'Escriba el nombre exacto para confirmar', 'texto', true, ['max' => 200, 'ayuda' => 'Nombre exacto: ' . $n . ' (o su id: ' . $id . ')', 'placeholder' => $n]),
+        tc2_campo('motivo', 'Motivo del borrado', 'texto', true, ['min' => 3, 'max' => 300]),
+    ]);
     if (usuario_dueno($l)) $b[] = tc2_boton('nueva_clave_dueno', 'Nueva clave del dueño', 'normal', '¿Crear una contraseña nueva para el dueño de ' . $n . '? La anterior deja de servir.', ['cliente_id' => $id]);
     $b[] = tc2_boton('nota_interna', 'Nota interna', 'normal', null, ['cliente_id' => $id],
         [tc2_campo('texto', 'Nota (el cliente no la ve)', 'texto_largo', false, ['valor' => (string)($l['notas_admin'] ?? ''), 'max' => 4000])]);
@@ -1054,10 +1118,33 @@ function tc2_acciones_cliente(array $l, array $c): array
     return $b;
 }
 
-/** Acción «cliente» (§5.5): resumen + ficha completa. */
+/** (Anexo A) Campos de «Pausar». */
+function tc2_campos_pausa(?array $pausa = null): array
+{
+    return [
+        tc2_campo('tipo', 'Tipo de pausa', 'opcion', true, ['valor' => $pausa['tipo'] ?? 'falta_pago', 'opciones' => tc2_opciones(tipos_pausa()),
+            'ayuda' => 'Con «En revisión» o «Uso indebido» el cliente ve un texto general, no el motivo.']),
+        tc2_campo('motivo', 'Motivo (lo verá el cliente)', 'texto', true, ['valor' => $pausa['motivo'] ?? null, 'min' => 3, 'max' => 300]),
+    ];
+}
+
+/** (Anexo A) Botón «Restaurar» de un cliente de la papelera. */
+function tc2_boton_restaurar(array $c): array
+{
+    return tc2_boton('restaurar_cliente', 'Restaurar', 'principal', '¿Sacar ' . $c['nombre'] . ' de la papelera? Vuelve tal cual estaba.', ['cliente_id' => (string)$c['id']]);
+}
+
+/** Acción «cliente» (§5.5): resumen + ficha completa (también de un cliente de la papelera, con «Restaurar»). */
 function tc2_cliente_ficha(string $id): array
 {
-    $l = tc2_liga_o_404($id);
+    $l = tc2_liga_o_404($id, true);
+    if (liga_eliminada($l)) {
+        $c = tc2_clientes_resumen([(int)$l['id']], true)[(int)$l['id']];
+        $c['acciones_posibles'] = [tc2_boton_restaurar($c)];
+        $c['registro'] = tc2_registro_cliente((int)$l['id']);
+        $c['notas_admin'] = (string)($l['notas_admin'] ?? '');
+        return $c;
+    }
     $c = tc2_clientes_resumen([(int)$l['id']])[(int)$l['id']];
     $lid = (int)$l['id'];
     $rec = !empty($l['referido_por']) ? fila('SELECT id, nombre FROM ligas WHERE id = ?', [(int)$l['referido_por']]) : null;
@@ -1078,10 +1165,7 @@ function tc2_cliente_ficha(string $id): array
             'registrado_por' => tc2_txt($p['registrado_por']), 'origen' => $origen, 'anulado' => false, 'puede_anular' => !isset($pagadas[$p['id']]),
         ];
     }
-    $registro = [];
-    foreach (filas("SELECT fecha, usuario, descripcion FROM bitacora WHERE liga_id = ? AND operacion = 'evento' ORDER BY id DESC LIMIT 20", [$lid]) as $b) {
-        $registro[] = ['momento' => tc2_momento($b['fecha'], true), 'quien' => tc2_txt($b['usuario']), 'texto' => tc2_txt($b['descripcion'])];
-    }
+    $registro = tc2_registro_cliente($lid);
     $c += [
         'notas_admin' => (string)($l['notas_admin'] ?? ''),
         'usuarios' => (int)valor('SELECT COUNT(*) FROM usuarios WHERE liga_id = ? AND activo = 1', [$lid]),
@@ -1096,6 +1180,16 @@ function tc2_cliente_ficha(string $id): array
         'acciones_posibles' => tc2_acciones_cliente($l, $c),
     ];
     return $c;
+}
+
+/** Últimos 20 eventos de la bitácora de un cliente (quién pausó, borró, cobró… y cuándo). */
+function tc2_registro_cliente(int $lid): array
+{
+    $registro = [];
+    foreach (filas("SELECT fecha, usuario, descripcion FROM bitacora WHERE liga_id = ? AND operacion = 'evento' ORDER BY id DESC LIMIT 20", [$lid]) as $b) {
+        $registro[] = ['momento' => tc2_momento($b['fecha'], true), 'quien' => tc2_txt($b['usuario']), 'texto' => tc2_txt($b['descripcion'])];
+    }
+    return $registro;
 }
 
 /* ============================================================
@@ -1184,7 +1278,7 @@ function tc2_planes(): array
     return [
         'editable' => false,
         'planes' => $planes,
-        'ajustes' => ['dias_prueba' => (int)ajuste('dias_prueba', 7), 'dias_demo' => (int)ajuste('dias_demo', 7), 'dias_gracia' => (int)ajuste('dias_gracia', 7),
+        'ajustes' => ['dias_prueba' => (int)ajuste('dias_prueba', tc_producto()[0] === 'tuacademia' ? 7 : 30), 'dias_demo' => (int)ajuste('dias_demo', 7), 'dias_gracia' => (int)ajuste('dias_gracia', 7),
                       'dias_gracia_demo' => (int)ajuste('dias_gracia_demo', 0), 'registro_abierto' => prueba_automatica()],
     ];
 }
@@ -1645,11 +1739,11 @@ function tc2_finanzas(array $d): array
         if (count($meses) > 24) throw tc2_mal('desde', 'Máximo 24 meses.');
     }
     $acad = tc_producto()[2];
-    $solo = tc_solo();
+    $solo = tc_solo(true); // (Anexo A) con la papelera, pero solo con lo que pagó ANTES de borrarla (tc_pago_antes_de_borrar)
     $ini = $desde . '-01';
     $fin = date('Y-m-t', strtotime($hasta . '-01'));
     $planes = array_column(filas('SELECT id, nombre FROM planes'), 'nombre', 'id');
-    $pagos = filas("SELECT ps.* FROM pagos_suscripcion ps JOIN ligas l ON l.id = ps.liga_id WHERE COALESCE(l.es_demo, 0) = 0$solo");
+    $pagos = filas("SELECT ps.*, l.eliminada AS _eliminada FROM pagos_suscripcion ps JOIN ligas l ON l.id = ps.liga_id WHERE COALESCE(l.es_demo, 0) = 0$solo" . tc_pago_antes_de_borrar('ps.fecha'));
     $primero = [];
     foreach ($pagos as $p) if ($p['fecha'] !== '' && (!isset($primero[$p['liga_id']]) || $p['fecha'] < $primero[$p['liga_id']])) $primero[$p['liga_id']] = $p['fecha'];
     $M = [];
@@ -1679,6 +1773,7 @@ function tc2_finanzas(array $d): array
         // devengado: el pago se reparte por días entre «desde» y «hasta»
         $a = strtotime((string)$p['desde'] ?: (string)$p['fecha']);
         $b = strtotime((string)$p['hasta'] ?: (string)$p['fecha']);
+        if ((string)$p['_eliminada'] !== '' && $b) $b = min($b, strtotime(substr((string)$p['_eliminada'], 0, 10))); // (Anexo A) no devenga después de borrarla
         if (!$a) continue;
         if (!$b || $b <= $a) {
             $mm2 = date('Y-m', $a);
@@ -1697,11 +1792,11 @@ function tc2_finanzas(array $d): array
     // otros ingresos y costos que el programa conoce
     $por_mes = fn(string $sql) => array_column(filas($sql, [$desde, $hasta]), 'v', 'm');
     $gestion = $por_mes("SELECT substr(p.pagado_en, 1, 7) AS m, SUM(p.comision_tuvocalia) AS v FROM pagos_linea p JOIN ligas l ON l.id = p.liga_id
-                         WHERE p.destino = 'organizacion' AND p.estado = 'pagado' AND COALESCE(l.es_demo, 0) = 0$solo AND substr(p.pagado_en, 1, 7) BETWEEN ? AND ? GROUP BY m");
+                         WHERE p.destino = 'organizacion' AND p.estado = 'pagado' AND COALESCE(l.es_demo, 0) = 0$solo" . tc_pago_antes_de_borrar('p.pagado_en') . " AND substr(p.pagado_en, 1, 7) BETWEEN ? AND ? GROUP BY m");
     $pasarela = $por_mes("SELECT substr(p.pagado_en, 1, 7) AS m, SUM(p.comision_pasarela) AS v FROM pagos_linea p JOIN ligas l ON l.id = p.liga_id
-                          WHERE p.destino = 'tuvocalia' AND p.estado = 'pagado' AND COALESCE(l.es_demo, 0) = 0$solo AND substr(p.pagado_en, 1, 7) BETWEEN ? AND ? GROUP BY m");
+                          WHERE p.destino = 'tuvocalia' AND p.estado = 'pagado' AND COALESCE(l.es_demo, 0) = 0$solo" . tc_pago_antes_de_borrar('p.pagado_en') . " AND substr(p.pagado_en, 1, 7) BETWEEN ? AND ? GROUP BY m");
     $vendedores = $por_mes("SELECT substr(c.creado, 1, 7) AS m, SUM(c.comision) AS v FROM comisiones c JOIN ligas l ON l.id = c.liga_id
-                            WHERE c.estado <> 'anulada' AND COALESCE(l.es_demo, 0) = 0$solo AND substr(c.creado, 1, 7) BETWEEN ? AND ? GROUP BY m");
+                            WHERE c.estado <> 'anulada' AND COALESCE(l.es_demo, 0) = 0$solo" . tc_pago_antes_de_borrar('c.creado') . " AND substr(c.creado, 1, 7) BETWEEN ? AND ? GROUP BY m");
     $pct = rtrim(rtrim(number_format(tasas_pasarela()['tuvocalia'], 2, ',', ''), '0'), ',');
     $tot = ['ingresos' => 0.0, 'otros_ingresos' => 0.0, 'costos' => 0.0, 'pagos' => 0];
     $salida = [];
@@ -1727,7 +1822,7 @@ function tc2_finanzas(array $d): array
     foreach (tc2_clientes_resumen() as $c) $mrr += $c['mensual_estimado'];
     return [
         'moneda' => 'USD',
-        'criterio' => 'Pagos de suscripción no anulados (los anulados se borran), por fecha de pago. Las demos del sistema no cuentan.' . ($acad ? ' Solo academias.' : ''),
+        'criterio' => 'Pagos de suscripción no anulados (los anulados se borran), por fecha de pago. Las demos del sistema no cuentan. De un cliente borrado (papelera) solo cuenta lo que pagó antes de borrarlo.' . ($acad ? ' Solo academias.' : ''),
         'desde' => $desde, 'hasta' => $hasta,
         'mrr' => round($mrr, 2),
         'meses' => $salida,
@@ -1779,18 +1874,18 @@ function tc2_ejecutar(array $p, array $d): never
     }
     q("INSERT INTO tukan_central_operaciones (operacion_id, accion, cliente_id, cuerpo_hash, estado, email, creado) VALUES (?, ?, ?, ?, 'en_curso', ?, ?)",
         [$op_id, $accion, tc2_id_valor($d['cliente_id'] ?? null), $hash, $email, date('Y-m-d H:i:s')]);
-    $ctx = ['op' => $op_id, 'accion' => $accion, 'quien' => $quien, 'por' => $por, 'email' => $email, 'nombre' => $nombre, 'cliente_id' => $d['cliente_id'] ?? null];
+    $ctx = ['op' => $op_id, 'accion' => $accion, 'quien' => $quien, 'por' => $por, 'email' => $email, 'nombre' => $nombre, 'cliente_id' => $d['cliente_id'] ?? $datos['cliente_id'] ?? null];
     try {
         $r = tc2_operacion($accion, $datos, $ctx);
         $resp = tc2_base('ejecutar') + [
             'operacion' => $accion, 'operacion_id' => $op_id, 'repetida' => false, 'sin_cambios' => (bool)($r['sin_cambios'] ?? false),
             'mensaje' => $r['mensaje'], 'resultado' => (object)($r['resultado'] ?? []), 'cliente' => null, 'solicitud' => null,
-        ];
+        ] + ($r['arriba'] ?? []); // (Anexo A) borrar_cliente: «copia» y «borrar_definitivo_el» también arriba
         // auditoría: una línea en la bitácora del programa con quién, qué, sobre qué cliente y la clave de operación
         $lid = $r['liga_id'] ?? null;
         bitacora_evento('tukan_central', mb_substr($r['bitacora'] ?? $r['mensaje'], 0, 420) . ' (op ' . substr($op_id, 0, 8) . ')', $lid, $r['registro_id'] ?? null);
         if ($lid) {
-            $c = tc2_clientes_resumen([$lid]);
+            $c = tc2_clientes_resumen([$lid]) ?: tc2_clientes_resumen([$lid], true); // (Anexo A) el de la papelera también
             $resp['cliente'] = $c[$lid] ?? null;
         }
         if (!empty($r['solicitud_id'])) $resp['solicitud'] = tc2_solicitud($r['solicitud_id']);
@@ -1840,12 +1935,12 @@ function tc2_sin_claves(array $resp, array $secretos): array
     return $r;
 }
 
-/** Cliente de la operación (cliente_id del pedido). */
-function tc2_op_liga(array $ctx): array
+/** Cliente de la operación (cliente_id del pedido, arriba o en datos.cliente_id). $papelera: también uno de la papelera. */
+function tc2_op_liga(array $ctx, bool $papelera = false): array
 {
     $id = tc2_id_valor($ctx['cliente_id']);
     if ($id === null) throw tc2_mal('cliente_id', 'Falta el cliente.');
-    $l = tc2_liga_o_404($id);
+    $l = tc2_liga_o_404($id, $papelera);
     contexto_auditoria(['usuario_id' => null, 'usuario' => $ctx['quien'], 'rol' => 'super', 'liga_id' => (int)$l['id'], 'origen' => 'tukan_central']);
     return $l;
 }
@@ -1995,6 +2090,11 @@ function tc2_operacion(string $accion, array $d, array $ctx): array
         case 'atender_solicitud':
             return tc2_op_atender($d, $ctx);
 
+        case 'pausar':
+        case 'borrar_cliente':
+        case 'restaurar_cliente':
+            return tc2_op_papelera($accion, $d, $ctx);
+
         case 'responder_ticket':
             [, $tid, $sol] = tc2_op_solicitud($d, ['soporte']);
             $texto = $d['texto'] ?? '';
@@ -2008,6 +2108,57 @@ function tc2_operacion(string $accion, array $d, array $ctx): array
                     'registro_id' => (int)$t['id'], 'bitacora' => 'Respondió el ticket #' . $t['id'] . ($est ? ' (queda ' . $est . ')' : '')];
     }
     throw new TcError('no_permitido', 'Esa operación no está disponible.', 403, 'accion', ['motivo' => 'no_disponible']);
+}
+
+/**
+ * (Anexo A) pausar · borrar_cliente · restaurar_cliente.
+ *  - pausar: datos.tipo (falta_pago, pedido_cliente, revision, abuso, otro) y datos.motivo (3 a 300). Reutiliza la suspensión real.
+ *  - borrar_cliente: datos.confirmar = nombre exacto del cliente (o su id) y datos.motivo (3 a 300). Copia + papelera de 30 días.
+ *    Si ya estaba en la papelera: sin_cambios, con la misma copia y fecha.
+ *  - restaurar_cliente: solo de la papelera (si no está en la papelera: sin_cambios; si ya se borró de verdad: 404).
+ */
+function tc2_op_papelera(string $accion, array $d, array $ctx): array
+{
+    $l = tc2_op_liga($ctx, $accion !== 'pausar');
+    $n = (string)$l['nombre'];
+    $lid = (int)$l['id'];
+    if ($accion === 'pausar') {
+        $tipo = $d['tipo'] ?? null;
+        if (!is_string($tipo) || !isset(tipos_pausa()[$tipo])) throw tc2_mal('datos.tipo', 'Elija el tipo de pausa: ' . implode(', ', array_keys(tipos_pausa())) . '.');
+        $motivo = tc2_texto($d, 'motivo', 3, 300, 'datos.motivo', 'Escriba el motivo (3 a 300 caracteres).');
+        $antes = (string)($l['suspendida_tipo'] ?? '');
+        $hecho = pausar_cuenta($l, $tipo, $motivo);
+        $msg = !$hecho ? $n . ' ya estaba pausada con ese tipo y motivo.'
+            : ($antes !== '' || liga_suspendida($l) ? 'Pausa de ' . $n . ' actualizada (' . tipos_pausa()[$tipo] . ').' : $n . ' quedó pausada (' . tipos_pausa()[$tipo] . '): sus usuarios ven «Tu cuenta está pausada» y su página pública está temporalmente no disponible. Sus datos se guardan.');
+        return ['mensaje' => $msg, 'sin_cambios' => !$hecho, 'resultado' => ['estado' => 'suspendido', 'tipo' => $tipo, 'motivo' => $motivo], 'liga_id' => $lid,
+                'bitacora' => ($hecho ? 'Pausó la cuenta (' . tipos_pausa()[$tipo] . '): ' : 'Pausar (ya estaba así): ') . $motivo];
+    }
+    if ($accion === 'borrar_cliente') {
+        $conf = $d['confirmar'] ?? null;
+        if (is_int($conf)) $conf = (string)$conf;
+        if (!is_string($conf) || ($conf = trim($conf)) === '' || ($conf !== trim($n) && $conf !== (string)$lid)) {
+            throw tc2_mal('datos.confirmar', 'Para confirmar, escriba el nombre exacto del cliente: ' . $n . ' (o su id: ' . $lid . ').');
+        }
+        $motivo = tc2_texto($d, 'motivo', 3, 300, 'datos.motivo', 'Escriba el motivo del borrado (3 a 300 caracteres).');
+        $x = borrar_cuenta($l, $motivo, $ctx['por']);
+        $arriba = ['copia' => $x['copia'], 'borrar_definitivo_el' => $x['borrar_definitivo_el']];
+        if ($x['ya_estaba']) {
+            return ['mensaje' => $n . ' ya estaba en la papelera (se borra de verdad el ' . $x['borrar_definitivo_el'] . ').', 'sin_cambios' => true,
+                    'resultado' => $arriba + ['estado' => 'papelera'], 'arriba' => $arriba, 'liga_id' => $lid, 'bitacora' => 'Borrar (ya estaba en la papelera)'];
+        }
+        return ['mensaje' => $n . ' pasó a la papelera: nadie puede entrar y su página pública ya no existe. Se guardó una copia completa (' . $x['filas'] . ' filas). Puede restaurarla hasta el '
+                    . date('Y-m-d', strtotime($x['borrar_definitivo_el'] . ' -1 day')) . '; el ' . $x['borrar_definitivo_el'] . ' se borra de verdad.',
+                'resultado' => $arriba + ['estado' => 'papelera', 'filas' => $x['filas'], 'tablas' => (object)$x['conteo']], 'arriba' => $arriba, 'liga_id' => $lid,
+                'bitacora' => 'Borró la cuenta (a la papelera hasta el ' . $x['borrar_definitivo_el'] . '; copia ' . $x['copia'] . '). Motivo: ' . $motivo];
+    }
+    // restaurar_cliente
+    if (!liga_eliminada($l)) {
+        return ['mensaje' => $n . ' no está en la papelera.', 'sin_cambios' => true, 'resultado' => ['estado' => tc2_estado_de($l)['estado']], 'liga_id' => $lid, 'bitacora' => 'Restaurar (no estaba en la papelera)'];
+    }
+    restaurar_cuenta($l, $ctx['por']);
+    $l2 = fila('SELECT * FROM ligas WHERE id = ?', [$lid]);
+    return ['mensaje' => $n . ' salió de la papelera y quedó tal cual estaba.', 'resultado' => ['estado' => tc2_estado_de($l2)['estado']], 'liga_id' => $lid,
+            'bitacora' => 'Restauró la cuenta desde la papelera'];
 }
 
 /** crear_demo (§6.1, §6.3). */

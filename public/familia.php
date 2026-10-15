@@ -14,6 +14,7 @@ csrf_verificar();
 
 $fam = !empty($_SESSION['familia']) ? fila('SELECT * FROM esc_familias WHERE id = ?', [(int)$_SESSION['familia']]) : null;
 $liga = $fam ? fila('SELECT * FROM ligas WHERE id = ?', [$fam['liga_id']]) : null;
+cortar_liga_publica($liga, false, true); // (Anexo A) en la papelera → 404; pausada → «temporalmente no disponible»
 exigir_modulo_portal($liga, 'esc_familias'); // (v12) módulo del plan
 if ($liga) contexto_auditoria(['usuario' => 'Familia C.I. ' . $fam['cedula'], 'rol' => 'familia', 'liga_id' => (int)$liga['id'], 'origen' => 'familia']);
 

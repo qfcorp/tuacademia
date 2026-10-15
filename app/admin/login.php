@@ -34,6 +34,7 @@ if (get('recuperar') !== '' && $hay_usuarios) {
             anotar_intento('recuperar');
             $email_r = mb_strtolower(post('email'), 'UTF-8');
             $ur = filter_var($email_r, FILTER_VALIDATE_EMAIL) ? fila('SELECT * FROM usuarios WHERE lower(email) = ? AND activo = 1', [$email_r]) : null;
+            if ($ur && $ur['liga_id'] && liga_id_eliminada((int)$ur['liga_id'])) $ur = null; // (Anexo A) cuenta en la papelera
             if ($ur && !es_usuario_demo($ur) && !($ur['rol'] === 'super' && tc_solo_central())) recuperar_enviar_codigo($ur); // (Tukán Central)
             usleep(300000);
             $_SESSION['recup_email'] = $email_r;
@@ -116,6 +117,7 @@ if (es_post() && $hay_usuarios) {
     } else {
         $email = mb_strtolower(post('email'), 'UTF-8');
         $u = fila('SELECT * FROM usuarios WHERE lower(email) = ? AND activo = 1', [$email]);
+        if ($u && $u['liga_id'] && liga_id_eliminada((int)$u['liga_id'])) $u = null; // (Anexo A) cuenta en la papelera: como si no existiera
         if ($u && $u['rol'] === 'super' && tc_solo_central()) {
             // (Tukán Central) TUKAN_SOLO_CENTRAL=1: el superadministrador no entra con clave (ni se revisa la clave)
             anotar_intento('login');

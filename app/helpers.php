@@ -119,6 +119,8 @@ function usuario(): ?array
     if ($u !== false) return $u;
     $id = $_SESSION['uid'] ?? 0;
     $u = $id ? fila('SELECT * FROM usuarios WHERE id = ? AND activo = 1', [$id]) : null;
+    // (Anexo A) los usuarios de una cuenta que está en la papelera ya no pueden entrar (aunque tuvieran la sesión abierta)
+    if ($u && $u['liga_id'] && function_exists('liga_id_eliminada') && liga_id_eliminada((int)$u['liga_id'])) $u = null;
     // Vista previa: el superadministrador mira el portal del árbitro o del club como esa persona (solo mirar)
     if ($u && $u['rol'] === 'super' && !empty($_SESSION['vista_previa']['uid'])) {
         $otro = fila("SELECT * FROM usuarios WHERE id = ? AND rol IN ('arbitro', 'delegado', 'liga') AND activo = 1", [(int)$_SESSION['vista_previa']['uid']]);

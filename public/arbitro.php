@@ -138,6 +138,7 @@ if (!$p || !in_array((int)$p['arbitro_id'], $mis, true)) {
 }
 $pid = (int)$p['id'];
 $liga = fila('SELECT * FROM ligas WHERE id = ?', [$p['liga_id']]);
+cortar_liga_publica($liga, true, true); // (Anexo A) en la papelera → 404; pausada → «temporalmente no disponible» (su personal: «Tu cuenta está pausada»)
 exigir_modulo_portal($liga, 'arbitros'); // (v12) módulo del plan
 $url = 'arbitro.php?p=' . $pid;
 $reglas = reglas_torneo((int)$p['torneo_id']);

@@ -144,7 +144,7 @@ Resultados del 13 de octubre de 2026:
 - `prueba_academia.py`: **236/236**. `navegador_academia.py`: **19/19**.
 - `prueba38.py`: **100/100** (modo ligas). `navegador38.py`: **13/13** (Chromium 141).
 - `prueba_central.py` (Panel Tukán Central, v1): **125/125** en modo academia y **121/121** en modo ligas.
-- `prueba_central_v2.py` (Panel Tukán Central, v2): **262/262** en modo academia y **258/258** en modo ligas.
+- `prueba_central_v2.py` (Panel Tukán Central, v2): **343/343** en modo academia y **338/338** en modo ligas (con el anexo A: pausar y papelera).
 - `recorrido.py`: **11.074 páginas, 0 con error de PHP**.
 
 ## 7. Cómo instalar en el servidor (VPS del ERP)
@@ -205,7 +205,7 @@ keytool -list -v -keystore android/firma/tuacademia.keystore -alias tuacademia
 | `pruebas/v38/navegador38.py` (Chromium con la Digital Goods API simulada) | ligas | **13/13** |
 | `pruebas/v38/recorrido.py` (abre todas las páginas: súper, liga, escuela, 3 academias, 2 portales de padres, público) | academia | **11.074 páginas, 0 errores de PHP** |
 | `pruebas/tukan_central/prueba_central.py` (conector del Panel Tukán Central v1, ver §12) | academia | **125/125** (en modo ligas: **121/121**) |
-| `pruebas/tukan_central/prueba_central_v2.py` (conector del Panel Tukán Central v2, ver §12.1) | academia | **262/262** (en modo ligas: **258/258**) |
+| `pruebas/tukan_central/prueba_central_v2.py` (conector del Panel Tukán Central v2, ver §12.1) | academia | **343/343** (en modo ligas: **338/338**; con el anexo A) |
 
 Las pruebas de la v38 (Google Play) se corren en modo **ligas** porque en TuAcademia la app de Google Play está apagada.
 Lo que **no** se pudo probar: Payphone con claves reales (no hay cuenta de prueba), compilar las apps Android (no hay llave ni SDK de Android aquí).
@@ -258,9 +258,9 @@ solicitudes, las academias, los pagos y las finanzas.
   `sudo docker exec -it -u www-data tuacademia-php php /var/www/tuacademia/app/crear_admin.php`.
   Apagar todo el conector: `sudo bash /var/www/tuacademia/vps/conectar_central.sh --desconectar`.
 - **Pruebas** (cada una con la base nueva): `bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py`
-  (v1: **125/125**, modo academia) y `bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central_v2.py` (v2: **262/262**).
+  (v1: **125/125**, modo academia) y `bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central_v2.py` (v2 con el anexo A: **343/343**).
   En modo ligas: `TA_PRODUCTO=ligas bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py` (**121/121**)
-  y lo mismo con `prueba_central_v2.py` (**258/258**).
+  y lo mismo con `prueba_central_v2.py` (**338/338**).
 
 ### 12.1 Protocolo v2: lo que el panel central ve y hace
 
@@ -290,6 +290,40 @@ El mismo `app/tukan_central.php` sirve para TuVocalía; en modo academia solo cu
   - Cada cuenta guarda **de dónde vino** (`origen`: registro, pedido de demo, súper o panel central) y tiene **notas internas**.
 - **Límite**: 120 pedidos por minuto por conexión y 30 rechazados por minuto (después responde 429 «espere un minuto»).
 - **En el VPS** no hay que hacer nada nuevo: basta con actualizar el programa. `conectar_central.sh --probar` dice «Protocolo v2: si».
+
+### 12.2 Anexo A (15 oct 2026): pausar y borrar clientes desde el panel central
+Pedido de Dimitry: «en clientes se debería poder borrar o pausar por algún motivo». Código en `app/papelera.php` (igual en TuVocalía
+y TuAcademia) y las operaciones en `app/tukan_central.php`. Todo queda en la **Bitácora** («Panel Tukán Central · Dimitry <correo>»)
+y se puede repetir sin miedo (misma `operacion_id` → no se hace dos veces).
+- **Pausar** (`pausar`): se elige el tipo (*falta de pago*, *a pedido del cliente*, *en revisión*, *uso indebido* u *otro*) y se escribe
+  el motivo (3 a 300 letras). Es la suspensión de verdad (`activa = 0`) con `suspendida_tipo` y `suspendida_motivo`.
+  - Los usuarios de la academia (administrador, profesores; en modo ligas también vocal, árbitro y delegado) ven **«Tu cuenta está pausada»** con el motivo y el botón de
+    WhatsApp de Tukán (Ajustes → WhatsApp de ventas). Con *en revisión* o *uso indebido* ven un texto general, no el motivo.
+  - Sus clientes (página pública, familias, pagos, carnés, entradas…) ven **«temporalmente no disponible»**.
+  - **Reactivar** la quita. *Suspender* (sin tipo) sigue igual que antes: aviso arriba, solo lectura y la página pública da 404.
+- **Borrar** (`borrar_cliente`): hay que escribir el **nombre exacto** (o el id) y el motivo.
+  1. Se guarda una **copia completa** de la cuenta en `data/borrados/<id>_<AAAAMMDD-HHMMSS>.json.gz` (fuera de la carpeta pública,
+     no se puede bajar por la web): todas sus filas, tabla por tabla. Las tablas **se sacan del esquema** de la base (no de una lista
+     a mano): las que tienen `liga_id` (o `cliente_id`) y todas las que cuelgan de ellas por claves foráneas (jugadores, eventos,
+     asistencia, mensajes de soporte…).
+  2. La cuenta pasa a la **papelera** (`ligas.eliminada`): nadie puede entrar (tampoco con la sesión abierta), no sale en Academias (Ligas), Ventas,
+     Usuarios, Embudo, Negocio ni en las cifras del panel central (estado, clientes, solicitudes), su página pública da **404** y no
+     se le mandan avisos de Telegram ni correos. Lo que pagó **antes** de borrarla sigue en las finanzas de los meses pasados.
+  3. **30 días en la papelera**: se puede **restaurar** tal cual estaba (también si estaba pausada), desde el panel central
+     (Clientes → Papelera → Restaurar, `restaurar_cliente`) o desde el súper panel (**Academias → 🗑️ Papelera → Restaurar**).
+  4. Pasados los 30 días, la **tarea automática** (`app/tareas.php`, una vez al día) la borra de verdad. La copia se guarda **1 año**
+     y después también se borra. La **bitácora** de auditoría no se borra nunca (el programa la protege); sus líneas van en la copia.
+     Cada cuenta que pasó por la papelera queda anotada en la tabla `ligas_borradas` (restaurada o borrada, con la ruta de la copia).
+- **Panel central**: `clientes` con `filtros.estado = "papelera"` (o `estado: "papelera"`) lista la papelera; cada cliente trae
+  `papelera: {desde, hasta, motivo, por, copia}` y, si está pausado, `pausa: {tipo, motivo, motivo_cliente, desde}`. La respuesta
+  de `clientes` trae además `papelera_total`. La ficha de un cliente trae los botones *Pausar* (o *Cambiar motivo de la pausa*) y
+  *Borrar*; la de uno de la papelera, solo *Restaurar*. `capacidades` trae `tipos_pausa` y `revision: 2`.
+- **Leer una copia** (por ejemplo para revisar qué tenía): `php -r 'require "app/bootstrap.php"; print_r(papelera_leer_copia("data/borrados/12_20261015-101500.json.gz")["conteo"]);'`
+  (formato `tukan-papelera-1`: `{cuenta, motivo, por, conteo, tablas: {tabla: {columnas, filas}}}`).
+- **Pruebas (15-oct-2026)**: `prueba_central_v2.py` **343/343** (modo academia) y **338/338** (modo ligas), con efectos reales, copia
+  completa, restaurar, borrado definitivo con fecha simulada y con `app/tareas.php`, aislamiento, entrada bloqueada y 404. Siguen bien:
+  `prueba_academia.py` 236/236, `navegador_academia.py` 19/19, `prueba_arreglos_14oct.py` 107/107, `prueba38.py` 100/100,
+  `navegador38.py` 13/13, `recorrido.py` (5.159 páginas, 0 con error de PHP) y `prueba_central.py` 125/125 y 121/121.
 
 ## 13. Arreglos del 14 de octubre de 2026
 

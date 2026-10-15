@@ -11,7 +11,7 @@ $etq = fn(string $ym) => $nombres_mes[substr($ym, 5, 2)] . ' ' . substr($ym, 2, 
 
 $ingresos = array_column(filas("SELECT substr(ps.fecha, 1, 7) AS m, SUM(ps.monto) AS total FROM pagos_suscripcion ps JOIN ligas l ON l.id = ps.liga_id
                                 WHERE l.es_demo = 0 AND ps.fecha >= ? GROUP BY m", [$desde]), 'total', 'm');
-$nuevas = array_column(filas("SELECT substr(creado, 1, 7) AS m, COUNT(*) AS n FROM ligas WHERE es_demo = 0 AND creado >= ? GROUP BY m", [$desde]), 'n', 'm');
+$nuevas = array_column(filas("SELECT substr(creado, 1, 7) AS m, COUNT(*) AS n FROM ligas WHERE es_demo = 0 AND COALESCE(eliminada, '') = '' AND creado >= ? GROUP BY m", [$desde]), 'n', 'm');
 // Primer pago de cada liga (pasó de prueba a pagar o empezó pagando)
 $primeras = array_column(filas("SELECT substr(f, 1, 7) AS m, COUNT(*) AS n FROM (SELECT MIN(ps.fecha) AS f FROM pagos_suscripcion ps JOIN ligas l ON l.id = ps.liga_id WHERE l.es_demo = 0 GROUP BY ps.liga_id) WHERE f >= ? GROUP BY m", [$desde]), 'n', 'm');
 // No renovaron: su fecha de vencimiento cayó en ese mes y todavía siguen vencidas

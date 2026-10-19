@@ -459,18 +459,10 @@ function img_plan(array $pl)
     imagefilledrectangle($img, 0, 190, IMG_W, 330, col($img, [0, 0, 0], 55));
     texto($img, 'PLAN ' . mb_strtoupper($pl['nombre']), 64, IMG_W / 2, 272, $blanco, 'bold', 'centro', 1000);
     if ($pl['eslogan'] !== '') texto($img, $pl['eslogan'], 24, IMG_W / 2, 315, $suave, 'medium', 'centro', 1000);
-    // Precio principal y demás períodos
-    $ops = opciones_precio($pl);
-    $p0 = reset($ops);
+    // (19-oct-2026) Sin precios: todo por módulos y cotización a la medida
     $y = 448;
-    if ($p0) {
-        $precio = dinero($p0['precio']);
-        $w = ancho_texto($precio, 96);
-        texto($img, $precio, 96, IMG_W / 2 - 90, $y, $amarillo, 'bold', 'centro');
-        texto($img, $p0['texto'], 32, IMG_W / 2 - 90 + intdiv($w, 2) + 18, $y - 8, $blanco, 'medium');
-        $otros = array_slice($ops, 1);
-        if ($otros) texto($img, implode('   ·   ', array_map(fn($o) => dinero($o['precio']) . ' ' . $o['texto'] . ($o['gratis'] ? ' (' . texto_ahorro($o['gratis']) . ')' : ''), $otros)), 24, IMG_W / 2, $y + 52, $blanco, 'medium', 'centro', 1000);
-    }
+    texto($img, 'Pida su demo', 72, IMG_W / 2, $y, $amarillo, 'bold', 'centro', 1000);
+    texto($img, 'Todo por módulos: elija lo que necesita y le enviamos una cotización a su medida', 24, IMG_W / 2, $y + 52, $blanco, 'medium', 'centro', 1000);
     // Límites
     $y = 556;
     texto($img, implode('  ·  ', array_map(fn($t) => trim(str_replace('🌐', '', $t)), textos_limites_plan($pl))), 24, IMG_W / 2, $y, $suave, 'medium', 'centro', 1000);

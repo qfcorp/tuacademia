@@ -245,6 +245,18 @@ function nota_dominio(): string
     return trim((string)ajuste('nota_dominio'));
 }
 
+/** (19-oct-2026) Regla de Dimitry: en las páginas públicas no se muestran precios, descuentos ni comisiones: todo por módulos y cotización. */
+function texto_cotizacion(): string
+{
+    return 'Cotización a su medida';
+}
+
+/** (19-oct-2026) Texto público de los cobros con tarjeta, sin porcentajes. */
+function texto_tasas_publico(): string
+{
+    return 'la comisión de la tarjeta se la explicamos en la demo';
+}
+
 /** Precio principal para mostrar: "$10 al mes" o "$10 por 3 meses". */
 function texto_precio_principal(array $pl): string
 {

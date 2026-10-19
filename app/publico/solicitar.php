@@ -52,10 +52,10 @@ cabecera_publica('Solicitar demo · ' . marca());
     <h1>Solicite su demo de <?= e(marca()) ?></h1>
     <?php if ($recomienda): ?><div class="aviso aviso-info">🤝 Le recomendó <b><?= e($recomienda['nombre']) ?></b>. ¡Bienvenido!</div><?php endif; ?>
     <p><b>📅 Demo de <?= (int)ajuste('dias_demo', 7) ?> días con todos los módulos</b>: le preparamos el acceso y le ayudamos a cargar su <?= es_academia() ? 'academia' : 'liga o escuela' ?>.</p>
-    <p>Le mostramos el sistema con un asesor y le creamos su acceso de prueba para <?= es_academia() ? 'su academia' : ($tipo === 'escuela' ? 'su escuela' : 'su liga') ?>, con sus propios datos.</p>
+    <p>Le mostramos el sistema con un asesor y le preparamos su demo para <?= es_academia() ? 'su academia' : ($tipo === 'escuela' ? 'su escuela' : 'su liga') ?>, con sus propios datos.</p>
     <ul class="lista-check">
       <li>Demo guiada por WhatsApp o videollamada</li>
-      <li>Acceso de prueba preparado para usted</li>
+      <li>Demo preparada para usted y cotización a su medida</li>
       <li>Le ayudamos a cargar sus <?= $tipo === 'escuela' ? (es_academia() ? 'alumnos y cursos' : 'alumnos y grupos') : 'equipos y su primer campeonato' ?></li>
       <li>Sin compromiso: elige su plan cuando esté listo</li>
     </ul>
@@ -82,7 +82,7 @@ cabecera_publica('Solicitar demo · ' . marca());
         <div><label>Su nombre *</label><input type="text" name="contacto" required maxlength="80" value="<?= e(post('contacto')) ?>" autocomplete="name"></div>
         <div><label>Celular / WhatsApp *</label><input type="tel" name="telefono" required maxlength="30" value="<?= e(post('telefono')) ?>" autocomplete="tel"></div>
         <div class="campo-ancho"><label>Correo</label><input type="email" name="email" value="<?= e(post('email')) ?>" autocomplete="email"></div>
-        <?php if ($planes): ?><div><label>Plan que le interesa</label><select name="plan_id"><option value="">Todavía no sé</option><?php foreach ($planes as $pl): ?><option value="<?= (int)$pl['id'] ?>" <?= (int)post('plan_id', get('plan')) === (int)$pl['id'] ? 'selected' : '' ?>><?= e($pl['nombre']) ?> — <?= e(texto_precio_principal($pl)) ?></option><?php endforeach; ?></select></div><?php endif; ?>
+        <?php if ($planes): ?><div><label>Plan que le interesa</label><select name="plan_id"><option value="">Todavía no sé</option><?php foreach ($planes as $pl): ?><option value="<?= (int)$pl['id'] ?>" <?= (int)post('plan_id', get('plan')) === (int)$pl['id'] ? 'selected' : '' ?>><?= e($pl['nombre']) ?></option><?php endforeach; ?></select></div><?php endif; ?>
         <?php $vref = vendedor_del_visitante(get('ref')) ?? vendedor_del_visitante(); ?>
         <div><label>Código de vendedor (opcional)</label><input type="text" name="ref" maxlength="20" value="<?= e(post('ref', $vref['codigo'] ?? '')) ?>" style="text-transform:uppercase" placeholder="Si alguien le recomendó"><?php if ($vref): ?><div class="ayuda">Le atiende: <?= e($vref['nombre']) ?></div><?php endif; ?></div>
         <div class="campo-ancho"><label>¿Algo que debamos saber?</label><textarea name="mensaje" rows="3" maxlength="600" placeholder="<?= es_academia() ? 'Ej: cuándo es su próximo recital, qué le interesa más' : 'Ej: cuándo empieza su campeonato, qué le interesa más' ?>"><?= e(post('mensaje')) ?></textarea></div>

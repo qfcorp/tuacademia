@@ -100,7 +100,7 @@ $mods_vista = modulos_sistema($tipo_vista); // (v16.1) textos propios para escue
     <?php if ($enlace_wa): ?><a class="btn btn-grande btn-wa" target="_blank" href="<?= e($enlace_wa) ?>">💬 Escríbanos por WhatsApp</a><?php endif; ?>
     <?php if (liga_demo()): ?><a class="btn btn-grande btn-sec-blanco" href="index.php?v=demo">👀 Ver demo</a><?php endif; ?>
   </div>
-  <p class="hero-nota">Demo guiada y acceso de prueba para su organización · Soporte por WhatsApp en Ecuador</p>
+  <p class="hero-nota">Demo guiada para su organización · Todo por módulos: pague solo lo que usa · Soporte por WhatsApp en Ecuador</p>
   <div class="hero-tabs"><a class="<?= $ver_escuelas ? '' : 'activa' ?>" href="index.php#planes">⚽ Para ligas y campeonatos</a><a class="<?= $ver_escuelas ? 'activa' : '' ?>" href="escuelas#planes">🎓 Para escuelas deportivas</a></div>
 </section>
 
@@ -135,23 +135,15 @@ $mods_vista = modulos_sistema($tipo_vista); // (v16.1) textos propios para escue
 
 <?php if ($planes_vista): $periodos_hay = []; foreach ($planes_vista as $pl) foreach (opciones_precio($pl) as $k => $o) $periodos_hay[$k] = $o['nombre']; $orden_p = array_intersect(['mensual', 'trimestral', 'semestral', 'anual'], array_keys($periodos_hay)); ?>
 <h2 class="titulo-seccion" id="planes">Planes <?= $ver_escuelas ? 'para escuelas' : 'para ligas' ?></h2>
-<?php if (count($orden_p) > 1): ?>
-<div class="periodos" id="periodos">
-  <?php foreach ($orden_p as $k): ?><button type="button" data-p="<?= $k ?>" class="<?= $k === 'mensual' ? 'activo' : '' ?>"><?= e($periodos_hay[$k]) ?><?php if ($k === 'semestral'): ?> <small>ahorra 1 mes</small><?php elseif ($k === 'anual'): ?> <small>ahorra 2 meses</small><?php endif; ?></button><?php endforeach; ?>
-</div>
-<?php endif; ?>
+<p class="suave" style="text-align:center;margin-top:-6px">Todo es por módulos: usted elige los módulos y las disciplinas que necesita y paga solo por eso. Pida su demo y le enviamos una cotización a su medida.</p>
 <div class="planes planes-v12">
   <?php foreach ($planes_vista as $pl): $ops = opciones_precio($pl); $mp = modulos_plan($pl); ?>
     <div class="plan<?= $pl['destacado'] ? ' plan-destacado' : '' ?>">
       <?php if ($pl['destacado']): ?><span class="plan-cinta">Recomendado</span><?php endif; ?>
       <h3><?= e($pl['nombre']) ?></h3>
       <?php if ($pl['eslogan'] !== ''): ?><p class="suave plan-eslogan"><?= e($pl['eslogan']) ?></p><?php endif; ?>
-      <?php foreach (['mensual', 'trimestral', 'semestral', 'anual'] as $k): $o = $ops[$k] ?? reset($ops); ?>
-        <div class="plan-precio-p" data-p="<?= $k ?>" <?= $k === 'mensual' ? '' : 'hidden' ?>>
-          <p class="plan-precio"><?= dinero($o['precio']) ?><small> <?= e($o['texto']) ?></small></p>
-          <p class="suave plan-equiv"><?= $o['meses'] > 1 ? 'Equivale a ' . dinero($o['por_mes']) . ' al mes' : '&nbsp;' ?><?= $o['gratis'] ? ' · <b>' . texto_ahorro($o['gratis']) . '</b>' : '' ?><?= !empty($o['dominio']) ? '<br><b class="plan-dominio">🌐 + dominio propio incluido*</b>' : '' ?></p>
-        </div>
-      <?php endforeach; ?>
+      <p class="plan-precio" style="font-size:1.15rem"><?= e(texto_cotizacion()) ?></p>
+      <?php if ((int)($pl['dominio_anual'] ?? 0)): ?><p class="suave plan-equiv"><b class="plan-dominio">🌐 + dominio propio incluido*</b></p><?php endif; ?>
       <ul class="plan-limites"><?php foreach (textos_limites_plan($pl, $tipo_vista) as $t): ?><li><?= e($t) ?></li><?php endforeach; ?></ul>
       <ul class="plan-modulos">
         <?php foreach ($mods_vista as $k => [$ico, $nom]): $si = in_array($k, $mp, true); ?><li class="<?= $si ? 'si' : 'no' ?>"><?= $si ? '✓' : '✕' ?> <?= e($nom) ?></li><?php endforeach; ?>
@@ -166,34 +158,24 @@ $mods_vista = modulos_sistema($tipo_vista); // (v16.1) textos propios para escue
   $pl_liga = fila("SELECT * FROM planes WHERE activo = 1 AND tipo_cuenta IN ('liga','ambos') AND precio_mensual > 0 ORDER BY destacado DESC, precio_mensual DESC LIMIT 1");
   $pl_esc = fila("SELECT * FROM planes WHERE activo = 1 AND tipo_cuenta IN ('escuela','ambos') AND precio_mensual > 0 ORDER BY destacado DESC, precio_mensual DESC LIMIT 1");
   // (v38) en la app de Google Play no hay combo
-  if (combo_descuento() > 0 && $pl_liga && $pl_esc && !en_app_play()): $suma = (float)$pl_liga['precio_mensual'] + (float)$pl_esc['precio_mensual']; ?>
+  if (combo_descuento() > 0 && $pl_liga && $pl_esc && !en_app_play()): ?>
 <div class="tarjeta combo-venta">
-  <h3 style="margin-top:0">🤝 <?= $ver_escuelas ? 'Combo escuela + liga: ' . e((string)(float)combo_descuento()) . '% de descuento en los dos planes' : e(texto_combo()) ?></h3>
-  <p style="margin:.3rem 0"><?= $ver_escuelas ? '¿Su escuela también organiza campeonatos o tiene una liga?' : '¿Tiene una liga <b>y</b> una escuela?' ?> Contrate las dos con el mismo usuario y pague <b><?= e((string)(float)combo_descuento()) ?>% menos</b> en cada plan. Se mantiene el ahorro de 1 mes en el semestre y de 2 meses en el año.</p>
-  <p class="suave" style="margin:0">Ejemplo: <?= $ver_escuelas ? e($pl_esc['nombre']) . ' (' . dinero($pl_esc['precio_mensual']) . ') + ' . e($pl_liga['nombre']) . ' (' . dinero($pl_liga['precio_mensual']) . ')' : e($pl_liga['nombre']) . ' (' . dinero($pl_liga['precio_mensual']) . ') + ' . e($pl_esc['nombre']) . ' (' . dinero($pl_esc['precio_mensual']) . ')' ?> = <s><?= dinero($suma) ?></s> → <b><?= dinero(round($suma * (1 - combo_descuento() / 100), 2)) ?> al mes</b>.</p>
+  <h3 style="margin-top:0">🤝 <?= $ver_escuelas ? 'Combo escuela + liga' : 'Combo liga + escuela' ?></h3>
+  <p style="margin:.3rem 0"><?= $ver_escuelas ? '¿Su escuela también organiza campeonatos o tiene una liga?' : '¿Tiene una liga <b>y</b> una escuela?' ?> Contrate las dos con el mismo usuario y tiene un descuento en las dos. Se lo incluimos en su cotización.</p>
 </div>
 <?php endif; ?>
 <?php if (array_filter($planes_vista, fn($p) => (int)($p['dominio_anual'] ?? 0)) && nota_dominio() !== ''): ?><p class="suave" style="text-align:center;font-size:.85rem">* <?= e(nota_dominio()) ?></p><?php endif; ?>
 <p class="suave" style="text-align:center">Todos los planes incluyen: <?= e(implode(' · ', funciones_base($tipo_vista))) ?>.</p>
 <p style="text-align:center"><a class="btn btn-sec" href="comparar<?= $ver_escuelas ? '?para=escuelas' : '' ?>">📊 Comparar todos los planes, función por función</a></p>
-<p class="suave" style="text-align:center">Precios en dólares. En la demo tiene todos los módulos (el fixture para imprimir y el esquema del campeonato son exclusivos del plan Profesional). ¿Necesita algo especial? <?= $enlace_wa ? '<a target="_blank" href="' . e($enlace_wa) . '">Converse con nosotros</a>' : 'Consúltenos' ?>.</p>
-<script>
-(function () {
-  var b = document.querySelectorAll('#periodos button');
-  b.forEach(function (x) { x.addEventListener('click', function () {
-    b.forEach(function (y) { y.classList.toggle('activo', y === x); });
-    document.querySelectorAll('.plan-precio-p').forEach(function (p) { p.hidden = p.getAttribute('data-p') !== x.getAttribute('data-p'); });
-  }); });
-})();
-</script>
+<p class="suave" style="text-align:center">En la demo le mostramos todos los módulos y después le enviamos una cotización a su medida. ¿Necesita algo especial? <?= $enlace_wa ? '<a target="_blank" href="' . e($enlace_wa) . '">Converse con nosotros</a>' : 'Consúltenos' ?>.</p>
 <?php endif; ?>
 
 <h2 class="titulo-seccion" id="deportes">Elija sus deportes</h2>
-<p class="suave" style="text-align:center;margin-top:-6px">Su plan incluye un deporte. Agregue los que necesite con <b><?= e(rtrim(rtrim(number_format(modulo_descuento(), 1, ',', ''), '0'), ',')) ?> % de descuento</b> cada uno: todo queda en la misma cuenta, con un solo panel y una sola página pública.</p>
+<p class="suave" style="text-align:center;margin-top:-6px">Su plan incluye un deporte. Elija los que necesite y pague solo por esos; si son más de dos, tiene descuento: todo queda en la misma cuenta, con un solo panel y una sola página pública.</p>
 <div class="funciones modulos-deporte-landing">
   <?php foreach (modulos_deporte(true) as $k => $m): ?>
     <div class="funcion"><span class="funcion-ico"><?= $m['icono'] ?></span><h3><?= e($m['nombre']) ?></h3><p><?= e($m['descripcion']) ?></p>
-      <p><b>+<?= dinero(precio_mostrar_modulo_extra($k)) ?>/mes</b> <small class="suave">como deporte adicional</small> · <a href="index.php?v=solicitar&amp;modulo=<?= e($k) ?>">pedir demo</a></p></div>
+      <p><a href="index.php?v=solicitar&amp;modulo=<?= e($k) ?>">Pedir demo y cotización</a></p></div>
   <?php endforeach; ?>
 </div>
 
@@ -215,7 +197,7 @@ $mods_vista = modulos_sistema($tipo_vista); // (v16.1) textos propios para escue
     <div><h3>📊 Reporte de pagos</h3><p>Entra a su panel y ve solo sus pagos: quién pagó, cuánto, la comisión y lo que le transferimos.</p></div>
     <div><h3>🤝 Usted decide</h3><p>La comisión la asume su <?= $ver_escuelas ? 'escuela' : 'liga' ?> o se le suma al que paga. Usted elige.</p></div>
   </div>
-  <p class="suave"><b>Costo por transacción:</b> <?= e(texto_tasas()) ?>. Sin costo mensual adicional en los planes que lo incluyen. Su suscripción de <?= e(marca()) ?> también se puede pagar con tarjeta.</p>
+  <p class="suave"><b>Costo por transacción:</b> <?= e(texto_tasas_publico()) ?>. Su suscripción de <?= e(marca()) ?> también se puede pagar con tarjeta.</p>
 </section>
 
 <h2 class="titulo-seccion">Todo lo que incluye</h2>
@@ -227,11 +209,11 @@ $mods_vista = modulos_sistema($tipo_vista); // (v16.1) textos propios para escue
 
 <h2 class="titulo-seccion" id="preguntas">Preguntas frecuentes</h2>
 <div class="faq">
-  <details><summary>¿Cuánto cuesta y cómo pago?</summary><p>Desde <?= $planes_vista ? e(texto_precio_principal($planes_vista[0])) : 'poco' ?>. Puede pagar mensual, semestral (ahorra 1 mes) o anual (ahorra 2 meses), por transferencia o con tarjeta. Primero le preparamos una demo para que lo conozca.</p></details>
+  <details><summary>¿Cuánto cuesta y cómo pago?</summary><p>Todo es por módulos: usted elige los módulos y las disciplinas que necesita y paga solo por eso; si son más de dos, tiene descuento. Pida su demo: se la mostramos y le enviamos una cotización a su medida. Puede pagar por transferencia o con tarjeta.</p></details>
   <?php if (!$ver_escuelas): ?><details><summary>¿Qué es el plan Torneo?</summary><p>Para campeonatos cortos (relámpago, de verano, de barrio): un solo torneo de hasta 20 equipos durante 3 meses, con casi todos los módulos (el fixture para imprimir y el esquema del campeonato son del plan Profesional).</p></details><?php endif; ?>
-  <?php if (combo_descuento() > 0): ?><details><summary>¿Y si tengo una liga y también una escuela?</summary><p>Con el combo liga + escuela maneja las dos con el mismo usuario y paga <?= e((string)(float)combo_descuento()) ?>% menos en cada plan.</p></details><?php endif; ?>
+  <?php if (combo_descuento() > 0): ?><details><summary>¿Y si tengo una liga y también una escuela?</summary><p>Con el combo liga + escuela maneja las dos con el mismo usuario y tiene un descuento en las dos. Se lo incluimos en su cotización.</p></details><?php endif; ?>
   <details><summary>¿Puedo cambiar de plan?</summary><p>Sí, cuando quiera, desde "Mi plan" en su panel. Los módulos nuevos se activan al instante y no pierde ningún dato.</p></details>
-  <details><summary>¿Cómo funcionan los cobros con tarjeta?</summary><p><?= $ver_escuelas ? 'Los padres pagan' : 'Sus equipos pagan' ?> con tarjeta; el recibo sale solo. <?= e(marca()) ?> le transfiere lo cobrado menos la comisión de la tarjeta (<?= e(texto_tasas()) ?>). Usted elige si la comisión la asume su organización o el que paga.</p></details>
+  <details><summary>¿Cómo funcionan los cobros con tarjeta?</summary><p><?= $ver_escuelas ? 'Los padres pagan' : 'Sus equipos pagan' ?> con tarjeta; el recibo sale solo. <?= e(marca()) ?> le transfiere lo cobrado menos la comisión de la tarjeta (se la explicamos en la demo). Usted elige si la comisión la asume su organización o el que paga.</p></details>
   <details><summary>¿Necesito instalar algo?</summary><p>No. Funciona en el navegador de cualquier computadora o celular. Si quiere, se instala como aplicación en el celular desde el mismo navegador (Agregar a pantalla de inicio).</p></details>
   <?php if ($ver_escuelas): ?>
   <details><summary>¿Para qué deportes sirve?</summary><p>Fútbol, básquet, vóley, natación y otros: cada escuela elige su deporte y sus tests de rendimiento.</p></details>

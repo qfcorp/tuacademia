@@ -56,7 +56,7 @@ $funciones = [
     <?php if ($enlace_wa): ?><a class="btn btn-grande btn-wa" target="_blank" href="<?= e($enlace_wa) ?>">💬 Escríbanos por WhatsApp</a><?php endif; ?>
     <?php if (escuela_demo()): ?><a class="btn btn-grande btn-sec-blanco" href="index.php?v=demo">👀 Ver demo</a><?php endif; ?>
   </div>
-  <p class="hero-nota">Demo guiada y acceso de prueba para su academia · Soporte por WhatsApp en Ecuador</p>
+  <p class="hero-nota">Demo guiada para su academia · Todo por módulos: pague solo lo que usa · Soporte por WhatsApp en Ecuador</p>
 </section>
 
 <h2 class="titulo-seccion" id="para-quien">Hecho para su academia</h2>
@@ -79,23 +79,15 @@ $funciones = [
 
 <?php if ($planes_vista): $periodos_hay = []; foreach ($planes_vista as $pl) foreach (opciones_precio($pl) as $k => $o) $periodos_hay[$k] = $o['nombre']; $orden_p = array_intersect(['mensual', 'trimestral', 'semestral', 'anual'], array_keys($periodos_hay)); ?>
 <h2 class="titulo-seccion" id="planes">Planes</h2>
-<?php if (count($orden_p) > 1): ?>
-<div class="periodos" id="periodos">
-  <?php foreach ($orden_p as $k): ?><button type="button" data-p="<?= $k ?>" class="<?= $k === 'mensual' ? 'activo' : '' ?>"><?= e($periodos_hay[$k]) ?><?php if ($k === 'semestral'): ?> <small>paga 5, recibe 6</small><?php elseif ($k === 'anual'): ?> <small>paga 10, recibe 12</small><?php endif; ?></button><?php endforeach; ?>
-</div>
-<?php endif; ?>
+<p class="suave" style="text-align:center;margin-top:-6px">Todo es por módulos: usted elige los módulos y las disciplinas que necesita y paga solo por eso. Pida su demo y le enviamos una cotización a su medida.</p>
 <div class="planes planes-v12">
   <?php foreach ($planes_vista as $pl): $ops = opciones_precio($pl); $mp = modulos_plan($pl); ?>
     <div class="plan<?= $pl['destacado'] ? ' plan-destacado' : '' ?>">
       <?php if ($pl['destacado']): ?><span class="plan-cinta">Recomendado</span><?php endif; ?>
       <h3><?= e($pl['nombre']) ?></h3>
       <?php if ($pl['eslogan'] !== ''): ?><p class="suave plan-eslogan"><?= e($pl['eslogan']) ?></p><?php endif; ?>
-      <?php foreach (['mensual', 'trimestral', 'semestral', 'anual'] as $k): $o = $ops[$k] ?? reset($ops); ?>
-        <div class="plan-precio-p" data-p="<?= $k ?>" <?= $k === 'mensual' ? '' : 'hidden' ?>>
-          <p class="plan-precio"><?= dinero($o['precio']) ?><small> <?= e($o['texto']) ?></small></p>
-          <p class="suave plan-equiv"><?= $o['meses'] > 1 ? 'Equivale a ' . dinero($o['por_mes']) . ' al mes' : '&nbsp;' ?><?= $o['gratis'] ? ' · <b>' . texto_ahorro($o['gratis']) . '</b>' : '' ?><?= !empty($o['dominio']) ? '<br><b class="plan-dominio">🌐 + dominio propio incluido*</b>' : '' ?></p>
-        </div>
-      <?php endforeach; ?>
+      <p class="plan-precio" style="font-size:1.15rem"><?= e(texto_cotizacion()) ?></p>
+      <?php if ((int)($pl['dominio_anual'] ?? 0)): ?><p class="suave plan-equiv"><b class="plan-dominio">🌐 + dominio propio incluido*</b></p><?php endif; ?>
       <ul class="plan-limites"><?php foreach (textos_limites_plan($pl, 'escuela') as $t): ?><li><?= e($t) ?></li><?php endforeach; ?></ul>
       <ul class="plan-modulos">
         <?php foreach ($mods_vista as $k => [$ico, $nom]): $si = in_array($k, $mp, true); ?><li class="<?= $si ? 'si' : 'no' ?>"><?= $si ? '✓' : '✕' ?> <?= e($nom) ?></li><?php endforeach; ?>
@@ -108,25 +100,16 @@ $funciones = [
 </div>
 <?php if (array_filter($planes_vista, fn($p) => (int)($p['dominio_anual'] ?? 0)) && nota_dominio() !== ''): ?><p class="suave" style="text-align:center;font-size:.85rem">* <?= e(nota_dominio()) ?></p><?php endif; ?>
 <p class="suave" style="text-align:center">Todos los planes incluyen: <?= e(implode(' · ', funciones_base('escuela'))) ?>.</p>
-<p class="suave" style="text-align:center">Precios en dólares. En la demo tiene todo. ¿Necesita algo especial? <?= $enlace_wa ? '<a target="_blank" href="' . e($enlace_wa) . '">Converse con nosotros</a>' : 'Consúltenos' ?>.</p>
-<script>
-(function () {
-  var b = document.querySelectorAll('#periodos button');
-  b.forEach(function (x) { x.addEventListener('click', function () {
-    b.forEach(function (y) { y.classList.toggle('activo', y === x); });
-    document.querySelectorAll('.plan-precio-p').forEach(function (p) { p.hidden = p.getAttribute('data-p') !== x.getAttribute('data-p'); });
-  }); });
-})();
-</script>
+<p class="suave" style="text-align:center">En la demo le mostramos todo y después le enviamos una cotización a su medida. ¿Necesita algo especial? <?= $enlace_wa ? '<a target="_blank" href="' . e($enlace_wa) . '">Converse con nosotros</a>' : 'Consúltenos' ?>.</p>
 <?php endif; ?>
 
 <h2 class="titulo-seccion" id="disciplinas">Elija sus disciplinas</h2>
-<p class="suave" style="text-align:center;margin-top:-6px">Su plan incluye una disciplina. Agregue las que necesite con <b><?= e(rtrim(rtrim(number_format(modulo_descuento(), 1, ',', ''), '0'), ',')) ?> % de descuento</b> cada una: todo queda en la misma cuenta, con un solo panel y una sola página.</p>
+<p class="suave" style="text-align:center;margin-top:-6px">Cada disciplina es un módulo: elija las que necesite y pague solo por esas; si son más de dos, tiene descuento. todo queda en la misma cuenta, con un solo panel y una sola página.</p>
 <div class="funciones modulos-deporte-landing">
   <?php $mods_d = modulos_deporte(true); uksort($mods_d, fn($a, $b) => (array_search($a, ['baile', 'musica', 'natacion']) === false ? 9 : array_search($a, ['baile', 'musica', 'natacion'])) <=> (array_search($b, ['baile', 'musica', 'natacion']) === false ? 9 : array_search($b, ['baile', 'musica', 'natacion'])));
   foreach ($mods_d as $k => $m): ?>
     <div class="funcion"><span class="funcion-ico"><?= $m['icono'] ?></span><h3><?= e($m['nombre']) ?></h3><p><?= e($m['descripcion']) ?></p>
-      <p><b>+<?= dinero(precio_mostrar_modulo_extra($k)) ?>/mes</b> <small class="suave">como disciplina adicional</small></p></div>
+      <p><a href="index.php?v=solicitar&amp;modulo=<?= e($k) ?>">Pedir demo y cotización</a></p></div>
   <?php endforeach; ?>
 </div>
 
@@ -137,7 +120,7 @@ $funciones = [
 
 <h2 class="titulo-seccion" id="preguntas">Preguntas frecuentes</h2>
 <div class="faq">
-  <details><summary>¿Cuánto cuesta y cómo pago?</summary><p>Desde <?= $planes_vista ? e(texto_precio_principal($planes_vista[0])) : 'poco' ?>. Puede pagar mensual, semestral (paga 5 meses y recibe 6) o anual (paga 10 y recibe 12, más dominio propio). Primero le preparamos una demo.</p></details>
+  <details><summary>¿Cuánto cuesta y cómo pago?</summary><p>Todo es por módulos: usted elige los módulos y las disciplinas que necesita y paga solo por eso; si son más de dos, tiene descuento. Pida su demo: se la mostramos y le enviamos una cotización a su medida. Puede pagar por transferencia o con tarjeta.</p></details>
   <details><summary>¿Cómo funciona el recordatorio de pensiones?</summary><p>Cada día, en <b>Mensajes de hoy</b>, aparecen las pensiones que vencen en los próximos días y las vencidas, con el mensaje listo para cada padre. Toca «WhatsApp», se abre el chat con el mensaje escrito, lo envía y lo marca como enviado. No hace falta contratar nada aparte.</p></details>
   <details><summary>¿Los padres pueden pagar por DeUna?</summary><p>Sí. Usted pone el número de DeUna de la academia; el padre paga desde su app y sube la captura del comprobante en su portal. Usted lo revisa y con un toque sale el recibo.</p></details>
   <details><summary>¿Sirve para clases particulares de música?</summary><p>Sí: vende paquetes de 4, 8 o 12 clases, arma el horario 1 a 1 con cada profesor y, al marcar la asistencia, la clase se descuenta del paquete. El padre ve cuántas clases le quedan.</p></details>

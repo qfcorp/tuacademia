@@ -32,9 +32,7 @@ $contenido = function (bool $pdf) use ($pl, $ops, $incluye, $no, $extras, $tipo,
       <div><small><?= e(marca()) ?> · Plan</small><h1><?= e($pl['nombre']) ?></h1><?php if ($pl['eslogan'] !== ''): ?><p><?= e($pl['eslogan']) ?></p><?php endif; ?></div>
     </div>
     <h2>💲 Precio</h2>
-    <div class="tabla-scroll"><table class="<?= $pdf ? 'pl' : '' ?>"><tr><th>Forma de pago</th><th class="num">Precio</th><th class="num">Equivale al mes</th><th>Beneficio</th></tr>
-      <?php foreach ($ops as $o): ?><tr><td><?= e($o['nombre']) ?> (<?= $o['meses'] ?> mes<?= $o['meses'] === 1 ? '' : 'es' ?>)</td><td class="num"><b><?= dinero($o['precio']) ?></b></td><td class="num"><?= dinero($o['por_mes']) ?></td><td><?= $o['gratis'] ? texto_ahorro($o['gratis']) . '' : '—' ?><?= !empty($o['dominio']) ? ' + 🌐 dominio propio incluido*' : '' ?></td></tr><?php endforeach; ?>
-    </table></div>
+    <p><b><?= e(texto_cotizacion()) ?>.</b> Todo es por módulos: usted elige los módulos y las disciplinas que necesita y paga solo por eso; si son más de dos, tiene descuento.<?= (int)($pl['dominio_anual'] ?? 0) ? ' Incluye 🌐 dominio propio pagando 1 año*.' : '' ?></p>
     <h2>📏 Capacidad</h2>
     <ul><?php foreach (textos_limites_plan($pl) as $t): ?><li><?= e($t) ?></li><?php endforeach; ?></ul>
     <h2>✅ Incluido siempre</h2>
@@ -46,15 +44,15 @@ $contenido = function (bool $pdf) use ($pl, $ops, $incluye, $no, $extras, $tipo,
     <?php if ($extras): ?><h2>➕ Además</h2><ul><?php foreach ($extras as $li): ?><li><?= e($li) ?></li><?php endforeach; ?></ul><?php endif; ?>
     <?php if (isset($incluye['pagos_tarjeta'])): ?>
       <h2>💳 Cobros con tarjeta</h2>
-      <p>Sus <?= $tipo === 'escuela' ? 'familias' : 'equipos' ?> pagan con tarjeta de crédito o débito; el recibo sale solo y usted recibe la transferencia en su cuenta. Costo por transacción: <?= e(texto_tasas()) ?>. Usted elige si la comisión la asume su organización o el que paga.</p>
+      <p>Sus <?= $tipo === 'escuela' ? 'familias' : 'equipos' ?> pagan con tarjeta de crédito o débito; el recibo sale solo y usted recibe la transferencia en su cuenta. Costo por transacción: <?= e(texto_tasas_publico()) ?>. Usted elige si la comisión la asume su organización o el que paga.</p>
     <?php endif; ?>
     <?php if ($no): ?>
       <h2>No incluye</h2>
       <p class="suave"><?= e(implode(' · ', array_map(fn($m) => $m[1], $no))) ?>.<?= $siguiente ? ' Los tiene en el plan ' . e($siguiente['nombre']) . '.' : '' ?></p>
     <?php endif; ?>
-    <?php if (combo_descuento() > 0): ?><h2>🤝 Combo liga + escuela</h2><p>Si también tiene una <?= $tipo === 'escuela' ? 'liga o campeonato' : 'escuela deportiva' ?>, contrate las dos con el mismo usuario y pague <b><?= e((string)(float)combo_descuento()) ?>% menos</b> en cada plan.</p><?php endif; ?>
+    <?php if (combo_descuento() > 0): ?><h2>🤝 Combo liga + escuela</h2><p>Si también tiene una <?= $tipo === 'escuela' ? 'liga o campeonato' : 'escuela deportiva' ?>, contrate las dos con el mismo usuario y tiene un descuento en las dos (se lo incluimos en su cotización).</p><?php endif; ?>
     <?php if ((int)($pl['dominio_anual'] ?? 0) && nota_dominio() !== ''): ?><p class="suave" style="font-size:.85rem">* <?= e(nota_dominio()) ?></p><?php endif; ?>
-    <p class="suave">Solicite su demo: le preparamos un acceso de prueba con todos los módulos. Precios en dólares. <?= e($url) ?></p>
+    <p class="suave">Pida su demo: se la mostramos con todos los módulos y le enviamos una cotización a su medida. <?= e($url) ?></p>
   </div>
     <?php
 };
@@ -79,7 +77,7 @@ cabecera_publica('Plan ' . $pl['nombre'] . ' · ' . marca());
   <div class="acciones" style="margin-top:10px">
     <a class="btn btn-sec btn-chico" target="_blank" href="<?= e($url) ?>?pdf=1">📄 Descargar PDF</a>
     <a class="btn btn-sec btn-chico" target="_blank" href="imagen.php?tipo=plan&amp;plan=<?= (int)$pl['id'] ?>">🖼 Imagen para WhatsApp</a>
-    <a class="btn btn-sec btn-chico" target="_blank" href="https://wa.me/?text=<?= rawurlencode('Plan ' . $pl['nombre'] . ' de ' . marca() . ': ' . texto_precio_principal($pl) . "\n" . $url) ?>">📲 Compartir</a>
+    <a class="btn btn-sec btn-chico" target="_blank" href="https://wa.me/?text=<?= rawurlencode('Plan ' . $pl['nombre'] . ' de ' . marca() . ': pida su demo y le enviamos una cotización a su medida.' . "\n" . $url) ?>">📲 Compartir</a>
   </div>
 </div>
 <?php

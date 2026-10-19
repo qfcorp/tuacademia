@@ -14,8 +14,8 @@ if ($T['con_goleadores']) $pestanas['goleadores'] = $T['goleadores'];
 $pestanas += ['tarjetas' => ($T['deporte'] === 'basquet' ? 'Faltas y suspendidos' : 'Tarjetas y suspendidos'), 'equipos' => 'Equipos'];
 // (v7) Votación del público y polla
 $votaciones_pub = filas("SELECT * FROM votaciones WHERE liga_id = ? AND (estado = 'abierta' OR creado >= datetime('now', '-30 days')) ORDER BY (estado = 'abierta') DESC, id DESC LIMIT 20", [$lid]);
-if ($votaciones_pub) $pestanas['votar'] = '🗳 Votaciones';
-if ((int)$liga['polla_activa'] === 1) $pestanas['polla'] = '🎯 Polla';
+if ($votaciones_pub && modulo_activo($liga, 'publico')) $pestanas['votar'] = '🗳 Votaciones'; // (Anexo B) votación y polla son de «Patrocinadores y público»
+if ((int)$liga['polla_activa'] === 1 && modulo_activo($liga, 'publico')) $pestanas['polla'] = '🎯 Polla';
 if ($t && $t['fecha_sorteo']) $pestanas['sorteo'] = 'Sorteo';
 $insc_abiertas = filas("SELECT * FROM torneos WHERE liga_id = ? AND " . sql_sin_carreras() . " AND estado <> 'finalizado' AND equipos_hasta <> '' AND equipos_hasta >= ? ORDER BY id DESC", [$lid, date('Y-m-d')]);
 if ($insc_abiertas) $pestanas['inscribir'] = '📝 Inscribe tu equipo';
@@ -32,7 +32,7 @@ if ($docs_pub) $pestanas['documentos'] = '📄 Documentos';
 $pestanas['buscar'] = '🔎 Buscar';
 if (es_federacion($liga)) $pestanas = ['federacion' => '🏛 Federación'] + $pestanas; // (v28) volver a la portada de la federación
 if (entradas_activas($liga) && ventas_abiertas($lid)) $pestanas['entradas'] = '🎟 Entradas'; // (v28)
-$canchas_res = (int)$liga['reservas_activas'] === 1 ? filas('SELECT * FROM canchas WHERE liga_id = ? AND activa = 1 AND reservable = 1 ORDER BY orden, nombre', [$lid]) : [];
+$canchas_res = (int)$liga['reservas_activas'] === 1 && modulo_activo($liga, 'reservas') ? filas('SELECT * FROM canchas WHERE liga_id = ? AND activa = 1 AND reservable = 1 ORDER BY orden, nombre', [$lid]) : [];
 if ($canchas_res) $pestanas['reservar'] = '🏟 Reservar cancha';
 
 /* (v8) Reserva de cancha hecha por el público */

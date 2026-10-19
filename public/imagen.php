@@ -45,7 +45,7 @@ if ($tipo === 'cromo') {
     // (v12) Imagen de un plan para WhatsApp y redes
     $pl = fila('SELECT * FROM planes WHERE id = ?', [(int)get('plan')]) ?? no_disponible();
     $liga = ['id' => 0, 'color' => '#0b6e4f', 'nombre' => marca(), 'logo' => ''];
-    $datos_firma = [$pl, modulos_sistema(), ajuste('ventas_whatsapp'), ajuste('dias_prueba'), ajuste('comision_credito'), prueba_automatica()];
+    $datos_firma = [$pl, modulos_sistema(), ajuste('ventas_whatsapp'), ajuste('dias_prueba'), ajuste('comision_credito'), 'solo_demo'];
     $nombre = 'plan_' . slugify($pl['nombre']);
 } elseif ($tipo === 'cumple') {
     // (v18) Cumpleañeros del día: imagen.php?tipo=cumple&l=ID_LIGA[&f=AAAA-MM-DD]
@@ -88,6 +88,8 @@ if ($tipo === 'cromo') {
     }
 }
 
+// (Anexo B) las imágenes de una cuenta son del módulo de redes (el cromo, del de carnets); la del plan es de la página de venta
+if ($tipo !== 'plan' && !empty($liga['id'])) exigir_modulo_corto($liga, $tipo === 'cromo' ? 'carnets' : 'redes');
 // Caché: solo se vuelve a dibujar si cambiaron los datos
 $firma = md5(json_encode([$tipo, $_GET['g'] ?? '', $liga, $t, $datos_firma, patrocinador_principal($liga), url_base(), filemtime(APP_DIR . '/imagenes.php'), filemtime(APP_DIR . '/v18.php'), filemtime(APP_DIR . '/individuales_extra.php')]));
 $dir_cache = RAIZ . '/data/cache';

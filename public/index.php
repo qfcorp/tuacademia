@@ -4,7 +4,7 @@
  *   /                         → página de venta (o la liga, si se entra por su dominio propio)
  *   /nombre-de-la-liga        → página de la liga (dirección corta)
  *   /index.php?l=nombre-liga  → página de la liga
- *   /index.php?v=ligas        → todas las ligas     /index.php?v=registro → prueba gratis
+ *   /index.php?v=ligas        → todas las ligas     /index.php?v=registro → (ya no existe: lleva a pedir la demo)
  *   /index.php?v=privacidad   → política de privacidad
  *   (v10) /nombre-liga/campeonato[/tabla|/fixture|/en-vivo|/boletin|/acumulada] → página del campeonato
  *   (v10) /demo               → liga de demostración
@@ -76,9 +76,12 @@ if ($slug === '') {
     } elseif ($v_global === 'demo') {
         require APP_DIR . '/publico/demo.php';
     } elseif ($v_global === 'registro') {
-        require APP_DIR . '/publico/registro.php';
+        // (18 oct 2026) ya no hay prueba gratis ni registro abierto: los enlaces viejos van a pedir la demo
+        header('Location: ' . url_base() . 'index.php?v=solicitar' . (get('tipo') === 'escuela' ? '&tipo=escuela' : '') . (get('plan') !== '' ? '&plan=' . (int)get('plan') : '')
+            . (get('ref') !== '' ? '&ref=' . rawurlencode(get('ref')) : '') . (get('modulo') !== '' ? '&modulo=' . rawurlencode(get('modulo')) : ''), true, 301);
+        exit;
     } elseif ($v_global === 'solicitar') {
-        // (v14) Solicitar una demo (reemplaza a la prueba gratis automática)
+        // (v14) Solicitar una demo: la única forma de entrar (no hay prueba gratis)
         require APP_DIR . '/publico/solicitar.php';
     } elseif ($v_global === 'ligas') {
         require APP_DIR . '/publico/portada.php';

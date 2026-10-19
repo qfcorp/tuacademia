@@ -37,7 +37,7 @@ function marca(): string
 /* ============================================================
  * SUSCRIPCIONES
  * vence = '' → sin vencimiento (ligas propias de QF o de cortesía).
- * es_prueba = 1 → está en el período de prueba gratis.
+ * es_prueba = 1 → está en su demo (ya no hay prueba gratis).
  * Vencida: pasados los días de gracia el panel de la liga queda en "solo lectura".
  * ============================================================ */
 
@@ -136,7 +136,7 @@ function verificar_limite_plan(array $liga, string $que): void
     }
 }
 
-/** Crea una liga completa con su administrador (lo usa el superadministrador y el registro de prueba gratis). */
+/** Crea una liga completa con su administrador (lo usa el superadministrador al crear cuentas y demos). */
 function crear_liga_completa(array $d): array
 {
     $nombre = trim($d['nombre'] ?? '');

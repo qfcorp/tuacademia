@@ -27,7 +27,7 @@ function motivo_solo_pagadas(?array $liga, string $modulo = ''): string
     if (es_super()) return '';
     if (!$liga) return 'Elija primero una liga o escuela.';
     if (!empty($liga['es_demo'])) return 'Esta función no está disponible en la demostración: se activa al contratar ' . marca() . '.';
-    if (!empty($liga['es_prueba']) || estado_suscripcion($liga)['estado'] === 'prueba') return 'Esta función se activa cuando su cuenta pasa de la prueba gratis a un plan pagado.';
+    if (!empty($liga['es_prueba']) || estado_suscripcion($liga)['estado'] === 'prueba') return 'Esta función se activa cuando su cuenta pasa de la demo a un plan pagado.';
     if ($modulo !== '' && !modulo_activo($liga, $modulo)) return 'Su plan no incluye «' . nombre_modulo($modulo) . '». Está en los planes completos (Profesional y Escuela Completo).';
     return '';
 }

@@ -110,7 +110,7 @@ cabecera_admin('Ventas');
         <a class="btn btn-chico" href="admin.php?p=suscripciones&amp;liga=<?= (int)$l['id'] ?>#pago">Registrar pago</a>
         <a class="btn btn-sec btn-chico" href="admin.php?p=ligas&amp;editar=<?= (int)$l['id'] ?>">Editar</a>
         <?php if ($wa && in_array($l['sus']['estado'], ['prueba', 'gracia', 'vencida'], true)): ?>
-          <a class="btn btn-sec btn-chico" target="_blank" href="https://wa.me/<?= e($wa) ?>?text=<?= rawurlencode('Hola ' . $l['contacto_nombre'] . ', le saluda ' . ajuste('empresa') . '. ' . ($l['sus']['estado'] === 'prueba' ? 'Su prueba gratis de ' . marca() . ' para ' . $l['nombre'] . ' termina el ' . $l['vence'] . '. ¿Le ayudamos a elegir su plan?' : 'La suscripción de ' . $l['nombre'] . ' venció el ' . $l['vence'] . '. ¿Le ayudamos a renovarla para seguir usando el sistema?')) ?>">📲 Recordar</a>
+          <a class="btn btn-sec btn-chico" target="_blank" href="https://wa.me/<?= e($wa) ?>?text=<?= rawurlencode('Hola ' . $l['contacto_nombre'] . ', le saluda ' . ajuste('empresa') . '. ' . ($l['sus']['estado'] === 'prueba' ? 'Su demo de ' . marca() . ' para ' . $l['nombre'] . ' termina el ' . $l['vence'] . '. ¿Le ayudamos a elegir su plan?' : 'La suscripción de ' . $l['nombre'] . ' venció el ' . $l['vence'] . '. ¿Le ayudamos a renovarla para seguir usando el sistema?')) ?>">📲 Recordar</a>
         <?php endif; ?>
       </td></tr>
   <?php endforeach; ?>

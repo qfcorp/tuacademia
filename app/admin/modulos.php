@@ -2,7 +2,7 @@
 /* (v35) Panel del superadministrador: MÓDULOS DEPORTIVOS (resumen, precios, requisitos, reglas, cuentas y demos por módulo) */
 if (!es_super()) ir('admin.php');
 $s = get('s', 'resumen');
-if (!in_array($s, ['resumen', 'precios', 'requisitos', 'reglas', 'cuentas', 'demo'], true)) $s = 'resumen';
+if (!in_array($s, ['resumen', 'precios', 'requisitos', 'reglas', 'cuentas', 'demo', 'funciones', 'pedidos'], true)) $s = 'resumen'; // (Anexo B) funciones y pedidos
 $url = 'admin.php?p=modulos';
 $mods = modulos_deporte();
 $mk = get('m', array_key_first($mods));
@@ -10,6 +10,27 @@ if (!isset($mods[$mk])) $mk = array_key_first($mods);
 
 if (es_post()) {
     $accion = post('accion');
+
+    // (Anexo B) catálogo de funciones: precio, grupo, orden, dependencias y texto para vender
+    if ($accion === 'catalogo') {
+        $lista = [];
+        foreach (catalogo_modulos() as $k => $x) {
+            $lista[] = ['id' => $k, 'precio_mensual' => str_replace(',', '.', (string)($_POST['precio'][$k] ?? $x['precio_mensual'])), 'grupo' => (string)($_POST['grupo'][$k] ?? $x['grupo']),
+                        'orden' => (string)($_POST['orden'][$k] ?? $x['orden']), 'descripcion' => (string)($_POST['desc'][$k] ?? ''),
+                        'depende_de' => array_values(array_intersect(array_keys(catalogo_modulos()), (array)($_POST['dep'][$k] ?? [])))];
+        }
+        $u = usuario();
+        $n = guardar_catalogo_modulos($lista, [], $u['nombre'] . ' <' . $u['email'] . '>');
+        flash($n ? 'Catálogo guardado (' . $n . ' cambio' . ($n === 1 ? '' : 's') . '). Los precios nuevos se usan desde ya en Mi plan y en los cobros.' : 'No había cambios.');
+        ir($url . '&s=funciones');
+    }
+    if ($accion === 'pedido_aprobar' || $accion === 'pedido_rechazar') {
+        $u = usuario();
+        $por = $u['nombre'] . ' <' . $u['email'] . '>';
+        if ($accion === 'pedido_aprobar') flash('Pedido aprobado. ' . aprobar_pedido_modulos((int)post('pedido'), $por)['texto']);
+        else { rechazar_pedido_modulos((int)post('pedido'), $por, post('motivo')); flash('Pedido no aprobado. Le avisamos al cliente.'); }
+        ir($url . '&s=pedidos');
+    }
 
     if ($accion === 'precios') {
         foreach ($mods as $k => $m) {
@@ -145,7 +166,8 @@ cabecera_admin('Módulos deportivos');
 <h1>🧩 Módulos deportivos</h1>
 <p class="suave" style="margin-top:0">El sistema se vende por deporte. Cada cuenta tiene sus módulos; quien compra más de uno lo ve todo junto en el mismo panel. Aquí maneja precios, requisitos, reglas por defecto, qué módulos tiene cada cuenta y las demos de cada deporte.</p>
 <nav class="pestanas">
-  <?php foreach (['resumen' => 'Resumen', 'precios' => '💵 Precios', 'requisitos' => '📋 Requisitos', 'reglas' => '📐 Reglas', 'cuentas' => '👥 Cuentas', 'demo' => '🎁 Crear demo'] as $k => $t): ?>
+  <?php foreach (['resumen' => 'Resumen', 'precios' => '💵 Precios', 'requisitos' => '📋 Requisitos', 'reglas' => '📐 Reglas', 'cuentas' => '👥 Cuentas', 'demo' => '🧪 Crear demo',
+                  'funciones' => '🧩 Funciones y precios', 'pedidos' => '📨 Pedidos de módulos' . (($np = (int)valor("SELECT COUNT(*) FROM modulos_pedidos WHERE estado = 'pendiente'")) ? ' (' . $np . ')' : '')] as $k => $t): // (Anexo B) ?>
     <a href="<?= e($url . '&s=' . $k) ?>" class="<?= $s === $k ? 'activa' : '' ?>"><?= e($t) ?></a>
   <?php endforeach; ?>
 </nav>
@@ -168,7 +190,7 @@ cabecera_admin('Módulos deportivos');
       </div>
     <?php endforeach; ?>
   </div>
-  <div class="aviso aviso-info" style="margin-top:14px">🔗 <b>Enlace de demo por deporte</b>: comparta <code><?= e(url_base()) ?>index.php?v=solicitar&amp;modulo=ciclismo</code> (o <?= e(implode(', ', array_keys(modulos_deporte()))) ?>) y el formulario llega con ese deporte marcado. La prueba gratis también: <code>index.php?v=registro&amp;modulo=…</code></div>
+  <div class="aviso aviso-info" style="margin-top:14px">🔗 <b>Enlace de demo por deporte</b>: comparta <code><?= e(url_base()) ?>index.php?v=solicitar&amp;modulo=ciclismo</code> (o <?= e(implode(', ', array_keys(modulos_deporte()))) ?>) y el formulario llega con ese deporte marcado.</div>
   <style>.rejilla-mod{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}.mod-inactivo{opacity:.6}</style>
 
 <?php elseif ($s === 'precios'): ?>
@@ -198,7 +220,7 @@ cabecera_admin('Módulos deportivos');
     <table><tr><th>Cuenta con</th><th class="num">Se suma al plan por mes</th><th>Detalle</th></tr>
       <?php foreach ($ej as $ks): $pm = precio_modulos($ks); ?><tr><td><?= e(texto_modulos($ks)) ?></td><td class="num"><b><?= dinero($pm['extra']) ?></b></td><td style="white-space:normal"><small><?= e(texto_precio_modulos($ks)) ?></small></td></tr><?php endforeach; ?>
     </table>
-    <p class="ayuda">El total que paga el cliente = precio del plan (Básico, Profesional…) + lo de esta columna. En 6 y 12 meses se aplica la misma rebaja del plan (meses gratis).</p>
+    <p class="ayuda">El total que paga el cliente = precio del plan (Básico, Profesional…) + lo de esta columna. En 6 y 12 meses se aplica la misma rebaja del plan (meses de ahorro).</p>
   </div>
 
 <?php elseif ($s === 'requisitos'):
@@ -278,6 +300,46 @@ cabecera_admin('Módulos deportivos');
     </form>
   </div>
 
+<?php elseif ($s === 'funciones'): // (Anexo B) catálogo de funciones (módulos del sistema)
+  $cat = catalogo_modulos(); ?>
+  <div class="tarjeta">
+    <h2 style="margin-top:0">🧩 Funciones que se encienden y apagan por cliente</h2>
+    <p class="suave" style="margin-top:0">Lo básico (equipos, campeonatos, alumnos, pagos con recibo, página pública…) lo tiene todo cliente. Cada función de aquí se cobra aparte si no está en su plan.
+      Qué trae cada plan se cambia en <a href="admin.php?p=planes">Planes y precios</a>. Lo encendido de cada cliente, en Ligas → Editar → Módulos de la cuenta. Apagar nunca borra datos.</p>
+    <form method="post" action="<?= e($url) ?>&amp;s=funciones"><?= csrf_campo() ?><input type="hidden" name="accion" value="catalogo">
+      <div class="tabla-scroll"><table>
+        <tr><th>Función</th><th>Para</th><th class="num">$ al mes</th><th>Grupo</th><th class="num">Orden</th><th>Necesita</th><th>Texto para vender (vacío = el de fábrica)</th></tr>
+        <?php foreach ($cat as $k => $x): $guardado = modulos_catalogo_guardado()[$k]['descripcion'] ?? ''; ?>
+          <tr><td><?= $x['icono'] ?> <b><?= e($x['nombre']) ?></b><br><small class="suave"><?= e($k) ?></small></td>
+            <td><?= e(['liga' => 'Ligas', 'escuela' => 'Escuelas', 'ambos' => 'Las dos'][$x['para']] ?? $x['para']) ?></td>
+            <td class="num"><input type="number" name="precio[<?= e($k) ?>]" min="0" step="0.01" value="<?= e((string)$x['precio_mensual']) ?>" style="width:80px"></td>
+            <td><select name="grupo[<?= e($k) ?>]"><?php foreach (grupos_modulos() as $g => $gn): ?><option value="<?= e($g) ?>" <?= $x['grupo'] === $g ? 'selected' : '' ?>><?= e($gn) ?></option><?php endforeach; ?></select></td>
+            <td class="num"><input type="number" name="orden[<?= e($k) ?>]" min="0" max="999" value="<?= (int)$x['orden'] ?>" style="width:64px"></td>
+            <td style="white-space:normal;min-width:160px"><select name="dep[<?= e($k) ?>][]" multiple size="2" style="min-width:150px"><?php foreach ($cat as $k2 => $x2): if ($k2 === $k) continue; ?><option value="<?= e($k2) ?>" <?= in_array($k2, $x['depende_de'], true) ? 'selected' : '' ?>><?= e($x2['nombre']) ?></option><?php endforeach; ?></select></td>
+            <td style="white-space:normal;min-width:220px"><textarea name="desc[<?= e($k) ?>]" rows="2" maxlength="400" placeholder="<?= e($x['descripcion']) ?>"><?= e($guardado) ?></textarea></td></tr>
+        <?php endforeach; ?>
+      </table></div>
+      <button class="btn">Guardar funciones y precios</button>
+    </form>
+  </div>
+<?php elseif ($s === 'pedidos'): // (Anexo B) pedidos de módulos desde Mi plan
+  $peds = filas("SELECT p.*, l.nombre AS liga, l.tipo FROM modulos_pedidos p JOIN ligas l ON l.id = p.liga_id ORDER BY (p.estado = 'pendiente') DESC, p.id DESC LIMIT 100"); ?>
+  <div class="tarjeta">
+    <h2 style="margin-top:0">📨 Pedidos de módulos</h2>
+    <p class="suave" style="margin-top:0">Los clientes los piden desde ⭐ Mi plan. También llegan al Panel Tukán Central (Solicitudes → «Cambio de módulos»).</p>
+    <?php if (!$peds): ?><p>No hay pedidos.</p><?php endif; ?>
+    <?php foreach ($peds as $p): $catp = catalogo_modulos(($p['tipo'] ?? 'liga') === 'escuela' ? 'escuela' : 'liga'); ?>
+      <div class="mod-fila" style="flex-wrap:wrap">
+        <div class="mod-texto"><b><?= e($p['liga']) ?></b> · #<?= (int)$p['id'] ?> · <?= e(substr((string)$p['creado'], 0, 16)) ?><br><?= e(nombres_modulos(array_filter(explode(',', (string)$p['encender'])), $catp)) ?>
+          <?= $p['mensaje'] !== '' ? '<br><small>«' . e($p['mensaje']) . '»</small>' : '' ?> <span class="etiqueta<?= $p['estado'] === 'pendiente' ? ' amarilla' : ($p['estado'] === 'aprobada' ? ' verde' : ' gris') ?>"><?= e(estados_pedido_modulos()[$p['estado']] ?? $p['estado']) ?></span></div>
+        <?php if ($p['estado'] === 'pendiente'): ?>
+          <form method="post" action="<?= e($url) ?>&amp;s=pedidos" class="inline"><?= csrf_campo() ?><input type="hidden" name="accion" value="pedido_aprobar"><input type="hidden" name="pedido" value="<?= (int)$p['id'] ?>"><button class="btn btn-chico">Aprobar</button></form>
+          <form method="post" action="<?= e($url) ?>&amp;s=pedidos" class="inline"><?= csrf_campo() ?><input type="hidden" name="accion" value="pedido_rechazar"><input type="hidden" name="pedido" value="<?= (int)$p['id'] ?>"><input type="text" name="motivo" required minlength="3" maxlength="300" placeholder="Motivo para el cliente" style="width:180px"> <button class="btn btn-sec btn-chico">No aprobar</button></form>
+        <?php endif; ?>
+        <a class="btn btn-sec btn-chico" href="admin.php?p=ligas&amp;editar=<?= (int)$p['liga_id'] ?>#modulos-cuenta">Ver cuenta</a>
+      </div>
+    <?php endforeach; ?>
+  </div>
 <?php else: /* demo */
     $planes = filas('SELECT * FROM planes WHERE activo = 1 ORDER BY orden, id'); ?>
   <div class="tarjeta">

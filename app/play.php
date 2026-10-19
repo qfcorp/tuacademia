@@ -637,7 +637,7 @@ function html_mi_plan_play(array $liga, array $planes): string
         $h .= '<li>' . e('Incluye 1 deporte') . '</li></ul>';
         foreach ($ops as $o) {
             $h .= '<button type="button" class="btn btn-grande play-comprar" style="margin-bottom:6px" data-producto="' . e($o['play_id']) . '">▶ <span class="play-precio" data-producto="' . e($o['play_id']) . '">' . dinero($o['precio']) . '</span> ' . e($o['texto'])
-                . ($o['gratis'] ? ' <small>(' . $o['gratis'] . ' gratis)</small>' : '') . '</button>';
+                . ($o['gratis'] ? ' <small>(' . texto_ahorro($o['gratis']) . ')</small>' : '') . '</button>';
         }
         $h .= '</div>';
     }

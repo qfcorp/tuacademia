@@ -11,11 +11,11 @@ if (es_post()) {
             $v = mb_substr(post($k), 0, $max);
             if ($v !== (string)ajuste($k)) { guardar_ajuste($k, $v); $cambios[] = $k; }
         }
-        foreach (['dias_prueba' => [1, 365], 'dias_gracia' => [0, 60], 'dias_gracia_demo' => [0, 60], 'dias_demo' => [1, 365], 'combo_descuento' => [0, 90], 'referidos_meses' => [0, 12]] as $k => [$mn, $mx]) {
+        foreach (['dias_gracia' => [0, 60], 'dias_gracia_demo' => [0, 60], 'dias_demo' => [1, 365], 'combo_descuento' => [0, 90], 'referidos_meses' => [0, 12]] as $k => [$mn, $mx]) {
             $v = (string)entero(post($k), $mn, $mx);
             if ($v !== (string)ajuste($k)) { guardar_ajuste($k, $v); $cambios[] = $k; }
         }
-        foreach (['registro_abierto', 'exigir_2fa'] as $k) {
+        foreach (['exigir_2fa'] as $k) {
             $v = post($k) === '1' ? '1' : '0';
             if ($v !== (string)ajuste($k)) { guardar_ajuste($k, $v); $cambios[] = $k; }
         }
@@ -135,14 +135,12 @@ cabecera_admin('Ajustes');
     <div><label>Correo de ventas</label><input type="email" name="ventas_email" maxlength="120" value="<?= e(ajuste('ventas_email')) ?>"></div>
     <div class="campo-ancho"><label>Título de la página de venta</label><input type="text" name="landing_titulo" maxlength="160" value="<?= e(ajuste('landing_titulo')) ?>"></div>
     <div class="campo-ancho"><label>Datos para que las ligas le paguen (cuenta bancaria, etc.)</label><textarea name="ventas_datos_pago" maxlength="800" rows="3" placeholder="Banco Pichincha · Cuenta de ahorros N° 2200000000 · A nombre de ... · Cédula/RUC ..."><?= e(ajuste('ventas_datos_pago')) ?></textarea><div class="ayuda">Aparecen en el aviso de vencimiento (5 días antes) en el panel de cada liga y por Telegram, junto con el valor de su plan.</div></div>
-    <div class="campo-ancho"><label>(v16) Nota del dominio gratis (sale con * en los planes)</label><textarea name="nota_dominio" maxlength="400" rows="2"><?= e(ajuste('nota_dominio')) ?></textarea></div>
+    <div class="campo-ancho"><label>(v16) Nota del dominio incluido (sale con * en los planes)</label><textarea name="nota_dominio" maxlength="400" rows="2"><?= e(ajuste('nota_dominio')) ?></textarea></div>
     <div><label>(v16) Descuento del combo liga + escuela (%)</label><input type="number" name="combo_descuento" min="0" max="90" step="1" value="<?= e((string)combo_descuento()) ?>"><div class="ayuda">Se aplica a los dos planes cuando la misma persona tiene una liga y una escuela enlazadas.</div></div>
     <div class="campo-ancho"><label>Texto bajo el título</label><textarea name="landing_subtitulo" maxlength="400" rows="2"><?= e(ajuste('landing_subtitulo')) ?></textarea></div>
-    <div class="campo-ancho"><label>Cómo empiezan los clientes nuevos</label><div class="ayuda" style="margin-bottom:4px">Recomendado: <b>demo por solicitud</b>. El interesado llena "Solicitar demo" y usted decide a quién le crea la cuenta (menú <a href="admin.php?p=demos">Demos</a>).</div>
-      <label class="check"><input type="checkbox" name="registro_abierto" value="1" <?= prueba_automatica() ? 'checked' : '' ?>> Permitir la prueba gratis automática (cualquiera crea su liga sin solicitud)</label></div>
-    <div><label>Meses gratis por cada recomendado que contrata</label><input type="number" name="referidos_meses" min="0" max="12" value="<?= (int)ajuste('referidos_meses', 1) ?>"><div class="ayuda">Programa «Recomiende y gane». 0 = sin premio.</div></div>
+    <div class="campo-ancho"><label>Cómo empiezan los clientes nuevos</label><div class="ayuda">Siempre con <b>demo por solicitud</b>: el interesado llena «Solicitar demo» y usted decide a quién le crea la cuenta (menú <a href="admin.php?p=demos">Demos</a> o el Panel Tukán Central). No hay prueba gratis.</div></div>
+    <div><label>Meses de descuento por cada recomendado que contrata</label><input type="number" name="referidos_meses" min="0" max="12" value="<?= (int)ajuste('referidos_meses', 1) ?>"><div class="ayuda">Programa «Recomiende y gane». 0 = sin premio.</div></div>
     <div><label>Días de la demo (por defecto)</label><input type="number" name="dias_demo" min="1" max="365" value="<?= (int)ajuste('dias_demo', 7) ?>"><div class="ayuda">Al crear la cuenta desde una solicitud. Puede cambiarlo en cada una.</div></div>
-    <div><label>Días de la prueba automática</label><input type="number" name="dias_prueba" min="1" max="365" value="<?= (int)ajuste('dias_prueba', 7) ?>"><div class="ayuda">Solo si la prueba automática está permitida.</div></div>
     <div><label>Días de gracia después de vencer (cuentas pagadas)</label><input type="number" name="dias_gracia" min="0" max="60" value="<?= (int)ajuste('dias_gracia', 7) ?>"><div class="ayuda">Luego el panel de la liga queda en solo lectura (la página pública sigue visible).</div></div>
     <div><label>Días de gracia de las demos</label><input type="number" name="dias_gracia_demo" min="0" max="60" value="<?= (int)ajuste('dias_gracia_demo', 0) ?>"><div class="ayuda">(v33) Recomendado 0: la demo se bloquea el día que vence y se le ofrece contratar (no pierde lo que cargó).</div></div>
     <div class="campo-ancho"><label>Dirección pública del sistema</label><input type="text" name="url_sitio" value="<?= e(ajuste('url_sitio')) ?>" placeholder="https://tuacademia.tukanec.com/" readonly><div class="ayuda">(v33) Se guarda sola cuando usted entra al panel. La usan los correos y avisos que salen de la tarea automática.</div></div>

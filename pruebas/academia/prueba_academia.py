@@ -4,7 +4,7 @@ Pruebas de TuAcademia (lo nuevo para academias) contra php -S + simulador de Pay
 Antes:  bash pruebas/v38/reiniciar.sh        (modo academia, por defecto)
 Correr: python3 pruebas/academia/prueba_academia.py
 
-Prueba: marca y producto academia (ligas apagadas, planes nuevos, Google Play apagado), registro de una academia,
+Prueba: marca y producto academia (ligas apagadas, planes nuevos, Google Play apagado), pedido de demo de una academia (no hay prueba gratis),
 academias de baile, música y natación (cursos, palabras, campos del alumno), niveles con examen y certificado QR,
 recital con participantes, ensayos y cobro de vestuario, paquete de clases que se descuenta, DeUna con comprobante
 (un comprobante para varios valores), Payphone (aprobado, cancelado, monto distinto, repetido), Mensajes de hoy,
@@ -100,7 +100,7 @@ chk('Academias de baile' in r.text and 'Escuelas de música' in r.text and 'Escu
 chk('$19.00' in r.text and '$29.00' in r.text, 'planes Básico $19 y Completo $29 en la portada')
 chk('$95.00' in r.text and '$290.00' in r.text, 'semestral $95 (paga 5) y anual $290 (paga 10)')
 chk('Vocalía' not in r.text and 'Árbitros' not in r.text and 'campeonato' not in r.text.lower(), 'portada sin ligas, campeonatos, árbitros ni vocalía')
-chk('7 días' in r.text, 'prueba gratis de 7 días')
+chk('Solicitar demo' in r.text and 'prueba gratis' not in r.text.lower() and 'gratis' not in r.text.lower(), 'portada: «Solicitar demo», nada gratis')
 planes = pj('filas("SELECT slug, precio_mensual, precio_semestral, precio_anual, dominio_anual FROM planes WHERE activo = 1 ORDER BY orden")')
 chk([p['slug'] for p in planes] == ['academia-basico', 'academia-completo'], 'solo los 2 planes de academia activos (%s)' % [p['slug'] for p in planes])
 chk(planes[1]['dominio_anual'] == 1 and float(planes[1]['precio_anual']) == 290, 'Completo anual con dominio')
@@ -119,17 +119,27 @@ r = anon.get(B + 'index.php?v=ligas')
 limpio(r, 'directorio')
 chk('Academias que usan' in r.text, 'directorio muestra academias, no ligas')
 
-# Registro abierto (prueba gratis de 7 días): la cuenta nueva es academia
-r = anon.get(B + 'index.php?v=registro')
-limpio(r, 'registro')
-chk('Tipo de cuenta' not in r.text and 'Disciplina principal' in r.text and 'Liga (campeonatos)' not in r.text, 'registro sin elegir liga: siempre academia')
-r = anon.post(B + 'index.php?v=registro', data={'csrf': csrf(r.text), 'sitio': '', 'tipo': 'liga', 'nombre': 'Academia de Danza Allegro', 'ciudad': 'Quito',
-                                                  'deporte_escuela': 'ballet', 'deportes[]': ['baile'], 'modalidad': 'F7', 'color': '#7b3fb0', 'plan_id': str(planes and 8),
-                                                  'admin_nombre': 'María Torres', 'telefono': '0991112233', 'email': 'baile@prueba.com', 'clave': 'clave12345', 'clave2': 'clave12345', 'acepto': '1'})
-limpio(r, 'crear academia por el registro')
+# Ya no hay registro abierto ni prueba gratis: se pide la demo y Tukán la crea (18 oct 2026)
+r = anon.get(B + 'index.php?v=registro', allow_redirects=False)
+chk(r.status_code == 301 and 'v=solicitar' in r.headers.get('Location', ''), 'registro abierto: ya no existe, lleva a pedir la demo')
+r = anon.get(B + 'index.php?v=solicitar')
+limpio(r, 'solicitar demo')
+chk('Liga (campeonatos)' not in r.text and 'gratis' not in r.text.lower(), 'pedir demo: siempre academia y sin «gratis»')
+r = anon.post(B + 'index.php?v=solicitar', data={'csrf': csrf(r.text), 'sitio': '', 'tipo': 'liga', 'organizacion': 'Academia de Danza Allegro', 'ciudad': 'Quito',
+                                                   'contacto': 'María Torres', 'telefono': '0991112233', 'email': 'baile@prueba.com', 'plan_id': str(planes and 8),
+                                                   'deportes[]': ['baile'], 'mensaje': 'Queremos la demo', 'acepto': '1'})
+limpio(r, 'pedir la demo')
+sd = pj('fila("SELECT * FROM solicitudes_demo WHERE email = \'baile@prueba.com\'")')
+chk(sd and sd['tipo'] == 'escuela' and sd['estado'] == 'nueva' and not pj('fila("SELECT id FROM ligas WHERE contacto_email = \'baile@prueba.com\'")'), 'pedir demo: queda el pedido (academia) y NO se crea ninguna cuenta')
+# Tukán crea la demo desde el pedido (la misma función que usan Ventas → Demos y el Panel Tukán Central)
+php('crear_demo_cuenta(["nombre" => "Academia de Danza Allegro", "ciudad" => "Quito", "admin_nombre" => "María Torres", "admin_email" => "baile@prueba.com", "admin_clave" => "clave12345",'
+    ' "telefono" => "0991112233", "plan_id" => 8, "vence" => date("Y-m-d", strtotime("+7 days")), "es_prueba" => 1, "crear_campeonato" => true, "tipo" => "escuela", "modalidad" => "F7",'
+    ' "deporte_escuela" => "ballet", "deportes" => ["baile"], "origen" => "demo_pedida", "solicitud_demo" => ' + str(sd['id']) + ', "enviar_correo" => false], "Super Prueba");')
+q_color = php('q("UPDATE ligas SET color = \'#7b3fb0\' WHERE contacto_email = \'baile@prueba.com\'");')
 l_baile = pj('fila("SELECT * FROM ligas WHERE contacto_email = \'baile@prueba.com\'")')
-chk(l_baile and l_baile['tipo'] == 'escuela' and l_baile['deporte_escuela'] == 'ballet' and l_baile['deportes'] == 'baile', 'academia de baile creada como escuela (aunque mandó tipo=liga)')
-chk(l_baile and l_baile['vence'] == str(HOY + timedelta(days=7)) and int(l_baile['es_prueba']) == 1, 'con 7 días de prueba')
+chk(l_baile and l_baile['tipo'] == 'escuela' and l_baile['deporte_escuela'] == 'ballet' and l_baile['deportes'] == 'baile', 'academia de baile creada como escuela desde su pedido de demo')
+chk(l_baile and l_baile['vence'] == str(HOY + timedelta(days=7)) and int(l_baile['es_prueba']) == 1, 'con 7 días de demo')
+chk(pj('valor("SELECT estado FROM solicitudes_demo WHERE id = ' + str(sd['id']) + '")') == 'creada', 'el pedido de demo queda «Demo creada»')
 chk(int(pj('valor("SELECT COUNT(*) FROM torneos WHERE liga_id = ?", [' + str(l_baile['id']) + '])')) == 0, 'sin campeonato creado')
 LB = int(l_baile['id'])
 

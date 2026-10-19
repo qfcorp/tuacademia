@@ -110,7 +110,7 @@ function menu_panel(): array
         if (puede('config')) $cf[] = $it('admin.php?p=mis_datos', 'Descargar mis datos', '📦', ['mis_datos'], 'Todo en un Excel');
         // (v28) Federación: la cuenta de la federación la tiene arriba; las ligas, para afiliarse
         if (puede('config') || puede('finanzas') || puede('cobros')) $cf[] = $it('admin.php?p=indicadores', 'Indicadores', '📈', ['indicadores'], 'Cómo va su ' . (es_escuela($liga) ? 'escuela' : 'liga') . ' mes a mes');
-        if (!es_super() && puede('config')) $cf[] = $it('admin.php?p=referidos', 'Recomiende y gane', '🤝', ['referidos'], 'Meses gratis por cada cuenta que recomiende');
+        if (!es_super() && puede('config')) $cf[] = $it('admin.php?p=referidos', 'Recomiende y gane', '🤝', ['referidos'], 'Meses de descuento por cada cuenta que recomiende');
         if (puede('config') && !es_federacion($liga) && !es_academia()) $cf[] = $it('admin.php?p=federacion', 'Federación', '🏛', ['federacion'], ($fd = federacion_de($liga)) ? 'Afiliada a ' . $fd['nombre'] : 'Afiliarse a una federación');
         if ($cf) $g['config'] = ['titulo' => 'Configuración', 'ico' => '⚙️', 'items' => $cf];
     }

@@ -116,7 +116,7 @@ function texto_precio_anual(array $pl): string
 {
     if ((float)$pl['precio_anual'] <= 0) return '';
     $g = meses_gratis_plan($pl);
-    return 'o ' . dinero($pl['precio_anual']) . ' al año' . ($g > 0 ? ' (' . $g . ' mes' . ($g === 1 ? '' : 'es') . ' gratis)' : '');
+    return 'o ' . dinero($pl['precio_anual']) . ' al año' . ($g > 0 ? ' (' . texto_ahorro($g) . ')' : '');
 }
 
 /* ============================================================
@@ -135,7 +135,7 @@ function texto_valor_renovacion(array $liga): string
     $pl = plan_para_renovar($liga);
     if (!$pl || !($o = opciones_precio($pl, $liga))) return ''; // (v16) con el descuento del combo si lo tiene
     // (v12) todos los períodos del plan: "$10 al mes · $50 por 6 meses (1 mes gratis) · $100 al año (2 meses gratis)"
-    return 'Plan ' . $pl['nombre'] . (factor_combo($liga) < 1 ? ' (combo ' . (float)combo_descuento() . '%)' : '') . ': ' . implode(' · ', array_map(fn($x) => dinero($x['precio']) . ' ' . $x['texto'] . ($x['gratis'] ? ' (' . $x['gratis'] . ' mes' . ($x['gratis'] === 1 ? '' : 'es') . ' gratis)' : ''), $o));
+    return 'Plan ' . $pl['nombre'] . (factor_combo($liga) < 1 ? ' (combo ' . (float)combo_descuento() . '%)' : '') . ': ' . implode(' · ', array_map(fn($x) => dinero($x['precio']) . ' ' . $x['texto'] . ($x['gratis'] ? ' (' . texto_ahorro($x['gratis']) . ')' : ''), $o));
 }
 
 /** ¿Hay que mostrar el aviso grande de vencimiento? (activa o en prueba, faltan 5 días o menos) */

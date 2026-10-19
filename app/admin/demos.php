@@ -23,7 +23,7 @@ $lista = filas('SELECT s.*, p.nombre AS plan, v.nombre AS vendedor, l.nombre AS 
 cabecera_admin('Solicitudes de demo');
 ?>
 <h1>📝 Solicitudes de demo</h1>
-<p class="suave">La prueba gratis automática está <?= prueba_automatica() ? '<b>abierta</b>' : '<b>cerrada</b>' ?> (se cambia en <a href="admin.php?p=ajustes">Ajustes</a>). Los interesados piden la demo en <a href="index.php?v=solicitar" target="_blank"><?= e(url_base()) ?>solicitar-demo</a> y usted decide a quién se la crea y por cuántos días.</p>
+<p class="suave">No hay prueba gratis: los interesados piden la demo en <a href="index.php?v=solicitar" target="_blank"><?= e(url_base()) ?>solicitar-demo</a> y usted decide a quién se la crea y por cuántos días.</p>
 <nav class="pestanas">
   <?php foreach (estados_solicitud_demo() + ['todas' => 'Todas'] as $k => $v): $n = $k === 'todas' ? (int)valor('SELECT COUNT(*) FROM solicitudes_demo') : (int)valor('SELECT COUNT(*) FROM solicitudes_demo WHERE estado = ?', [$k]); ?>
     <a class="<?= $estado === $k ? 'activa' : '' ?>" href="admin.php?p=demos&amp;estado=<?= $k ?>"><?= e($v) ?> (<?= $n ?>)</a>

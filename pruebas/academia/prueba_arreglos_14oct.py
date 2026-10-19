@@ -4,7 +4,7 @@ Pruebas de los arreglos del 14-oct-2026 en TuAcademia (contra php -S + simulador
 Antes:  bash pruebas/v38/reiniciar.sh        (modo academia; crea el simulador de Google/Payphone/Telegram)
 Correr: python3 pruebas/academia/prueba_arreglos_14oct.py
 
-1. Prueba gratis = 7 días: ajuste, registro, portada, plan, manual, imagen; la migración v35 lo pone en 7 aunque estuviera en 14.
+1. Demo de 7 días (ya no hay prueba gratis ni registro abierto: 18 oct 2026): portada, plan, manual, botón; la migración v35 deja dias_prueba en 7.
 2. Textos de academia: «Resumen de la academia», perfiles sin equipos ni árbitros, sin botón Federación, Requisitos solo si aplica,
    carnet con edad (no Sub-7) en ballet, «pensión» en vez de «mensualidad» en las ayudas.
 3. Fotos de la demo: de baile y música (no de fútbol) y la demo tiene clases con fotos.
@@ -132,28 +132,23 @@ chk(pj('ajustes_por_defecto()["dias_prueba"]') == 7, 'valor por defecto del cód
 # Una base vieja con 14: la migración v35 lo deja en 7
 php('guardar_ajuste("dias_prueba", 14); db()->exec("PRAGMA user_version = 34"); esquema_v35(db()); db()->exec("PRAGMA user_version = 35");')
 chk(pj('ajuste("dias_prueba")') == '7', 'migración v35: si estaba en 14 queda en 7')
-r = anon.get(B + 'index.php?v=registro')
-limpio(r, 'registro')
-chk('gratis por 7 días' in r.text and '14 días' not in r.text and '30 días' not in r.text, 'registro: «gratis por 7 días»')
+r = anon.get(B + 'index.php?v=registro', allow_redirects=False)
+chk(r.status_code == 301 and 'v=solicitar' in r.headers.get('Location', ''), 'registro: ya no existe (lleva a pedir la demo)')
 r = anon.get(B + 'index.php')
-chk('7 días' in r.text and '14 días' not in r.text, 'portada: 7 días')
+chk('gratis' not in r.text.lower() and '14 días' not in r.text and 'Solicitar demo' in r.text, 'portada: sin «gratis», con «Solicitar demo»')
+r = anon.get(B + 'index.php?v=solicitar')
+chk('7 días' in r.text and 'gratis' not in r.text.lower(), 'pedir demo: «Demo de 7 días», sin «gratis»')
 r = anon.get(B + 'index.php?v=manual&m=escuelas')
 limpio(r, 'manual de academias')
 chk('14 días' not in r.text, 'manual: ya no dice 14 días')
-chk('7 días' in open(os.path.join(REPO, 'app/manuales/escuelas.html'), encoding='utf-8').read(), 'manual (archivo): prueba gratis de 7 días')
+man = open(os.path.join(REPO, 'app/manuales/escuelas.html'), encoding='utf-8').read()
+chk('7 días' in man and 'gratis de 7' not in man, 'manual (archivo): demo de 7 días, sin «gratis»')
 # Ningún valor por defecto de 30 o 14 días para la prueba en el código
 codigo = subprocess.run(['grep', '-rnE', r"ajuste\('dias_prueba', (14|30)\)", 'app', 'public'], cwd=REPO, capture_output=True, text=True).stdout
 chk(codigo.strip() == '', 'ningún ajuste(\'dias_prueba\', 14/30) en el código')
-# Si el ajuste no existiera, todo dice 7
-php('q("DELETE FROM ajustes WHERE clave = \'dias_prueba\'"); ajuste("__recargar");')
-r = anon.get(B + 'index.php?v=registro')
-chk('gratis por 7 días' in r.text, 'sin el ajuste guardado, el registro dice 7 días')
-php('guardar_ajuste("dias_prueba", 7);')
-chk('7 días' in pj('texto_empezar()') or 'Prueba gratis' in pj('texto_empezar()'), 'botón de empezar: ' + str(pj('texto_empezar()')))
-# Script del VPS: existe, sin tildes y con sintaxis correcta
-sh = os.path.join(REPO, 'vps/vps/poner_prueba_7_dias.sh')
-chk(os.path.exists(sh) and subprocess.run(['bash', '-n', sh]).returncode == 0, 'vps/vps/poner_prueba_7_dias.sh existe y su sintaxis es correcta')
-chk(all(ord(c) < 128 for c in open(sh, encoding='utf-8').read()), 'el script del VPS no tiene tildes ni ñ')
+chk(pj('texto_empezar()') == '📅 Solicitar demo' and pj('texto_empezar(true)') == 'Pedir demo', 'botón de empezar: ' + str(pj('texto_empezar()')))
+# El script viejo para poner la prueba gratis en 7 días ya no existe (no hay prueba gratis)
+chk(not os.path.exists(os.path.join(REPO, 'vps/vps/poner_prueba_7_dias.sh')), 'vps/vps/poner_prueba_7_dias.sh se quitó')
 
 # =====================================================================
 # 2. TEXTOS DE ACADEMIA

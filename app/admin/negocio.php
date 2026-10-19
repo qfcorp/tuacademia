@@ -115,7 +115,7 @@ cabecera_admin('Negocio');
     <?php if (!$por_vencer): ?><p class="suave">Ninguna.</p><?php else: ?>
     <div class="tabla-scroll"><table><tr><th>Liga</th><th>Vence</th><th>Plan</th><th></th></tr>
       <?php foreach ($por_vencer as $l): ?><tr><td><?= e($l['nombre']) ?><?= $l['es_prueba'] ? ' <span class="etiqueta amarilla">prueba</span>' : '' ?></td><td><?= e($l['vence']) ?></td><td><?= e($l['plan'] ?? '—') ?></td>
-        <td class="acciones"><a class="btn btn-chico" href="admin.php?p=suscripciones&amp;liga=<?= (int)$l['id'] ?>#pago">Registrar pago</a> <?= $wa_liga($l, 'Hola ' . $l['contacto_nombre'] . ', le saluda ' . ajuste('empresa') . '. ' . ($l['es_prueba'] ? 'Su prueba gratis' : 'Su suscripción') . ' de ' . marca() . ' para ' . $l['nombre'] . ' vence el ' . $l['vence'] . '. ' . texto_valor_renovacion($l) . '. ¿Le ayudamos a renovar?') ?></td></tr><?php endforeach; ?>
+        <td class="acciones"><a class="btn btn-chico" href="admin.php?p=suscripciones&amp;liga=<?= (int)$l['id'] ?>#pago">Registrar pago</a> <?= $wa_liga($l, 'Hola ' . $l['contacto_nombre'] . ', le saluda ' . ajuste('empresa') . '. ' . ($l['es_prueba'] ? 'Su demo' : 'Su suscripción') . ' de ' . marca() . ' para ' . $l['nombre'] . ' vence el ' . $l['vence'] . '. ' . texto_valor_renovacion($l) . '. ¿Le ayudamos a renovar?') ?></td></tr><?php endforeach; ?>
     </table></div>
     <?php endif; ?>
   </div>

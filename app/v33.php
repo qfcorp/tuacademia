@@ -265,7 +265,7 @@ function html_contratar_transferencia(array $liga, array $planes): string
         <div class="campo-ancho"><label>Plan y tiempo</label>
           <select name="plan_meses" required>
             <?php foreach ($planes as $pl): foreach (opciones_precio($pl, $liga) as $o): $k = (int)$pl['id'] . ':' . $o['meses']; $sel = $actual && (int)$actual['id'] === (int)$pl['id'] && $o['meses'] === 1 && !$prueba; ?>
-              <option value="<?= $k ?>" <?= $sel ? 'selected' : '' ?> data-base="<?= e((string)$o['base']) ?>" data-meses="<?= (int)$o['meses'] ?>" data-rebaja="<?= e((string)$o['rebaja']) ?>" data-factor="<?= e((string)$o['factor']) ?>"><?= e($pl['nombre']) ?> · <?= e($o['nombre']) ?>: <?= dinero($o['precio']) ?><?= $o['gratis'] ? ' (' . $o['gratis'] . ' mes' . ($o['gratis'] === 1 ? '' : 'es') . ' gratis)' : '' ?><?= $o['dominio'] ? ' + dominio gratis' : '' ?><?= $o['combo'] ? ' · combo' : '' ?></option>
+              <option value="<?= $k ?>" <?= $sel ? 'selected' : '' ?> data-base="<?= e((string)$o['base']) ?>" data-meses="<?= (int)$o['meses'] ?>" data-rebaja="<?= e((string)$o['rebaja']) ?>" data-factor="<?= e((string)$o['factor']) ?>"><?= e($pl['nombre']) ?> · <?= e($o['nombre']) ?>: <?= dinero($o['precio']) ?><?= $o['gratis'] ? ' (' . texto_ahorro($o['gratis']) . ')' : '' ?><?= $o['dominio'] ? ' + dominio incluido' : '' ?><?= $o['combo'] ? ' · combo' : '' ?></option>
             <?php endforeach; endforeach; ?>
           </select></div>
         <div><label>Forma de pago</label><select name="forma_pago"><option value="transferencia">Transferencia</option><option value="deposito">Depósito</option><option value="efectivo">Efectivo</option><option value="otro">Otro</option></select></div>

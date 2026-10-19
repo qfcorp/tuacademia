@@ -91,7 +91,7 @@ if (es_post()) {
 }
 
 // Libreta y recibo (solo de sus hijos)
-if ($fam && get('libreta') !== '') {
+if ($fam && get('libreta') !== '' && modulo_activo($liga, 'esc_evaluaciones')) { // (Anexo B) la libreta es de «Evaluaciones»
     $a = fila('SELECT a.*, g.nombre AS grupo FROM esc_alumnos a LEFT JOIN esc_grupos g ON g.id = a.grupo_id WHERE a.id = ? AND a.liga_id = ? AND a.representante_cedula = ?', [(int)get('libreta'), $fam['liga_id'], $fam['cedula']]);
     if ($a) { doc_libreta_alumno($a, $liga, preg_match('/^\d{4}-T[1-4]$/', get('per')) ? get('per') : periodo_libreta(), 'familia.php'); exit; }
 }
@@ -150,6 +150,7 @@ $pend_todos = org_cobra_con_tarjeta($liga) ? filas("SELECT c.*, a.nombres FROM e
 // (v17) Vista de un hijo: diario de entrenamientos, desarrollo con gráficos o partidos
 $hv = (int)get('h');
 $vista = in_array(get('v'), ['diario', 'desarrollo', 'partidos'], true) ? get('v') : '';
+if (($vista === 'diario' && !modulo_activo($liga, 'esc_entrenamientos')) || ($vista === 'desarrollo' && !modulo_activo($liga, 'esc_evaluaciones'))) $vista = ''; // (Anexo B)
 $hijo = $hv && $vista ? (array_values(array_filter($hijos, fn($x) => (int)$x['id'] === $hv))[0] ?? null) : null;
 $con_club = formativas_activas($liga);
 $pest_hijo = function (array $a, string $v) use ($con_club): string {
@@ -193,17 +194,17 @@ if ($hijo):
     $pagados = filas("SELECT recibo, MAX(pagado_en) AS fecha, SUM(monto - descuento) AS total FROM esc_cargos WHERE alumno_id = ? AND estado = 'pagado' AND recibo IS NOT NULL GROUP BY recibo ORDER BY recibo DESC LIMIT 6", [$a['id']]);
     $ins = $a['estado'] === 'activo' ? insignias_alumno($a, $liga) : [];
     $ult = $a['estado'] === 'activo' ? diario_alumno((int)$a['id'], 1, 0, true) : [];
-    $nuevas = jornadas_nuevas_alumno((int)$a['id']); ?>
+    $nuevas = modulo_activo($liga, 'esc_evaluaciones') ? jornadas_nuevas_alumno((int)$a['id']) : []; // (Anexo B) ?>
   <div class="tarjeta">
     <div class="perfil"><?= foto_alumno($a, 'foto-grande') ?><div>
       <h2 style="margin:0"><?= e(nombre_alumno($a)) ?> <?= $a['estado'] === 'pendiente' ? '<span class="estado-chip chip-pend">Inscripción en revisión</span>' : '' ?></h2>
       <p style="margin:.3rem 0"><?= e(edad_o_categoria($a, $liga)) ?><?= ($a['grupo'] ?? '') !== '' && !str_starts_with((string)$a['grupo'], sub_de($a['fecha_nac'])) ? ' · ' . e($a['grupo']) : '' ?><?= $a['grupo'] ? ' · ' . e(texto_horario($a)) : '' ?></p><?= html_deportes_alumno($a, $liga) ?>
       <p style="margin:.3rem 0">Asistencia (90 días): <b><?= $as['pct'] !== null ? $as['pct'] . '%' : '—' ?></b> · Pagos: <?= chip_pago($ep['estado']) ?><?= $ins ? ' · 🏅 ' . count($ins) . ' insignia(s)' : '' ?></p>
       <?php if ($a['estado'] === 'activo'): ?><div class="acciones">
-        <a class="btn btn-chico" href="familia.php?h=<?= (int)$a['id'] ?>&amp;v=diario">📖 Entrenamientos</a>
-        <a class="btn btn-chico" href="familia.php?h=<?= (int)$a['id'] ?>&amp;v=desarrollo">📈 Desarrollo<?= $nuevas ? ' 🆕' : '' ?></a>
+        <?php if (modulo_activo($liga, 'esc_entrenamientos')): // (Anexo B) ?><a class="btn btn-chico" href="familia.php?h=<?= (int)$a['id'] ?>&amp;v=diario">📖 Entrenamientos</a><?php endif; ?>
+        <?php if (modulo_activo($liga, 'esc_evaluaciones')): ?><a class="btn btn-chico" href="familia.php?h=<?= (int)$a['id'] ?>&amp;v=desarrollo">📈 Desarrollo<?= $nuevas ? ' 🆕' : '' ?></a><?php endif; ?>
         <?php if ($con_club): ?><a class="btn btn-chico" href="familia.php?h=<?= (int)$a['id'] ?>&amp;v=partidos">🏟 Partidos</a><?php endif; ?>
-        <a class="btn btn-sec btn-chico" target="_blank" href="familia.php?libreta=<?= (int)$a['id'] ?>">📘 Informe</a><a class="btn btn-sec btn-chico" target="_blank" href="<?= e(url_carnet_alumno($a)) ?>">🪪 Carnet digital</a></div><?php endif; ?>
+        <?php if (modulo_activo($liga, 'esc_evaluaciones')): ?><a class="btn btn-sec btn-chico" target="_blank" href="familia.php?libreta=<?= (int)$a['id'] ?>">📘 Informe</a><?php endif; ?><?php if (modulo_activo($liga, 'carnets')): ?><a class="btn btn-sec btn-chico" target="_blank" href="<?= e(url_carnet_alumno($a)) ?>">🪪 Carnet digital</a><?php endif; ?></div><?php endif; ?>
     </div></div>
     <?php foreach ($nuevas as $jn): ?><div class="aviso aviso-info" style="margin-top:10px">🆕 Ya están los resultados de <b><?= e($jn['nombre']) ?></b>. <a href="familia.php?h=<?= (int)$a['id'] ?>&amp;v=desarrollo">Ver con gráficos →</a></div><?php endforeach; ?>
     <?php if ($ins): ?><div style="margin-top:10px"><?= html_insignias(array_slice($ins, 0, 3)) ?></div><?php endif; ?>

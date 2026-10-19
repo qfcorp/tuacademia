@@ -469,7 +469,7 @@ function img_plan(array $pl)
         texto($img, $precio, 96, IMG_W / 2 - 90, $y, $amarillo, 'bold', 'centro');
         texto($img, $p0['texto'], 32, IMG_W / 2 - 90 + intdiv($w, 2) + 18, $y - 8, $blanco, 'medium');
         $otros = array_slice($ops, 1);
-        if ($otros) texto($img, implode('   ·   ', array_map(fn($o) => dinero($o['precio']) . ' ' . $o['texto'] . ($o['gratis'] ? ' (' . $o['gratis'] . ' gratis)' : ''), $otros)), 24, IMG_W / 2, $y + 52, $blanco, 'medium', 'centro', 1000);
+        if ($otros) texto($img, implode('   ·   ', array_map(fn($o) => dinero($o['precio']) . ' ' . $o['texto'] . ($o['gratis'] ? ' (' . texto_ahorro($o['gratis']) . ')' : ''), $otros)), 24, IMG_W / 2, $y + 52, $blanco, 'medium', 'centro', 1000);
     }
     // Límites
     $y = 556;
@@ -502,7 +502,7 @@ function img_plan(array $pl)
     }
     // Pie
     imagefilledrectangle($img, 0, IMG_H - 130, IMG_W, IMG_H, col($img, [0, 0, 0], 40));
-    texto($img, prueba_automatica() ? 'Prueba gratis ' . (int)ajuste('dias_prueba', 7) . ' días' : 'Solicite su demo', 34, 60, IMG_H - 70, $amarillo, 'bold', 'izq', 560);
+    texto($img, 'Solicite su demo', 34, 60, IMG_H - 70, $amarillo, 'bold', 'izq', 560);
     $host = preg_replace('#^https?://#', '', rtrim(url_base(), '/'));
     texto($img, $host, 26, IMG_W - 60, IMG_H - 78, $blanco, 'bold', 'der', 420);
     if (($wa = (string)ajuste('ventas_whatsapp')) !== '') texto($img, 'WhatsApp ' . $wa, 22, IMG_W - 60, IMG_H - 40, $suave, 'medium', 'der', 420);

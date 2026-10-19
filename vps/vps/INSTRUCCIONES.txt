@@ -47,9 +47,12 @@ CUANDO SE ELIJA EL NOMBRE DEFINITIVO
   - Cambiar SITIO en vps/vps/comun.sh y la marca en Superadministrador > Ajustes.
   - Agregar el nuevo subdominio en el tunel (como en el paso 3) apuntando al mismo 127.0.0.1:8096.
 
-PRUEBA GRATIS DE 7 DIAS (arreglo del 14-oct-2026). Despues de actualizar:
-  sudo bash tuacademia/vps/vps/poner_prueba_7_dias.sh
-  -> Debe terminar con:  OK: la pagina de registro dice "gratis por 7 dias"
+MODULOS POR ACADEMIA Y "TODO SE PIDE DEMO" (18-oct-2026). Para actualizar:
+  cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps/vps/vps_2_codigo.sh
+  - Ya no hay prueba gratis ni registro abierto: todos piden su demo en /solicitar-demo.
+  - Cada academia ve sus modulos en Mi plan y puede pedir mas. El super los enciende o apaga en Ligas -> Editar -> Modulos de la cuenta
+    o desde el Panel Tukan Central. Precios: Modulos deportivos -> Funciones y precios.
+  - Apagar un modulo NO borra datos. No hay que volver a conectar el panel central.
 
 AVISOS POR TELEGRAM A LOS PADRES: necesitan el bot en Superadministrador > Ajustes > Bot de Telegram (token y usuario).
   Cada academia elige los avisos en Dinero > Avisos por Telegram; los padres se conectan desde su portal.

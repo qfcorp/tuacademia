@@ -21,21 +21,25 @@
  *   real con tipo y motivo; borrar = copia completa en data/borrados/ + papelera de 30 días + borrado definitivo por la tarea automática.
  *   Las cuentas de la papelera no salen en estado, clientes (salvo con estado «papelera»), solicitudes ni finanzas (sus pagos de
  *   antes de borrarla sí quedan en los meses pasados).
+ * - (Anexo B, 18 oct 2026) Programas modulares (app/modulos_catalogo.php): acción «modulos» (base, catálogo y planes), «cliente.modulos»,
+ *   ejecutar cambiar_modulos (encender / apagar, dependencias, precio acordado) y guardar_modulos (catálogo y módulos de cada plan),
+ *   solicitudes «cambio_modulos» (pedidos desde Mi plan) con Aprobar / No aprobar, finanzas.por_modulo y crear_demo con plan + módulos.
  * - Las reglas de negocio son las del programa (app/cuentas_super.php y las funciones de siempre): el panel solo pide.
  * - Todo «ejecutar» deja una línea en la bitácora («Panel Tukán Central · Nombre <correo>», operación tukan_central).
  */
 
 const TC_PROTOCOLO = 1;          // estado y sso siguen siendo v1
 const TC_PROTOCOLO_MAX = 2;
-const TC_REVISION = 2;           // sube cuando se agregan cosas al v2 sin romper nada (2: Anexo A, pausar y papelera)
+const TC_REVISION = 3;           // sube cuando se agregan cosas al v2 sin romper nada (2: Anexo A, pausar y papelera; 3: Anexo B, módulos)
 const TC_LIMITE_MINUTO = 120;    // pedidos por minuto por IP (todos)
 const TC_LIMITE_RECHAZOS = 30;   // pedidos rechazados (401) por minuto por IP
-const TC_ACCIONES_V2 = ['capacidades', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar'];
+const TC_ACCIONES_V2 = ['capacidades', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar', 'modulos'];
 const TC_OPERACIONES = ['crear_demo', 'extender_prueba', 'registrar_pago', 'anular_pago', 'aprobar_comprobante', 'rechazar_comprobante',
     'suspender', 'reactivar', 'cambiar_plan', 'nueva_clave_dueno', 'nota_interna', 'atender_solicitud', 'responder_ticket',
-    'pausar', 'borrar_cliente', 'restaurar_cliente']; // (Anexo A)
+    'pausar', 'borrar_cliente', 'restaurar_cliente', // (Anexo A)
+    'cambiar_modulos', 'guardar_modulos']; // (Anexo B)
 const TC_TIPOS_SOLICITUD = ['registro_nuevo', 'demo_pedida', 'comprobante', 'soporte', 'derechos_datos', 'pago_automatico',
-    'seguimiento_prueba', 'renovacion', 'dominio_gratis', 'comision_vendedor', 'liquidacion_pendiente'];
+    'seguimiento_prueba', 'renovacion', 'dominio_gratis', 'comision_vendedor', 'liquidacion_pendiente', 'cambio_modulos']; // (Anexo B) cambio_modulos
 const TC_ESTADOS = ['prueba', 'activo', 'por_vencer', 'vencido', 'suspendido'];
 const TC_RUTAS_SSO = ['/admin.php'];
 
@@ -361,6 +365,7 @@ function tc2_despachar(string $accion, array $p, array $d): never
         'adjunto'     => tc2_ok('adjunto', tc2_adjunto($d)),
         'finanzas'    => tc2_ok('finanzas', tc2_finanzas($d)),
         'ejecutar'    => tc2_ejecutar($p, $d),
+        'modulos'     => tc2_ok('modulos', tc2_modulos()), // (Anexo B)
     };
     exit;
 }
@@ -754,7 +759,7 @@ function tc2_capacidades(): array
         'revision' => TC_REVISION, 'nombre' => $nombre, 'version' => tc_version(),
         'unico' => false, 'moneda' => 'USD', 'zona_horaria' => date_default_timezone_get(),
         'url_publica' => rtrim(url_base(), '/'),
-        'acciones' => ['capacidades', 'estado', 'sso', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar'],
+        'acciones' => ['capacidades', 'estado', 'sso', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar', 'modulos'],
         'sso_ir' => true,
         'rutas_sso' => TC_RUTAS_SSO,
         'ejecutar' => TC_OPERACIONES,
@@ -769,6 +774,8 @@ function tc2_capacidades(): array
         'limites' => ['por_pagina_max' => 200, 'meses_finanzas_max' => 24, 'dias_prueba_max' => 90, 'papelera_dias' => PAPELERA_DIAS, 'copia_dias' => PAPELERA_COPIA_DIAS],
         'tipos_pausa' => tc2_opciones(tipos_pausa()),
         'papelera' => true,
+        'modulos' => true, // (Anexo B) programa modular: acción «modulos», cliente.modulos, cambiar_modulos y guardar_modulos
+        'finanzas_por_modulo' => true,
     ];
 }
 
@@ -861,6 +868,7 @@ function tc2_clientes_resumen(?array $ids = null, bool $papelera = false): array
         $ult = (string)($act[$id]['u'] ?? '');
         $mensual = !$en_papelera && $x['estado'] !== 'suspendido' && $s['estado'] === 'activa' && isset($ultimo[$id])
             ? round((float)$ultimo[$id]['monto'] / max(1, (int)$ultimo[$id]['meses']), 2) : 0.0;
+        if ($mensual > 0 && modulos_personalizados($l)) $mensual = modulos_cliente($l)['mensual']; // (Anexo B) plan + extra − descuentos (o precio acordado)
         $tipo_pausa = (string)($l['suspendida_tipo'] ?? '');
         $texto = $x['estado'] === 'suspendido'
             ? ($tipo_pausa !== '' ? 'Pausada (' . (tipos_pausa()[$tipo_pausa] ?? $tipo_pausa) . ')' : 'Suspendida') . (($l['suspendida_motivo'] ?? '') !== '' ? ': ' . $l['suspendida_motivo'] : '') . ($vence ? ' (vence el ' . $vence . ')' : '')
@@ -1042,7 +1050,7 @@ function tc2_campos_pago(array $l, ?array $sugerido = null): array
     $op_plan = array_map(fn($p) => ['valor' => (string)$p['id'], 'etiqueta' => (string)$p['nombre']], array_values($planes));
     $opciones = $pl ? opciones_precio($pl, $l) : [];
     $op_per = [];
-    foreach ($opciones as $k => $o) $op_per[] = ['valor' => $k, 'etiqueta' => $o['nombre'] . ($o['gratis'] ? ' (' . $o['gratis'] . ' mes' . ($o['gratis'] === 1 ? '' : 'es') . ' gratis)' : '')];
+    foreach ($opciones as $k => $o) $op_per[] = ['valor' => $k, 'etiqueta' => $o['nombre'] . ($o['gratis'] ? ' (' . texto_ahorro($o['gratis']) . ')' : '')];
     if (!$op_per) foreach (periodos_plan() as $k => [$m, $n]) $op_per[] = ['valor' => $k, 'etiqueta' => $n];
     $per = $sugerido['periodo'] ?? ($op_per[0]['valor'] ?? 'mensual');
     $monto = $pl && isset($opciones[$per]) ? tc2_dinero($opciones[$per]['precio']) : 0.0;
@@ -1108,6 +1116,7 @@ function tc2_acciones_cliente(array $l, array $c): array
         tc2_campo('confirmar', 'Escriba el nombre exacto para confirmar', 'texto', true, ['max' => 200, 'ayuda' => 'Nombre exacto: ' . $n . ' (o su id: ' . $id . ')', 'placeholder' => $n]),
         tc2_campo('motivo', 'Motivo del borrado', 'texto', true, ['min' => 3, 'max' => 300]),
     ]);
+    $b[] = tc2_boton_modulos($l); // (Anexo B) encender / apagar módulos
     if (usuario_dueno($l)) $b[] = tc2_boton('nueva_clave_dueno', 'Nueva clave del dueño', 'normal', '¿Crear una contraseña nueva para el dueño de ' . $n . '? La anterior deja de servir.', ['cliente_id' => $id]);
     $b[] = tc2_boton('nota_interna', 'Nota interna', 'normal', null, ['cliente_id' => $id],
         [tc2_campo('texto', 'Nota (el cliente no la ve)', 'texto_largo', false, ['valor' => (string)($l['notas_admin'] ?? ''), 'max' => 4000])]);
@@ -1174,6 +1183,7 @@ function tc2_cliente_ficha(string $id): array
         'dominio' => (string)($l['dominio'] ?? ''),
         'enlace_publico' => url_liga($l),
         'pagos_detalle' => $pagos,
+        'modulos' => tc2_modulos_cliente($l), // (Anexo B)
         'solicitudes' => tc2_solicitudes_todas(['estado' => 'abiertas', 'cliente_id' => (string)$lid]),
         'registro' => $registro,
         'mensajes_sugeridos' => tc2_mensajes($l, $c),
@@ -1243,6 +1253,7 @@ function tc2_cotizar(array $d): array
         'detalle' => $pl['nombre'] . ' ' . mb_strtolower(tc2_periodo_de($meses)[1]) . ($gratis ? ' (paga ' . ($meses - $gratis) . ', recibe ' . $meses . ')' : ''),
         'incluye_dominio' => $meses >= 12 && (int)($pl['dominio_anual'] ?? 0) === 1,
         'descuentos' => $desc,
+        'modulos' => tc2_modulos_cliente($l, $pl), // (Anexo B) lo que suman los módulos con ese plan
     ];
 }
 
@@ -1279,7 +1290,7 @@ function tc2_planes(): array
         'editable' => false,
         'planes' => $planes,
         'ajustes' => ['dias_prueba' => (int)ajuste('dias_prueba', tc_producto()[0] === 'tuacademia' ? 7 : 30), 'dias_demo' => (int)ajuste('dias_demo', 7), 'dias_gracia' => (int)ajuste('dias_gracia', 7),
-                      'dias_gracia_demo' => (int)ajuste('dias_gracia_demo', 0), 'registro_abierto' => prueba_automatica()],
+                      'dias_gracia_demo' => (int)ajuste('dias_gracia_demo', 0), 'registro_abierto' => false], // (18 oct 2026) no hay prueba gratis: todo se pide demo
     ];
 }
 
@@ -1590,7 +1601,7 @@ function tc2_solicitudes_todas(array $f = [], bool $completo = false, ?string $s
             $sid = 'dominio_gratis:' . $p['id'];
             $l = $ligas[$p['liga_id']];
             $r[] = tc2_sol([
-                'id' => $sid, 'tipo' => 'dominio_gratis', 'categoria' => 'recordatorio', 'titulo' => 'Dominio gratis por registrar: ' . $l['nombre'],
+                'id' => $sid, 'tipo' => 'dominio_gratis', 'categoria' => 'recordatorio', 'titulo' => 'Dominio incluido por registrar: ' . $l['nombre'],
                 'fecha' => tc2_momento($p['creado'], true), 'actualizado' => tc2_momento($att[$sid]['momento'] ?? '') ?? tc2_momento($p['creado'], true), 'cliente_id' => (string)$l['id'], 'quien' => $quien_liga($l),
                 'resumen' => 'Pagó ' . (int)$p['meses'] . ' meses del plan ' . $p['plan_nombre'] . ' el ' . $p['fecha'], 'monto' => tc2_dinero($p['monto']), 'estado' => $estado_att($sid),
                 'detalle' => ['pago_id' => (string)$p['id'], 'plan' => ['codigo' => (string)$p['plan_id'], 'nombre' => (string)$p['plan_nombre']], 'nota' => (string)($att[$sid]['nota'] ?? '')],
@@ -1631,6 +1642,44 @@ function tc2_solicitudes_todas(array $f = [], bool $completo = false, ?string $s
                 'resumen' => (int)$x['n'] . ' cobro(s) con tarjeta sin liquidar · cobrado ' . str_replace('.', ',', dinero((float)$x['cobrado'])), 'monto' => tc2_dinero($x['neto']), 'estado' => $estado_att($sid),
                 'detalle' => ['pagos' => (int)$x['n'], 'cobrado' => tc2_dinero($x['cobrado']), 'neto' => tc2_dinero($x['neto']), 'desde' => tc2_momento($x['desde']), 'hasta' => tc2_momento($x['hasta']), 'nota' => (string)($att[$sid]['nota'] ?? '')],
                 'acciones_posibles' => [tc2_boton_abrir('/admin.php?p=pasarela', 'Ver en Cobros con tarjeta'), tc2_boton_atender($sid)], 'ir' => '/admin.php?p=pasarela',
+            ]);
+        }
+    }
+
+    // 12) (Anexo B) Pedidos de módulos desde Mi plan (modulos_pedidos)
+    if ($quiere('cambio_modulos')) {
+        $mapa = ['pendiente' => 'pendiente', 'aprobada' => 'atendida', 'rechazada' => 'descartada'];
+        foreach (filas("SELECT p.* FROM modulos_pedidos p JOIN ligas l ON l.id = p.liga_id WHERE COALESCE(l.es_demo, 0) = 0$solo AND (p.estado = 'pendiente' OR p.creado >= ?) ORDER BY p.id DESC", [$desde]) as $p) {
+            $l = $ligas[$p['liga_id']] ?? null;
+            if (!$l) continue;
+            $sid = 'cambio_modulos:' . $p['id'];
+            $cat = catalogo_modulos(tipo_modulos($l));
+            $mc = modulos_cliente($l);
+            $enc = array_values(array_filter(explode(',', (string)$p['encender']), fn($k) => isset($cat[$k])));
+            $apg = array_values(array_filter(explode(',', (string)$p['apagar']), fn($k) => isset($cat[$k])));
+            $mas = round(array_sum(array_map(fn($k) => in_array($k, $mc['del_plan'], true) ? 0 : $cat[$k]['precio_mensual'], array_diff($enc, $mc['todos_en_demo'] ? [] : $mc['activos']))), 2);
+            $est = $mapa[$p['estado']] ?? 'pendiente';
+            $quien = $quien_liga($l);
+            $info = fn(array $ks) => array_map(fn($k) => ['id' => $k, 'nombre' => $cat[$k]['nombre'], 'icono' => $cat[$k]['icono'], 'precio_mensual' => $cat[$k]['precio_mensual'], 'en_plan' => in_array($k, $mc['del_plan'], true)], $ks);
+            $acc = [];
+            if ($p['estado'] === 'pendiente') {
+                $acc[] = tc2_boton('cambiar_modulos', 'Aprobar', 'principal', '¿Encender ' . nombres_modulos($enc ?: $apg, $cat) . ' para ' . $l['nombre'] . '?' . ($mas > 0 ? ' Suma ' . dinero($mas) . ' al mes.' : ''),
+                    ['cliente_id' => (string)$l['id'], 'solicitud_id' => $sid, 'encender' => $enc, 'apagar' => $apg], [
+                        tc2_campo('precio_acordado', 'Precio acordado ($ al mes, opcional)', 'dinero', false, ['valor' => $mc['precio_acordado'], 'min' => 0, 'ayuda' => 'Vacío = plan + módulos (' . dinero(round($mc['mensual'] + $mas, 2)) . ' al mes).']),
+                        tc2_campo('motivo', 'Nota (queda en la bitácora)', 'texto', false, ['max' => 300])]);
+                $acc[] = tc2_boton('atender_solicitud', 'No aprobar', 'peligro', null, ['solicitud_id' => $sid, 'resultado' => 'descartada'],
+                    [tc2_campo('nota', 'Motivo (lo verá el cliente)', 'texto', true, ['min' => 3, 'max' => 300])]);
+            }
+            if ($w = tc2_boton_wa($quien['whatsapp'], 'Hola' . ($quien['nombre'] ? ' ' . $quien['nombre'] : '') . ', le saluda ' . ajuste('empresa') . '. Recibimos su pedido del módulo ' . nombres_modulos($enc ?: $apg, $cat) . ' para ' . $l['nombre'] . '.')) $acc[] = $w;
+            $acc[] = tc2_boton_abrir('/admin.php?p=ligas&editar=' . $l['id'] . '#pedidos-modulos');
+            $r[] = tc2_sol([
+                'id' => $sid, 'tipo' => 'cambio_modulos', 'categoria' => 'pedido', 'titulo' => 'Pide módulos: ' . $l['nombre'],
+                'fecha' => tc2_momento($p['creado']), 'actualizado' => tc2_momento($p['atendido_en']) ?? tc2_momento($p['creado']), 'cliente_id' => (string)$l['id'], 'quien' => $quien,
+                'resumen' => nombres_modulos($enc, $cat) . ($apg ? ' · quitar ' . nombres_modulos($apg, $cat) : '') . ($mas > 0 ? ' · +' . str_replace('.', ',', dinero($mas)) . ' al mes' : ''),
+                'monto' => $mas > 0 ? $mas : null, 'estado' => $est, 'estado_producto' => (string)$p['estado'], 'prioridad' => $est === 'pendiente' ? 'alta' : 'normal',
+                'detalle' => ['encender' => $info($enc), 'apagar' => $info($apg), 'mensaje' => tc2_txt($p['mensaje']), 'pedido_por' => tc2_txt($p['pedido_por']),
+                              'mensual_actual' => $mc['mensual'], 'suma_al_mes' => $mas, 'respuesta' => tc2_txt($p['respuesta']), 'atendido_por' => tc2_txt($p['atendido_por'])],
+                'acciones_posibles' => $acc, 'ir' => '/admin.php?p=ligas&editar=' . $l['id'] . '#pedidos-modulos',
             ]);
         }
     }
@@ -1819,12 +1868,35 @@ function tc2_finanzas(array $d): array
         $salida[] = $fila;
     }
     $mrr = 0.0;
-    foreach (tc2_clientes_resumen() as $c) $mrr += $c['mensual_estimado'];
+    $por_modulo = [];
+    $lig_mod = array_column(filas("SELECT l.* FROM ligas l WHERE COALESCE(l.es_demo, 0) = 0" . tc_solo()), null, 'id');
+    foreach (tc2_clientes_resumen() as $c) {
+        $mrr += $c['mensual_estimado'];
+        // (Anexo B) ingreso estimado por módulo extra: clientes que pagan (activos o por vencer), lo que suma cada módulo al mes
+        if ($c['mensual_estimado'] <= 0 || !isset($lig_mod[(int)$c['id']])) continue;
+        $lm = $lig_mod[(int)$c['id']];
+        $cat_m = catalogo_modulos(tipo_modulos($lm));
+        $mc = modulos_cliente($lm);
+        foreach ($mc['extra'] as $k) {
+            $por_modulo[$k] ??= ['modulo' => $k, 'nombre' => $cat_m[$k]['nombre'], 'clientes' => 0, 'mensual' => 0.0, 'quitado_por' => 0, 'descuentos' => 0.0];
+            $por_modulo[$k]['clientes']++;
+            $por_modulo[$k]['mensual'] += $cat_m[$k]['precio_mensual'];
+        }
+        foreach ((array)$mc['descuentos'] as $k => $v) {
+            if (!isset($cat_m[$k])) continue;
+            $por_modulo[$k] ??= ['modulo' => $k, 'nombre' => $cat_m[$k]['nombre'], 'clientes' => 0, 'mensual' => 0.0, 'quitado_por' => 0, 'descuentos' => 0.0];
+            $por_modulo[$k]['quitado_por']++;
+            $por_modulo[$k]['descuentos'] += (float)$v;
+        }
+    }
+    $por_modulo = array_values(array_map(fn($x) => ['mensual' => round($x['mensual'], 2), 'descuentos' => round($x['descuentos'], 2)] + $x, $por_modulo));
+    usort($por_modulo, fn($a, $b) => ($b['mensual'] <=> $a['mensual']) ?: strcmp($a['modulo'], $b['modulo']));
     return [
         'moneda' => 'USD',
         'criterio' => 'Pagos de suscripción no anulados (los anulados se borran), por fecha de pago. Las demos del sistema no cuentan. De un cliente borrado (papelera) solo cuenta lo que pagó antes de borrarlo.' . ($acad ? ' Solo academias.' : ''),
         'desde' => $desde, 'hasta' => $hasta,
         'mrr' => round($mrr, 2),
+        'por_modulo' => $por_modulo, // (Anexo B) estimado de HOY: lo que suman al mes los módulos extra de los clientes que pagan
         'meses' => $salida,
         'totales' => ['ingresos' => round($tot['ingresos'], 2), 'otros_ingresos' => round($tot['otros_ingresos'], 2), 'costos' => round($tot['costos'], 2), 'pagos' => $tot['pagos']],
     ];
@@ -1992,7 +2064,7 @@ function tc2_operacion(string $accion, array $d, array $ctx): array
             $nota = tc2_texto($d, 'nota', 0, 200, 'datos.nota');
             $dom = '';
             if (($d['dominio'] ?? '') !== '' && ($d['dominio'] ?? null) !== null) {
-                if (!($meses >= 12 && (int)($pl['dominio_anual'] ?? 0) === 1)) throw tc2_mal('datos.dominio', 'El dominio gratis solo viene pagando 1 año de un plan con dominio.');
+                if (!($meses >= 12 && (int)($pl['dominio_anual'] ?? 0) === 1)) throw tc2_mal('datos.dominio', 'El dominio incluido solo viene pagando 1 año de un plan con dominio.');
                 $dom = limpiar_dominio(is_string($d['dominio']) ? $d['dominio'] : '');
                 if ($dom === '') throw tc2_mal('datos.dominio', 'El dominio no es válido. Escríbalo así: suliga.com');
                 if (fila('SELECT id FROM ligas WHERE dominio = ? AND id <> ?', [$dom, $l['id']])) throw tc2_mal('datos.dominio', 'Ese dominio ya lo usa otra cuenta.');
@@ -2094,6 +2166,12 @@ function tc2_operacion(string $accion, array $d, array $ctx): array
         case 'borrar_cliente':
         case 'restaurar_cliente':
             return tc2_op_papelera($accion, $d, $ctx);
+
+        case 'cambiar_modulos':
+            return tc2_op_cambiar_modulos($d, $ctx);
+
+        case 'guardar_modulos':
+            return tc2_op_guardar_modulos($d, $ctx);
 
         case 'responder_ticket':
             [, $tid, $sol] = tc2_op_solicitud($d, ['soporte']);
@@ -2217,8 +2295,22 @@ function tc2_op_crear_demo(array $d, array $ctx): array
         if ($tipo === 'escuela' && $disc && ($kd = function_exists('modulo_de_deporte_escuela') ? modulo_de_deporte_escuela((string)$disc) : '') !== '' && !in_array($kd, $deportes, true)) $deportes[] = $kd;
         $datos['deportes'] = $deportes;
     }
+    // (Anexo B) módulos de la demo: sin «modulos» tiene todos (para que vea todo); con «modulos» solo esos (y lo que necesitan)
+    $mods_demo = null;
+    if (array_key_exists('modulos', $d) && $d['modulos'] !== null && $d['modulos'] !== '') {
+        $mods_demo = is_string($d['modulos']) ? array_values(array_filter(array_map('trim', explode(',', $d['modulos'])))) : $d['modulos'];
+        $cat_d = catalogo_modulos($tipo);
+        if (!is_array($mods_demo) || !array_is_list($mods_demo)) throw tc2_mal('datos.modulos', '«modulos» debe ser una lista de módulos.');
+        foreach ($mods_demo as $k) if (!is_string($k) || !isset($cat_d[$k])) throw tc2_mal('datos.modulos', 'El módulo «' . (is_scalar($k) ? (string)$k : '?') . '» no existe para ' . ($tipo === 'escuela' ? 'escuelas y academias' : 'ligas') . '.');
+    }
     $r = crear_demo_cuenta($datos, $ctx['por']);
     $l = $r['liga'];
+    if ($mods_demo !== null) {
+        $cat_d = catalogo_modulos($tipo);
+        $quiere = array_values(array_unique(array_merge($mods_demo, ...array_map(fn($k) => dependencias_modulo($k, $cat_d), $mods_demo ?: []))));
+        cambiar_modulos_cuenta($l, $mods_demo, array_values(array_diff(array_keys($cat_d), $quiere)), ['por' => $ctx['por'], 'motivo' => 'Demo con módulos elegidos']);
+        $l = fila('SELECT * FROM ligas WHERE id = ?', [$l['id']]);
+    }
     $wa = tc2_wa($tel);
     return [
         'mensaje' => 'Demo creada: ' . $l['nombre'] . ', hasta el ' . $l['vence'] . '.',
@@ -2228,6 +2320,7 @@ function tc2_op_crear_demo(array $d, array $ctx): array
             'enlace_publico' => url_liga($l), 'mensaje_whatsapp' => $r['mensaje_whatsapp'],
             'whatsapp_url' => $wa ? 'https://wa.me/' . $wa . '?text=' . rawurlencode($r['mensaje_whatsapp']) : null,
             'correo_enviado' => (bool)$r['correo_enviado'],
+            'modulos' => tc2_modulos_cliente($l), // (Anexo B)
         ],
         'secretos' => [$clave], 'liga_id' => (int)$l['id'], 'solicitud_id' => $sol ? 'demo_pedida:' . $sol['id'] : null,
         'bitacora' => 'Creó la demo ' . $l['nombre'] . ' (' . $email . ') hasta el ' . $l['vence'] . ($sol ? ', del pedido de demo #' . $sol['id'] : ''),
@@ -2247,6 +2340,22 @@ function tc2_op_atender(array $d, array $ctx): array
     $nombres = ['en_proceso' => 'en proceso', 'atendida' => 'atendida', 'descartada' => 'descartada'];
     $sin = fn(string $txt) => ['mensaje' => $txt, 'sin_cambios' => true, 'resultado' => [], 'liga_id' => $lid, 'solicitud_id' => $sid, 'bitacora' => 'Atender ' . $sid . ': ' . $txt];
     switch ($tipo) {
+        case 'cambio_modulos': // (Anexo B) «No aprobar» (descartada, con el motivo en la nota) o «Aprobar» (atendida = cambiar_modulos con lo pedido)
+            $pm = fila('SELECT * FROM modulos_pedidos WHERE id = ?', [(int)$ref]);
+            if ($pm['estado'] !== 'pendiente') {
+                if (($res === 'atendida' && $pm['estado'] === 'aprobada') || ($res === 'descartada' && $pm['estado'] === 'rechazada')) return $sin('El pedido ya estaba así.');
+                throw new TcError('conflicto', 'Ese pedido de módulos ya fue atendido (' . (estados_pedido_modulos()[$pm['estado']] ?? $pm['estado']) . ').', 409, null, ['motivo' => 'ya_atendida', 'estado' => $pm['estado']]);
+            }
+            if ($res === 'en_proceso') throw new TcError('no_permitido', 'Los pedidos de módulos se atienden con «Aprobar» o «No aprobar».', 403, 'datos.resultado', ['motivo' => 'usar_aprobar_rechazar']);
+            if ($res === 'descartada') {
+                if (mb_strlen($nota) < 3) throw tc2_mal('datos.nota', 'Escriba el motivo para el cliente (3 a 300 caracteres).');
+                rechazar_pedido_modulos((int)$pm['id'], $ctx['por'], $nota);
+                $txt = 'Pedido de módulos #' . $pm['id'] . ': no aprobado. Le avisamos al cliente.';
+                break;
+            }
+            $x = aprobar_pedido_modulos((int)$pm['id'], $ctx['por'], $nota !== '' ? ['nota' => $nota] : []);
+            $txt = 'Pedido de módulos #' . $pm['id'] . ' aprobado. ' . $x['texto'];
+            break;
         case 'demo_pedida':
             $s = fila('SELECT * FROM solicitudes_demo WHERE id = ?', [(int)$ref]);
             $nuevo = $res === 'descartada' ? 'descartada' : 'contactada';
@@ -2289,4 +2398,170 @@ function tc2_op_atender(array $d, array $ctx): array
             $txt = $sol['titulo'] . ': ' . $nombres[$res] . '.';
     }
     return ['mensaje' => 'Listo. ' . $txt, 'resultado' => ['estado' => $res], 'liga_id' => $lid, 'solicitud_id' => $sid, 'bitacora' => 'Atendió ' . $sid . ' (' . $nombres[$res] . ')' . ($nota !== '' ? ': ' . $nota : '')];
+}
+
+/* ============================================================
+ * v2 — MÓDULOS (Anexo B)
+ * ============================================================ */
+
+/** Acción «modulos»: lo básico, el catálogo de módulos y lo que trae cada plan. */
+function tc2_modulos(): array
+{
+    $acad = tc_producto()[2];
+    $tipos = $acad ? ['escuela'] : ['liga', 'escuela'];
+    $cat = catalogo_modulos($acad ? 'escuela' : '');
+    $mods = [];
+    foreach ($cat as $k => $m) {
+        $mods[] = ['id' => $k, 'nombre' => $m['nombre'], 'icono' => $m['icono'], 'descripcion' => tc2_txt($m['descripcion']), 'precio_mensual' => $m['precio_mensual'],
+                   'depende_de' => $m['depende_de'], 'grupo' => $m['grupo'], 'grupo_nombre' => $m['grupo_nombre'], 'orden' => $m['orden'],
+                   'para' => array_values(array_intersect($tipos, $m['para'] === 'ambos' ? ['liga', 'escuela'] : [$m['para']]))];
+    }
+    $planes = [];
+    foreach (filas('SELECT * FROM planes ORDER BY orden, precio_mensual, id') as $pl) {
+        $para = (string)($pl['tipo_cuenta'] ?? '') !== '' ? (string)$pl['tipo_cuenta'] : 'ambos';
+        if ($acad && $para === 'liga') continue;
+        $cat_p = catalogo_modulos($para === 'ambos' ? ($acad ? 'escuela' : '') : $para);
+        $planes[] = ['codigo' => (string)$pl['id'], 'nombre' => (string)$pl['nombre'], 'activo' => (int)$pl['activo'] === 1, 'para' => $para,
+                     'precio_mensual' => precio_mensual_plan($pl), 'modulos' => array_values(array_intersect(array_keys($cat_p), modulos_plan($pl))),
+                     'todos' => in_array(trim((string)$pl['modulos']), ['*', ''], true)];
+    }
+    $base = [];
+    foreach ($tipos as $t) $base[$t] = funciones_base($t);
+    return [
+        'base' => funciones_base($acad ? 'escuela' : 'liga'), 'base_por_tipo' => (object)$base,
+        'grupos' => tc2_opciones(grupos_modulos()), 'modulos' => $mods, 'planes' => $planes, 'editable' => true,
+        'reglas' => ['activos' => '(módulos del plan − quitados) + extra, respetando dependencias', 'mensual' => 'plan + extra + deportes − descuentos, o el precio acordado',
+                     'demo' => 'en la demo tiene todos los módulos, salvo que se elijan al crear la demo o con cambiar_modulos', 'apagar' => 'apagar nunca borra datos'],
+    ];
+}
+
+/** cliente.modulos (Anexo B.2). Con $pl: cómo quedaría con ese plan. */
+function tc2_modulos_cliente(array $l, ?array $pl = null): array
+{
+    $m = modulos_cliente($l, $pl);
+    return ['del_plan' => $m['del_plan'], 'extra' => $m['extra'], 'quitados' => $m['quitados'], 'activos' => $m['activos'], 'descuentos' => $m['descuentos'],
+            'precio_plan' => $m['precio_plan'], 'precio_extra' => $m['precio_extra'], 'precio_deportes' => $m['precio_deportes'], 'descuento' => $m['descuento'],
+            'precio_acordado' => $m['precio_acordado'], 'mensual' => $m['mensual'], 'todos_en_demo' => $m['todos_en_demo'], 'elegidos' => (int)($l['modulos_elegidos'] ?? 0) === 1];
+}
+
+/** Botón «Módulos» de la ficha: un sí/no por módulo + precio acordado + motivo. */
+function tc2_boton_modulos(array $l): array
+{
+    $cat = catalogo_modulos(tipo_modulos($l));
+    $m = modulos_cliente($l);
+    $campos = [];
+    foreach ($cat as $k => $x) {
+        $en_plan = in_array($k, $m['del_plan'], true);
+        $campos[] = tc2_campo('mod_' . $k, $x['icono'] . ' ' . $x['nombre'] . ($en_plan ? ' (en su plan)' : ' (+' . dinero($x['precio_mensual']) . ' al mes)'), 'si_no', false,
+            ['valor' => in_array($k, $m['activos'], true), 'ayuda' => $x['depende_de'] ? 'Necesita: ' . nombres_modulos($x['depende_de'], $cat) : null]);
+    }
+    $campos[] = tc2_campo('precio_acordado', 'Precio acordado ($ al mes, opcional)', 'dinero', false, ['valor' => $m['precio_acordado'], 'min' => 0, 'ayuda' => 'Vacío = plan + módulos (hoy ' . dinero($m['mensual']) . ' al mes).']);
+    $campos[] = tc2_campo('motivo', 'Motivo (queda en la bitácora)', 'texto', false, ['max' => 300]);
+    return tc2_boton('cambiar_modulos', 'Módulos', 'normal', '¿Guardar los módulos de ' . $l['nombre'] . '? Apagar un módulo no borra datos.', ['cliente_id' => (string)$l['id']], $campos);
+}
+
+/** Lista de ids de módulos de un campo (lista o texto separado por comas). */
+function tc2_lista_modulos(array $d, string $k, array $cat, string $ruta): array
+{
+    if (!array_key_exists($k, $d) || $d[$k] === null || $d[$k] === '') return [];
+    $v = is_string($d[$k]) ? array_values(array_filter(array_map('trim', explode(',', $d[$k])))) : $d[$k];
+    if (!is_array($v) || !array_is_list($v)) throw tc2_mal($ruta, '«' . $k . '» debe ser una lista de módulos.');
+    foreach ($v as $x) if (!is_string($x) || !isset($cat[$x])) throw tc2_mal($ruta, 'El módulo «' . (is_scalar($x) ? (string)$x : '?') . '» no existe para este cliente. Vea la acción «modulos».');
+    return array_values(array_unique($v));
+}
+
+/**
+ * cambiar_modulos: datos.encender / datos.apagar (listas), o datos.activos (lista completa de lo que debe quedar encendido),
+ * o datos.mod_<id> (sí/no, el formulario de la ficha); datos.precio_acordado (número o null), datos.descuentos {id: $},
+ * datos.motivo; con datos.solicitud_id = cambio_modulos:<n> aprueba ese pedido. Idempotente: si ya estaba así → sin_cambios.
+ */
+function tc2_op_cambiar_modulos(array $d, array $ctx): array
+{
+    $pedido = null;
+    $sid = $d['solicitud_id'] ?? null;
+    if ($sid !== null && $sid !== '') {
+        if (!is_string($sid) || !preg_match('/^cambio_modulos:(\d+)$/', $sid, $mm)) throw tc2_mal('datos.solicitud_id', 'La solicitud debe ser «cambio_modulos:<número>».');
+        $pedido = fila('SELECT p.* FROM modulos_pedidos p JOIN ligas l ON l.id = p.liga_id WHERE p.id = ? AND COALESCE(l.es_demo, 0) = 0' . tc_solo(), [(int)$mm[1]])
+            ?? throw new TcError('no_encontrado', 'Ese pedido de módulos ya no existe.', 404);
+        if ($ctx['cliente_id'] === null || $ctx['cliente_id'] === '') $ctx['cliente_id'] = (string)$pedido['liga_id'];
+        if ((string)$pedido['liga_id'] !== (string)tc2_id_valor($ctx['cliente_id'])) throw tc2_mal('datos.solicitud_id', 'Ese pedido es de otro cliente.');
+        if ($pedido['estado'] !== 'pendiente') throw new TcError('conflicto', 'Ese pedido de módulos ya fue atendido (' . (estados_pedido_modulos()[$pedido['estado']] ?? $pedido['estado']) . ').', 409, null, ['motivo' => 'ya_atendida', 'estado' => $pedido['estado']]);
+    }
+    $l = tc2_op_liga($ctx);
+    $cat = catalogo_modulos(tipo_modulos($l));
+    $act = modulos_cliente($l)['activos'];
+    $enc = tc2_lista_modulos($d, 'encender', $cat, 'datos.encender');
+    $apg = tc2_lista_modulos($d, 'apagar', $cat, 'datos.apagar');
+    if (array_key_exists('activos', $d)) {
+        $quiere = tc2_lista_modulos($d, 'activos', $cat, 'datos.activos');
+        $enc = array_values(array_unique(array_merge($enc, array_diff($quiere, $act))));
+        $apg = array_values(array_unique(array_merge($apg, array_diff($act, $quiere))));
+    }
+    foreach ($d as $k => $v) {
+        if (!is_string($k) || !str_starts_with($k, 'mod_')) continue;
+        $id = substr($k, 4);
+        if (!isset($cat[$id])) throw tc2_mal('datos.' . $k, 'El módulo «' . $id . '» no existe para este cliente.');
+        $si = $v === true || $v === 1 || $v === '1' || $v === 'si';
+        if (!$si && !($v === false || $v === 0 || $v === '0' || $v === 'no' || $v === null || $v === '')) throw tc2_mal('datos.' . $k, 'Debe ser sí o no.');
+        if ($si && !in_array($id, $act, true)) $enc[] = $id;
+        if (!$si && in_array($id, $act, true)) $apg[] = $id;
+    }
+    $enc = array_values(array_unique($enc));
+    $apg = array_values(array_unique($apg));
+    $o = ['por' => $ctx['por'], 'motivo' => tc2_texto($d, 'motivo', 0, 300, 'datos.motivo')];
+    if (array_key_exists('precio_acordado', $d)) {
+        $v = $d['precio_acordado'];
+        if ($v !== null && $v !== '' && (!is_int($v) && !is_float($v) && !(is_string($v) && is_numeric($v)))) throw tc2_mal('datos.precio_acordado', 'El precio acordado debe ser un número (o vacío).');
+        if (is_numeric($v) && ((float)$v < 0 || (float)$v > 100000)) throw tc2_mal('datos.precio_acordado', 'El precio acordado va de 0 a 100000.');
+        $o['precio_acordado'] = $v === '' ? null : $v;
+    }
+    if (array_key_exists('descuentos', $d) && $d['descuentos'] !== null) {
+        if (!is_array($d['descuentos']) || ($d['descuentos'] !== [] && array_is_list($d['descuentos']))) throw tc2_mal('datos.descuentos', '«descuentos» debe ser un objeto {módulo: $}.');
+        foreach ($d['descuentos'] as $k => $v) if (!isset($cat[$k]) || !is_numeric($v) || (float)$v < 0) throw tc2_mal('datos.descuentos', 'Descuento no válido para «' . $k . '».');
+        $o['descuentos'] = array_map('floatval', $d['descuentos']);
+    }
+    if ($pedido) {
+        if (!$enc && !$apg && !array_key_exists('encender', $d) && !array_key_exists('apagar', $d)) {
+            $enc = array_values(array_filter(explode(',', (string)$pedido['encender'])));
+            $apg = array_values(array_filter(explode(',', (string)$pedido['apagar'])));
+        }
+        $x = aprobar_pedido_modulos((int)$pedido['id'], $ctx['por'], ['encender' => $enc, 'apagar' => $apg, 'nota' => $o['motivo'] !== '' ? $o['motivo'] : null] + array_intersect_key($o, array_flip(['precio_acordado', 'descuentos'])));
+    } else {
+        try {
+            $x = cambiar_modulos_cuenta($l, $enc, $apg, $o);
+        } catch (RuntimeException $e) {
+            if (str_contains($e->getMessage(), 'depende de') || str_contains($e->getMessage(), 'lo necesita')) throw new TcError('invalido', $e->getMessage(), 422, 'datos.apagar', ['motivo' => 'dependencia']);
+            throw $e;
+        }
+    }
+    $mods = tc2_modulos_cliente(fila('SELECT * FROM ligas WHERE id = ?', [$l['id']]));
+    $msg = $x['sin_cambios'] ? 'Los módulos de ' . $l['nombre'] . ' ya estaban así.' : 'Módulos de ' . $l['nombre'] . ': ' . $x['texto'] . ($pedido ? ' Le avisamos al cliente.' : '');
+    return ['mensaje' => $msg, 'sin_cambios' => $x['sin_cambios'],
+            'resultado' => ['modulos' => $mods, 'encendidos' => $x['encendidos'], 'apagados' => $x['apagados'], 'tambien_encendidos' => $x['auto']],
+            'arriba' => ['modulos' => $mods], 'liga_id' => (int)$l['id'], 'solicitud_id' => $pedido ? 'cambio_modulos:' . $pedido['id'] : null,
+            'bitacora' => ($x['sin_cambios'] ? 'Cambiar módulos (ya estaban así)' : 'Cambió los módulos: ' . $x['texto']) . ($pedido ? ' · pedido #' . $pedido['id'] : '')];
+}
+
+/** guardar_modulos: datos.modulos [{id, precio_mensual?, descripcion?, orden?, grupo?, depende_de?}] y datos.planes [{codigo, modulos: [ids] | "*", precio_mensual?}]. */
+function tc2_op_guardar_modulos(array $d, array $ctx): array
+{
+    $acad = tc_producto()[2];
+    $mods = $d['modulos'] ?? [];
+    $planes = $d['planes'] ?? [];
+    if (!is_array($mods) || !array_is_list($mods)) throw tc2_mal('datos.modulos', '«modulos» debe ser una lista.');
+    if (!is_array($planes) || !array_is_list($planes)) throw tc2_mal('datos.planes', '«planes» debe ser una lista.');
+    if (!$mods && !$planes) throw tc2_mal('datos.modulos', 'No hay nada que guardar.');
+    $cat = catalogo_modulos($acad ? 'escuela' : '');
+    foreach ($mods as $i => $m) {
+        if (!is_array($m) || !is_string($m['id'] ?? null) || !isset($cat[$m['id']])) throw tc2_mal('datos.modulos.' . $i . '.id', 'Ese módulo no existe en ' . tc_producto()[1] . '.');
+        if (isset($m['depende_de']) && (!is_array($m['depende_de']) || array_diff($m['depende_de'], array_keys($cat)))) throw tc2_mal('datos.modulos.' . $i . '.depende_de', 'Dependencias no válidas.');
+    }
+    foreach ($planes as $i => $p) {
+        $pl = is_array($p) && (is_string($p['codigo'] ?? null) || is_int($p['codigo'] ?? null)) && ctype_digit((string)$p['codigo']) ? fila('SELECT * FROM planes WHERE id = ?', [(int)$p['codigo']]) : null;
+        if (!$pl || ($acad && ($pl['tipo_cuenta'] ?? '') === 'liga')) throw tc2_mal('datos.planes.' . $i . '.codigo', 'Ese plan no existe en ' . tc_producto()[1] . '.');
+        if ($acad && is_array($p['modulos'] ?? null) && array_diff($p['modulos'], array_keys($cat))) throw tc2_mal('datos.planes.' . $i . '.modulos', 'Hay módulos que no existen en ' . tc_producto()[1] . '.');
+    }
+    $n = guardar_catalogo_modulos($mods, $planes, $ctx['por']);
+    return ['mensaje' => $n ? 'Catálogo de módulos guardado (' . $n . ' cambio' . ($n === 1 ? '' : 's') . '). Los precios nuevos se usan desde ya.' : 'El catálogo ya estaba así.', 'sin_cambios' => $n === 0,
+            'resultado' => ['cambios' => $n, 'catalogo' => tc2_modulos()], 'liga_id' => null, 'bitacora' => 'Guardó el catálogo de módulos (' . $n . ' cambios)'];
 }

@@ -261,7 +261,13 @@ q("INSERT INTO soporte_mensajes (ticket_id, de, autor, texto, creado) VALUES (?,
 // derechos de datos dirigidos a Tukán
 q("INSERT INTO solicitudes_derechos (liga_id, tipo, nombre, cedula, email, telefono, detalle, estado, creado) VALUES (NULL, 'acceso', 'María Titular', '1712345678', 'maria@v2.ejemplo.com', '0990001122', 'Quiero saber qué datos tienen de mí', 'nueva', ?)", [$ahora]);
 $der = (int)db()->lastInsertId();
-echo json_encode(['id' => $id, 'pl' => $pl, 'pl2' => $pl2, 'pldom' => $pldom, 'plotro' => $plotro, 'vend' => $vend, 'pagos' => $pagos, 'pvd1' => $pvd1, 'pvd2' => $pvd2,
+// (Anexo B) pedido de módulos desde Mi plan (un módulo que el plan no trae y que no necesita otro)
+$cat = catalogo_modulos($T);
+$del = modulos_del_plan_cuenta(['tipo' => $T, 'plan_id' => $pl], fila('SELECT * FROM planes WHERE id = ?', [$pl]), $cat);
+$modped = (string)array_values(array_filter(array_keys($cat), fn($k) => !in_array($k, $del, true) && !$cat[$k]['depende_de']))[0];
+q("INSERT INTO modulos_pedidos (liga_id, encender, mensaje, pedido_por, creado) VALUES (?, ?, 'Lo necesito', 'Dueño V8', ?)", [$id['V8'], $modped, date('Y-m-d H:i:s')]);
+$ped1 = (int)db()->lastInsertId();
+echo json_encode(['modped' => $modped, 'ped1' => $ped1, 'id' => $id, 'pl' => $pl, 'pl2' => $pl2, 'pldom' => $pldom, 'plotro' => $plotro, 'vend' => $vend, 'pagos' => $pagos, 'pvd1' => $pvd1, 'pvd2' => $pvd2,
     'sd1' => $sd1, 'sd2' => $sd2, 'cp1' => $cp1, 'cp2' => $cp2, 'cp3' => $cp3, 'cpdemo' => $cpdemo, 't1' => $t1, 't2' => $t2, 'm1' => $m1, 'der' => $der, 'png' => base64_encode($png),
     'base' => (int)valor("SELECT COUNT(*) FROM ligas l WHERE COALESCE(l.es_demo, 0) = 0" . tc_solo())]);
 '''
@@ -275,12 +281,13 @@ chk(r.status_code == 200 and r.headers.get('Content-Type', '').startswith('appli
 chk(cap.get('ok') is True and cap.get('protocolo') == 2 and cap.get('accion') == 'capacidades' and cap.get('producto') == PRODUCTO and re.search(r'[+-]\d\d:\d\d$', cap.get('generado', '')),
     'capacidades: ok, protocolo 2, accion, producto y generado con zona')
 OPS = ['crear_demo', 'extender_prueba', 'registrar_pago', 'anular_pago', 'aprobar_comprobante', 'rechazar_comprobante', 'suspender', 'reactivar', 'cambiar_plan',
-       'nueva_clave_dueno', 'nota_interna', 'atender_solicitud', 'responder_ticket', 'pausar', 'borrar_cliente', 'restaurar_cliente']
-chk(cap.get('ejecutar') == OPS, 'capacidades: las 16 operaciones de TuVocalía/TuAcademia, con las del anexo A (sin guardar_plan ni cancelar)')
-chk(set(cap.get('acciones', [])) == {'capacidades', 'estado', 'sso', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar'}, 'capacidades: las 12 acciones')
+       'nueva_clave_dueno', 'nota_interna', 'atender_solicitud', 'responder_ticket', 'pausar', 'borrar_cliente', 'restaurar_cliente', 'cambiar_modulos', 'guardar_modulos']
+chk(cap.get('ejecutar') == OPS, 'capacidades: las 18 operaciones de TuVocalía/TuAcademia, con las del anexo A y B (sin guardar_plan ni cancelar)')
+chk(set(cap.get('acciones', [])) == {'capacidades', 'estado', 'sso', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar', 'modulos'}, 'capacidades: las 13 acciones (con «modulos»)')
 chk(cap.get('sso_ir') is True and cap.get('rutas_sso') == ['/admin.php'] and cap.get('unico') is False and cap.get('moneda') == 'USD' and cap.get('zona_horaria') == 'America/Guayaquil', 'capacidades: sso_ir, rutas, moneda y zona')
-chk(cap.get('meses_libres') is True and cap.get('planes_editar') is False and cap.get('limites', {}).get('dias_prueba_max') == 90 and cap.get('revision') == 2, 'capacidades: meses libres, planes no editables, límites (revisión 2: anexo A)')
-chk(len(cap.get('tipos_solicitud', [])) == 11 and 'cambio_plan' not in cap.get('tipos_solicitud', []), 'capacidades: 11 tipos de solicitud')
+chk(cap.get('meses_libres') is True and cap.get('planes_editar') is False and cap.get('limites', {}).get('dias_prueba_max') == 90 and cap.get('revision') == 3, 'capacidades: meses libres, planes no editables, límites (revisión 3: anexo B)')
+chk(len(cap.get('tipos_solicitud', [])) == 12 and 'cambio_modulos' in cap.get('tipos_solicitud', []) and 'cambio_plan' not in cap.get('tipos_solicitud', []), 'capacidades: 12 tipos de solicitud (con cambio_modulos)')
+chk(cap.get('modulos') is True and cap.get('finanzas_por_modulo') is True, 'capacidades: programa modular (anexo B)')
 campos_demo = [c['campo'] for c in cap.get('formularios', {}).get('crear_demo', [])]
 chk(campos_demo == (['ciudad', 'disciplina'] if ACADEMIA else ['tipo', 'ciudad']), 'capacidades: campos propios de crear_demo ' + str(campos_demo))
 metodos = [m['metodo'] for m in cap.get('metodos_pago', [])]
@@ -442,13 +449,14 @@ esperadas = {
     'renovacion:%s:vencida:%s' % (ID['G'], (HOY - timedelta(days=2)).strftime('%Y%m%d')): 'pendiente',
     'renovacion:%s:vencida:%s' % (ID['VD'], (HOY - timedelta(days=20)).strftime('%Y%m%d')): 'pendiente',
     'dominio_gratis:%d' % fx['pagos'][7]['id']: 'pendiente',
+    'cambio_modulos:%d' % fx['ped1']: 'pendiente',
     'liquidacion_pendiente:' + ID['V8'] + ':' + php("echo (int)valor(\"SELECT MAX(id) FROM pagos_linea WHERE destino = 'organizacion'\");"): 'pendiente',
 }
 com_id = php("echo (int)valor(\"SELECT id FROM comisiones WHERE estado = 'pendiente' AND liga_id = " + ID['V8'] + "\");")
 esperadas['comision_vendedor:' + com_id] = 'pendiente'
 for sid, est in esperadas.items():
     chk(sid in S and S[sid]['estado'] == est, 'solicitudes: %s (%s)' % (sid, S.get(sid, {}).get('estado')))
-chk({s['tipo'] for s in S.values()} >= set(cap.get('tipos_solicitud', [])), 'solicitudes: aparecen los 11 tipos ' + str(sorted({s['tipo'] for s in S.values()})))
+chk({s['tipo'] for s in S.values()} >= set(cap.get('tipos_solicitud', [])), 'solicitudes: aparecen los 12 tipos ' + str(sorted({s['tipo'] for s in S.values()})))
 chk(sols.get('total') == len(S) and sum(sols.get('contadores', {}).values()) == len(S), 'solicitudes: total y contadores por tipo')
 chk('comprobante:%d' % fx['cp3'] in S and 'comprobante:%d' % fx['cpdemo'] not in S, 'solicitudes: el comprobante de la demo del sistema no sale')
 chk(not any(s['cliente_id'] == ID['DEMO'] for s in S.values()), 'solicitudes: nada de la demo del sistema')
@@ -1017,6 +1025,139 @@ e9 = estado_v1()
 cl9 = pedir('clientes', {'por_pagina': 200})
 chk(cl9.get('contadores') == {'total': e9['negocios']['total'], 'prueba': e9['negocios']['prueba'], 'activo': e9['negocios']['activos'], 'por_vencer': e9['negocios']['por_vencer'],
                               'vencido': e9['negocios']['vencidos'], 'suspendido': e9['negocios']['suspendidos']}, 'anexo A: al final, clientes.contadores = estado.negocios')
+
+# ---------- 9c) Anexo B: programas modulares ----------
+FIXB = r"""
+$acad = tc_producto()[2];
+$T = $acad ? 'escuela' : 'liga';
+$pl = (int)valor("SELECT id FROM planes WHERE activo = 1 AND tipo_cuenta IN ('ambos', ?) AND precio_mensual > 0 AND modulos <> '*' ORDER BY precio_mensual, id LIMIT 1", [$T]);
+$r = [];
+foreach (['MA' => 'Modulos Activa', 'MB' => 'Modulos Otra'] as $k => $n) {
+    q("INSERT INTO ligas (nombre, slug, vence, es_prueba, activa, es_demo, tipo, plan_id, contacto_nombre, contacto_telefono, contacto_email, ciudad, creado) VALUES (?, ?, ?, 0, 1, 0, ?, ?, ?, '0991230000', ?, 'Quito', ?)",
+      [$n, 'mod-' . strtolower($k) . '-' . bin2hex(random_bytes(3)), date('Y-m-d', strtotime('+40 days')), $T, $pl, 'Dueño ' . $k, strtolower($k) . '@mod.ejemplo.com', gmdate('Y-m-d H:i:s')]);
+    $lid = (int)db()->lastInsertId();
+    q("INSERT INTO pagos_suscripcion (liga_id, plan_id, monto, meses, desde, hasta, forma_pago, nota, fecha, registrado_por) VALUES (?, ?, 10, 1, ?, ?, 'transferencia', 'mod', ?, 'Super Prueba')",
+      [$lid, $pl, date('Y-m-d', strtotime('-5 days')), date('Y-m-d', strtotime('+40 days')), date('Y-m-d', strtotime('-5 days'))]);
+    $r[$k] = $lid;
+}
+$cat = catalogo_modulos($T);
+$del = modulos_del_plan_cuenta(['tipo' => $T], fila('SELECT * FROM planes WHERE id = ?', [$pl]), $cat);
+// un módulo con dependencia que el plan no trae, y la dependencia tampoco (para ver que se enciende sola)
+$con = null;
+foreach ($cat as $k => $x) if ($x['depende_de'] && !in_array($k, $del, true)) { $con = $k; break; }
+$libre = array_values(array_filter(array_keys($cat), fn($k) => !in_array($k, $del, true) && !$cat[$k]['depende_de'] && !in_array($k, $cat[$con]['depende_de'] ?? [], true)))[0];
+echo json_encode(['ids' => $r, 'pl' => $pl, 'del' => $del, 'con' => $con, 'dep' => $con ? $cat[$con]['depende_de'] : [], 'libre' => $libre, 'quitar' => array_values(array_filter($del, fn($k) => !array_filter($cat, fn($x) => in_array($k, $x['depende_de'], true)) && $k !== $libre))[0],
+                  'precios' => array_map(fn($x) => $x['precio_mensual'], $cat), 'plan_mes' => precio_mensual_plan(fila('SELECT * FROM planes WHERE id = ?', [$pl]))]);
+"""
+BX = json.loads(php(FIXB))
+MA, MB = str(BX['ids']['MA']), str(BX['ids']['MB'])
+PR = BX['precios']
+ligaM = lambda i: pj('fila("SELECT * FROM ligas WHERE id = ?", [' + i + '])')
+# acción «modulos»
+m = pedir('modulos')
+ids_cat = [x['id'] for x in m.get('modulos', [])]
+chk(m.get('ok') is True and m.get('accion') == 'modulos' and m.get('base') and isinstance(m.get('base'), list) and len(ids_cat) >= 8
+    and all(set(x) >= {'id', 'nombre', 'icono', 'descripcion', 'precio_mensual', 'depende_de', 'grupo'} for x in m['modulos']), 'modulos: base, catálogo con precio, dependencias y grupo')
+chk(all(set(p_) >= {'codigo', 'nombre', 'precio_mensual', 'modulos'} for p_ in m.get('planes', [])) and any(p_['codigo'] == str(BX['pl']) and set(p_['modulos']) == set(BX['del']) for p_ in m.get('planes', [])),
+    'modulos: cada plan con su precio y sus módulos')
+if ACADEMIA:
+    chk('vocalia' not in ids_cat and 'arbitros' not in ids_cat, '(academia) modulos: sin los módulos solo de ligas')
+# cliente.modulos
+c = pedir('cliente', {'id': MA}).get('cliente', {})
+cm = c.get('modulos', {})
+chk(set(cm.get('del_plan', [])) == set(BX['del']) and cm.get('extra') == [] and cm.get('quitados') == [] and set(cm.get('activos', [])) == set(BX['del'])
+    and cm.get('precio_plan') == BX['plan_mes'] and cm.get('mensual') == BX['plan_mes'] and cm.get('precio_acordado') is None, 'cliente.modulos: del plan, activos y mensual = precio del plan ' + str(cm))
+bm = [b for b in c.get('acciones_posibles', []) if b['accion'] == 'cambiar_modulos']
+chk(bm and any(f['campo'] == 'mod_' + BX['libre'] and f['tipo'] == 'si_no' and f['valor'] is False for f in bm[0]['campos']), 'cliente: botón «Módulos» con un sí/no por módulo')
+# encender uno sin dependencias
+r, d = ejecutar('cambiar_modulos', {'encender': [BX['libre']], 'motivo': 'Lo pidió por WhatsApp'}, MA)
+chk(r.status_code == 200 and d.get('sin_cambios') is False and BX['libre'] in d.get('modulos', {}).get('extra', []) and d['modulos']['mensual'] == round(BX['plan_mes'] + PR[BX['libre']], 2),
+    'cambiar_modulos: enciende un extra y el mensual sube su precio')
+chk(bitacora_central('Cambió los módulos') >= 1, 'cambiar_modulos: queda en la bitácora con el correo del Central')
+chk(d.get('cliente', {}).get('mensual_estimado') == d['modulos']['mensual'], 'cambiar_modulos: mensual_estimado del cliente = plan + extra')
+# lo mismo otra vez (otra operación): sin cambios
+r, d = ejecutar('cambiar_modulos', {'encender': [BX['libre']]}, MA)
+chk(r.status_code == 200 and d.get('sin_cambios') is True, 'cambiar_modulos: repetir lo mismo → sin_cambios')
+# mismo operacion_id → repetida
+oid = op_id()
+r1, d1 = ejecutar('cambiar_modulos', {'apagar': [BX['libre']]}, MA, oid=oid)
+r2, d2 = ejecutar('cambiar_modulos', {'apagar': [BX['libre']]}, MA, oid=oid)
+chk(d1.get('sin_cambios') is False and d2.get('repetida') is True and BX['libre'] not in ligaM(MA)['modulos_extra'], 'cambiar_modulos: mismo operacion_id → repetida, una sola vez')
+# dependencias: encender uno que necesita otro → se enciende solo y lo dice
+if BX['con']:
+    r, d = ejecutar('cambiar_modulos', {'encender': [BX['con']]}, MA)
+    chk(r.status_code == 200 and set(d.get('resultado', {}).get('tambien_encendidos', [])) == set(BX['dep']) - set(BX['del']) and set(BX['dep']) <= set(d['modulos']['activos']),
+        'cambiar_modulos: enciende también lo que necesita ' + str(d.get('resultado', {}).get('tambien_encendidos')))
+    r, d = ejecutar('cambiar_modulos', {'apagar': BX['dep']}, MA)
+    chk(es_error(r, 'invalido', 422) and d.get('detalle', {}).get('motivo') == 'dependencia' and 'depende' in d.get('error', ''), 'cambiar_modulos: no se apaga uno del que depende otro encendido')
+    r, d = ejecutar('cambiar_modulos', {'apagar': [BX['con']] + BX['dep']}, MA)
+    chk(r.status_code == 200 and BX['con'] not in d['modulos']['activos'], 'cambiar_modulos: apagando los dos a la vez sí se puede')
+    if [x for x in BX['dep'] if x in BX['del']]:
+        ejecutar('cambiar_modulos', {'encender': [x for x in BX['dep'] if x in BX['del']]}, MA)  # vuelve a como estaba
+# quitar uno del plan con descuento, y precio acordado
+r, d = ejecutar('cambiar_modulos', {'apagar': [BX['quitar']], 'descuentos': {BX['quitar']: 2}}, MA)
+chk(r.status_code == 200 and d['modulos']['quitados'] == [BX['quitar']] and d['modulos']['descuento'] == 2 and d['modulos']['mensual'] == round(BX['plan_mes'] - 2, 2),
+    'cambiar_modulos: apaga uno del plan con descuento (mensual = plan − descuento)')
+q_txt = php('echo modulo_activo(fila("SELECT * FROM ligas WHERE id = ' + MA + '"), "' + BX['quitar'] + '") ? "si" : "no";')
+chk(q_txt == 'no', 'el módulo quitado queda apagado en el programa (modulo_activo)')
+r, d = ejecutar('cambiar_modulos', {'precio_acordado': 7.5}, MA)
+chk(r.status_code == 200 and d['modulos']['precio_acordado'] == 7.5 and d['modulos']['mensual'] == 7.5, 'cambiar_modulos: precio acordado fijo')
+co = pedir('cotizar', {'cliente_id': MA, 'periodo': 'mensual'})
+chk(co.get('monto') == 7.5 or co.get('ok') is False, 'cotizar: sugiere el precio acordado ' + str(co.get('monto')))
+r, d = ejecutar('cambiar_modulos', {'precio_acordado': None, 'encender': [BX['quitar']]}, MA)
+chk(r.status_code == 200 and d['modulos']['precio_acordado'] is None and d['modulos']['quitados'] == [], 'cambiar_modulos: quitar el precio acordado y volver a encender')
+# formulario sí/no de la ficha
+r, d = ejecutar('cambiar_modulos', {'mod_' + BX['libre']: True}, MA)
+chk(r.status_code == 200 and BX['libre'] in d['modulos']['activos'], 'cambiar_modulos: el formulario sí/no de la ficha funciona')
+r, d = ejecutar('cambiar_modulos', {'encender': ['no_existe']}, MA)
+chk(es_error(r, 'invalido', 422), 'cambiar_modulos: módulo que no existe → 422')
+# finanzas por módulo
+f = pedir('finanzas', {})
+pm = {x['modulo']: x for x in f.get('por_modulo', [])}
+chk(BX['libre'] in pm and pm[BX['libre']]['clientes'] >= 1 and pm[BX['libre']]['mensual'] >= PR[BX['libre']], 'finanzas: por_modulo con el ingreso estimado de los extras')
+# solicitud cambio_modulos: aprobar (= cambiar_modulos con solicitud_id)
+sid = 'cambio_modulos:%d' % fx['ped1']
+so = pedir('solicitud', {'id': sid}).get('solicitud', {})
+acc = {b['accion']: b for b in so.get('acciones_posibles', [])}
+chk(so.get('tipo') == 'cambio_modulos' and so.get('estado') == 'pendiente' and 'cambiar_modulos' in acc and 'atender_solicitud' in acc and acc['cambiar_modulos']['datos'].get('encender') == [fx['modped']],
+    'solicitud cambio_modulos: Aprobar y No aprobar')
+r, d = ejecutar('cambiar_modulos', dict(acc['cambiar_modulos']['datos']), ID['V8'])
+chk(r.status_code == 200 and fx['modped'] in d.get('modulos', {}).get('activos', []) and (d.get('solicitud') or {}).get('estado') == 'atendida', 'aprobar pedido: enciende el módulo y la solicitud queda atendida')
+r, d = ejecutar('cambiar_modulos', dict(acc['cambiar_modulos']['datos']), ID['V8'])
+chk(es_error(r, 'conflicto', 409) and d.get('detalle', {}).get('motivo') == 'ya_atendida', 'aprobar otra vez el mismo pedido → 409 ya atendido')
+# pedido desde «Mi plan» (pantalla) y No aprobar desde el Central
+q_id = php("echo crear_pedido_modulos(fila('SELECT * FROM ligas WHERE id = " + MB + "'), 'Dueño MB', ['" + BX['libre'] + "'], [], 'por favor');")
+sid2 = 'cambio_modulos:' + q_id
+chk(any(x['id'] == sid2 for x in pedir('solicitudes', {'tipos': ['cambio_modulos']}).get('solicitudes', [])), 'pedido nuevo de Mi plan aparece en solicitudes')
+r, d = ejecutar('atender_solicitud', {'solicitud_id': sid2, 'resultado': 'descartada', 'nota': 'Ahora no'})
+chk(r.status_code == 200 and php("echo valor('SELECT estado FROM modulos_pedidos WHERE id = " + q_id + "');") == 'rechazada' and BX['libre'] not in ligaM(MB)['modulos_extra'], 'No aprobar: el pedido queda no aprobado y no enciende nada')
+r, d = ejecutar('atender_solicitud', {'solicitud_id': sid2, 'resultado': 'en_proceso'})
+chk(r.status_code in (403, 409), 'atender un pedido ya cerrado como en proceso → no se puede')
+# guardar_modulos: precio del catálogo y módulos de un plan
+r, d = ejecutar('guardar_modulos', {'modulos': [{'id': BX['libre'], 'precio_mensual': 9.25, 'descripcion': 'Texto nuevo para vender'}], 'planes': [{'codigo': str(BX['pl']), 'modulos': BX['del'] + [BX['libre']]}]})
+m2 = {x['id']: x for x in pedir('modulos').get('modulos', [])}
+chk(r.status_code == 200 and d.get('resultado', {}).get('cambios', 0) >= 2 and m2[BX['libre']]['precio_mensual'] == 9.25 and m2[BX['libre']]['descripcion'] == 'Texto nuevo para vender', 'guardar_modulos: precio y texto del catálogo')
+c = pedir('cliente', {'id': MA}).get('cliente', {}).get('modulos', {})
+chk(BX['libre'] in c.get('del_plan', []) and BX['libre'] not in c.get('extra', []), 'guardar_modulos: el plan ahora trae el módulo (ya no se cobra aparte)')
+r, d = ejecutar('guardar_modulos', {'modulos': [{'id': BX['libre'], 'precio_mensual': 9.25}]})
+chk(r.status_code == 200 and d.get('sin_cambios') is True, 'guardar_modulos: lo mismo otra vez → sin_cambios')
+r, d = ejecutar('guardar_modulos', {'modulos': [{'id': BX['libre'], 'precio_mensual': -1}]})
+chk(es_error(r, 'invalido', 422), 'guardar_modulos: precio negativo → 422')
+ejecutar('guardar_modulos', {'planes': [{'codigo': str(BX['pl']), 'modulos': BX['del']}]})
+# crear_demo con plan y módulos elegidos (y sin módulos: todo)
+r, d = ejecutar('crear_demo', {'nombre': 'Demo Con Modulos', 'contacto_nombre': 'Ana Demo', 'email': 'demo.modulos@v2.ejemplo.com', 'telefono': '0991112299', 'plan': str(BX['pl']),
+                               'modulos': [BX['del'][0]], 'enviar_correo': False, 'extra': {'ciudad': 'Quito'} if ACADEMIA else {'tipo': 'liga', 'ciudad': 'Quito'}})
+dm = d.get('resultado', {}).get('modulos', {})
+chk(r.status_code == 200 and dm.get('activos') == [BX['del'][0]] and dm.get('elegidos') is True, 'crear_demo con módulos: solo esos encendidos ' + str(dm.get('activos')))
+r, d = ejecutar('crear_demo', {'nombre': 'Demo Con Todo', 'contacto_nombre': 'Eva Demo', 'email': 'demo.todo@v2.ejemplo.com', 'telefono': '0991112288', 'enviar_correo': False,
+                               'extra': {'ciudad': 'Quito'} if ACADEMIA else {'tipo': 'liga', 'ciudad': 'Quito'}})
+dm = d.get('resultado', {}).get('modulos', {})
+chk(r.status_code == 200 and dm.get('todos_en_demo') is True and set(dm.get('activos', [])) == {k for k, x in m2.items() if ('escuela' if ACADEMIA else 'liga') in x['para']}, 'crear_demo sin módulos: la demo tiene todo')
+r, d = ejecutar('crear_demo', {'nombre': 'Demo Mala', 'contacto_nombre': 'Eva Demo', 'email': 'demo.mala@v2.ejemplo.com', 'telefono': '0991112277', 'modulos': ['no_existe'],
+                               'extra': {'ciudad': 'Quito'} if ACADEMIA else {'tipo': 'liga', 'ciudad': 'Quito'}})
+chk(es_error(r, 'invalido', 422), 'crear_demo con un módulo que no existe → 422')
+# apagar nunca borra datos: el módulo apagado sigue con sus filas
+chk(int(php("echo (int)valor('SELECT COUNT(*) FROM modulos_pedidos WHERE liga_id = " + MB + "');")) == 1, 'apagar / no aprobar no borra datos')
 
 # ---------- 10) Pantallas del programa con las mismas reglas (Ventas, Embudo) ----------
 s, rr = entrar('super@prueba.com')

@@ -49,12 +49,12 @@ cabecera_admin('Planes');
 ?>
 <p><a href="admin.php?p=suscripciones">← Ventas</a></p>
 <div class="fila-titulo"><h1>Planes y precios</h1><div class="acciones"><a class="btn btn-sec btn-chico" target="_blank" href="index.php#planes">Ver en la página de venta ↗</a> <a class="btn btn-sec btn-chico" target="_blank" href="comparar">Tabla comparativa ↗</a></div></div>
-<p class="suave">Los límites y módulos se aplican solos a cada liga o escuela según su plan (en la prueba gratis tienen todo). 0 = sin límite. Un precio en 0 = ese período no se ofrece. En Ligas → Editar puede regalar módulos a una liga.</p>
+<p class="suave">Los límites y módulos se aplican solos a cada liga o escuela según su plan (en la demo tienen todo). 0 = sin límite. Un precio en 0 = ese período no se ofrece. En Ligas → Editar se encienden o apagan los módulos de cada cliente.</p>
 <div class="tabla-scroll"><table>
   <tr><th>Plan</th><th class="num">Mes</th><th class="num">Trimestre</th><th class="num">Semestre</th><th class="num">Año</th><th>Límites</th><th class="num">Módulos</th><th class="num">Ligas</th><th>Estado</th><th></th></tr>
   <?php foreach ($planes as $pl): $o = opciones_precio($pl); ?>
     <tr><td><b><?= e($pl['nombre']) ?></b><?= $pl['destacado'] ? ' <span class="etiqueta verde">recomendado</span>' : '' ?><br><small class="suave"><?= e($para[$pl['tipo_cuenta']] ?? '') ?></small></td>
-      <?php foreach (['mensual', 'trimestral', 'semestral', 'anual'] as $k): ?><td class="num"><?= isset($o[$k]) ? dinero($o[$k]['precio']) . ($o[$k]['gratis'] ? '<br><small class="suave">' . $o[$k]['gratis'] . ' gratis</small>' : '') : '—' ?></td><?php endforeach; ?>
+      <?php foreach (['mensual', 'trimestral', 'semestral', 'anual'] as $k): ?><td class="num"><?= isset($o[$k]) ? dinero($o[$k]['precio']) . ($o[$k]['gratis'] ? '<br><small class="suave">' . texto_ahorro($o[$k]['gratis']) . '</small>' : '') : '—' ?></td><?php endforeach; ?>
       <td style="white-space:normal;font-size:.85rem"><?= e(implode(' · ', textos_limites_plan($pl))) ?></td>
       <td class="num"><?= count(modulos_plan($pl)) ?>/<?= count(modulos_sistema()) ?></td><td class="num"><?= (int)$pl['n_ligas'] ?></td>
       <td><?= $pl['activo'] ? 'Visible' : '<span class="etiqueta gris">Oculto</span>' ?></td>
@@ -79,8 +79,8 @@ cabecera_admin('Planes');
     <div class="campos">
       <div><label>Mensual ($)</label><input type="number" name="precio_mensual" id="pr-m" min="0" step="0.01" value="<?= e($v['precio_mensual']) ?>"></div>
       <div><label>Trimestral · 3 meses ($)</label><input type="number" name="precio_trimestral" min="0" step="0.01" value="<?= e($v['precio_trimestral']) ?>"></div>
-      <div><label>Semestral · 6 meses ($)</label><input type="number" name="precio_semestral" id="pr-s" min="0" step="0.01" value="<?= e($v['precio_semestral']) ?>"><div class="ayuda"><a href="#" onclick="var m=parseFloat(document.getElementById('pr-m').value)||0;document.getElementById('pr-s').value=(m*5).toFixed(2);return false">Poner 1 mes gratis</a></div></div>
-      <div><label>Anual · 12 meses ($)</label><input type="number" name="precio_anual" id="pr-a" min="0" step="0.01" value="<?= e($v['precio_anual']) ?>"><div class="ayuda"><a href="#" onclick="var m=parseFloat(document.getElementById('pr-m').value)||0;document.getElementById('pr-a').value=(m*10).toFixed(2);return false">Poner 2 meses gratis</a></div></div>
+      <div><label>Semestral · 6 meses ($)</label><input type="number" name="precio_semestral" id="pr-s" min="0" step="0.01" value="<?= e($v['precio_semestral']) ?>"><div class="ayuda"><a href="#" onclick="var m=parseFloat(document.getElementById('pr-m').value)||0;document.getElementById('pr-s').value=(m*5).toFixed(2);return false">Poner 1 mes de ahorro</a></div></div>
+      <div><label>Anual · 12 meses ($)</label><input type="number" name="precio_anual" id="pr-a" min="0" step="0.01" value="<?= e($v['precio_anual']) ?>"><div class="ayuda"><a href="#" onclick="var m=parseFloat(document.getElementById('pr-m').value)||0;document.getElementById('pr-a').value=(m*10).toFixed(2);return false">Poner 2 meses de ahorro</a></div></div>
     </div>
     <p class="ayuda">Un plan de un solo período (por ejemplo el plan Torneo: solo trimestral) dura ese tiempo; al terminar se renueva o se cambia de plan.</p>
     <h3>📏 Límites <small class="suave">(0 = sin límite)</small></h3>
@@ -102,7 +102,7 @@ cabecera_admin('Planes');
       <div class="campo-ancho"><label>Puntos extra para la página de venta (uno por línea, opcional)</label><textarea name="descripcion" rows="4" placeholder="Soporte prioritario por WhatsApp&#10;Capacitación por videollamada"><?= e($v['descripcion']) ?></textarea></div>
       <div><label>Orden</label><input type="number" name="orden" min="0" max="99" value="<?= (int)$v['orden'] ?>"></div>
       <div><label class="check"><input type="checkbox" name="destacado" value="1" <?= $v['destacado'] ? 'checked' : '' ?>> Recomendado (resaltado)</label></div>
-      <div><label class="check"><input type="checkbox" name="dominio_anual" value="1" <?= (int)($v['dominio_anual'] ?? 0) ? 'checked' : '' ?>> 🌐 Dominio gratis al pagar 1 año</label><div class="ayuda">Sale con * y la nota del dominio (Ajustes → Marca y venta).</div></div>
+      <div><label class="check"><input type="checkbox" name="dominio_anual" value="1" <?= (int)($v['dominio_anual'] ?? 0) ? 'checked' : '' ?>> 🌐 Dominio propio incluido al pagar 1 año</label><div class="ayuda">Sale con * y la nota del dominio (Ajustes → Marca y venta).</div></div>
       <div><label class="check"><input type="checkbox" name="activo" value="1" <?= $v['activo'] ? 'checked' : '' ?>> Visible en la página de venta</label></div>
     </div>
     <button class="btn">Guardar plan</button> <?php if ($editar): ?><a href="admin.php?p=planes">Cancelar</a><?php endif; ?>

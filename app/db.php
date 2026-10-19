@@ -22,6 +22,7 @@ function db(): PDO
     $pdo->exec('PRAGMA journal_mode = WAL');
     crear_esquema($pdo);
     esquema_tukan_central($pdo); // (Tukán Central v2) columnas y tablas propias, sin PRAGMA user_version
+    esquema_modulos($pdo); // (Anexo B) módulos por cliente (quitados, precio acordado) y pedidos de módulos
     return $pdo;
 }
 
@@ -803,9 +804,9 @@ SQL);
         // En TuAcademia solo se venden los planes de academia (los de ligas y escuelas de TuVocalía quedan guardados, apagados)
         $pdo->exec("UPDATE planes SET activo = 0, destacado = 0 WHERE slug NOT IN ('academia-basico', 'academia-completo')");
         $aj = $pdo->prepare('INSERT OR REPLACE INTO ajustes (clave, valor) VALUES (?, ?)');
-        foreach (['marca' => 'TuAcademia', 'empresa' => 'Tukán Software', 'responsable_nombre' => 'Tukán Software', 'dias_prueba' => '7', 'dias_demo' => '7', 'registro_abierto' => '1',
+        foreach (['marca' => 'TuAcademia', 'empresa' => 'Tukán Software', 'responsable_nombre' => 'Tukán Software', 'dias_prueba' => '7', 'dias_demo' => '7', 'registro_abierto' => '0',
             'combo_descuento' => '0', 'landing_titulo' => 'El sistema para su academia', 'landing_subtitulo' => 'Baile, música, natación y deportes: alumnos, pensiones, asistencia, niveles con certificado, recitales y portal de padres.',
-            'nota_dominio' => 'El dominio gratis se da al pagar el plan por 1 año. La academia lo usa mientras mantenga su plan al día.'] as $k => $v) $aj->execute([$k, $v]);
+            'nota_dominio' => 'El dominio propio viene incluido al pagar el plan por 1 año. La academia lo usa mientras mantenga su plan al día.'] as $k => $v) $aj->execute([$k, $v]);
     }
     $n = $pdo->prepare('INSERT INTO novedades (titulo, texto, para, enlace, version, fecha) SELECT ?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM novedades WHERE titulo = ?)');
     foreach ([
@@ -2741,7 +2742,7 @@ function ajustes_por_defecto(): array
         'plux_url_produccion' => '', 'plux_iva_suscripcion' => '1', 'plux_iva_cobros' => '0',
         // (v16) combo liga + escuela (% de descuento en los dos planes) y nota del dominio gratis anual
         'combo_descuento' => '30',
-        'nota_dominio' => 'El dominio gratis se da al pagar el plan por 1 año. El dominio es propiedad de tupass.com; la organización lo usa mientras mantenga su plan al día.',
+        'nota_dominio' => 'El dominio propio viene incluido al pagar el plan por 1 año. El dominio es propiedad de tupass.com; la organización lo usa mientras mantenga su plan al día.',
     ];
 }
 
@@ -3537,7 +3538,7 @@ SQL);
         ['🏛 Federaciones', 'Varias ligas y escuelas de cualquier deporte bajo un mismo paraguas: resumen, partidos de la semana, sanciones federativas que se respetan en todas las ligas y campeonatos inter-ligas. Su liga puede afiliarse en Parámetros → Federación.', 'todos', 'manual/ligas#s29', 'v28', '2026-10-01'],
         ['🎟 Venta de entradas con QR', 'Opcional: venda las entradas de sus partidos por internet (tarjeta o transferencia), en taquilla y cortesías, con parqueadero. En la puerta se valida con el celular, aunque no haya internet. Se activa en Parámetros.', 'ligas', 'manual/ligas#s30', 'v28', '2026-10-01'],
         ['🎬 Videos del jugador y del alumno', 'Suba videos cortos (hasta 2 minutos) a cada jugador o alumno: les llegan a su portal para verlos y descargarlos. Se borran solos a los 10 días.', 'todos', 'admin.php?p=videos', 'v28', '2026-10-01'],
-        ['📈 Indicadores y 🤝 Recomiende y gane', 'Vea cómo va su liga o escuela mes a mes, y gane meses gratis por cada liga o escuela que contrate con su recomendación.', 'todos', 'admin.php?p=indicadores', 'v28', '2026-10-01'],
+        ['📈 Indicadores y 🤝 Recomiende y gane', 'Vea cómo va su liga o escuela mes a mes, y gane meses de descuento por cada liga o escuela que contrate con su recomendación.', 'todos', 'admin.php?p=indicadores', 'v28', '2026-10-01'],
         ['🌐 Idiomas', 'El sistema ya está en inglés, francés, portugués e italiano: use el botón 🌐 de la barra de arriba. Elija el idioma de su página pública en Parámetros.', 'todos', '', 'v28', '2026-10-01'],
     ] as $n) $ins->execute(array_merge($n, [$n[0]]));
     $agregar('solicitudes_demo', ['recomendado_por' => 'INTEGER']);

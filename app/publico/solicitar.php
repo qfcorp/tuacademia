@@ -1,5 +1,5 @@
 <?php
-/* (v14) SOLICITAR UNA DEMO: reemplaza a la prueba gratis automática. QF decide a quién se la crea. */
+/* (v14) SOLICITAR UNA DEMO: la única forma de empezar (no hay prueba gratis). QF decide a quién se la crea. */
 $planes = filas('SELECT * FROM planes WHERE activo = 1 ORDER BY orden, precio_mensual');
 $errores = [];
 $enviada = null;
@@ -49,9 +49,9 @@ cabecera_publica('Solicitar demo · ' . marca());
 ?>
 <div class="registro">
   <div>
-    <h1>Solicite su demo gratis de <?= e(marca()) ?></h1>
+    <h1>Solicite su demo de <?= e(marca()) ?></h1>
     <?php if ($recomienda): ?><div class="aviso aviso-info">🤝 Le recomendó <b><?= e($recomienda['nombre']) ?></b>. ¡Bienvenido!</div><?php endif; ?>
-    <p><b>🎁 <?= (int)ajuste('dias_demo', 7) ?> días gratis con todos los módulos</b>: le preparamos el acceso y le ayudamos a cargar su <?= es_academia() ? 'academia' : 'liga o escuela' ?>.</p>
+    <p><b>📅 Demo de <?= (int)ajuste('dias_demo', 7) ?> días con todos los módulos</b>: le preparamos el acceso y le ayudamos a cargar su <?= es_academia() ? 'academia' : 'liga o escuela' ?>.</p>
     <p>Le mostramos el sistema con un asesor y le creamos su acceso de prueba para <?= es_academia() ? 'su academia' : ($tipo === 'escuela' ? 'su escuela' : 'su liga') ?>, con sus propios datos.</p>
     <ul class="lista-check">
       <li>Demo guiada por WhatsApp o videollamada</li>

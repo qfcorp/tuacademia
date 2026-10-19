@@ -847,3 +847,23 @@ table.comparativa td:first-child { text-align: left; }
 .comprobante-fila{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-top:1px solid #e6e8e4}
 .comprobante-mini{width:110px;height:140px;object-fit:cover;border-radius:8px;border:1px solid #d9ddd8;background:#f3f4f2}
 @media (max-width:640px){.comprobante-fila{flex-direction:column}.comprobante-mini{width:100%;height:auto;max-height:260px;object-fit:contain}}
+
+/* (Anexo B) módulos */
+.rejilla-mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:10px}
+.mod-tarjeta{border:1px solid var(--borde);border-radius:var(--radio);padding:12px;background:var(--tarjeta);display:flex;flex-direction:column}
+.mod-tarjeta p{margin:.4rem 0;font-size:.9rem}
+.mod-tarjeta.mod-on{border-color:var(--acento);box-shadow:inset 4px 0 0 var(--acento)}
+.mod-cab{display:flex;gap:8px;align-items:center}.mod-ico{font-size:1.4rem}
+.mod-pie{margin-top:auto;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding-top:6px}
+.mod-total{margin:12px 0 0;padding:10px 12px;border-radius:8px;background:var(--fondo);border:1px solid var(--borde)}
+.mod-grupo{margin:14px 0 6px;font-size:1rem}
+.mod-fila{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--borde)}
+.mod-fila .mod-texto{flex:1;min-width:0}.mod-fila .mod-desc{display:flex;align-items:center;gap:6px}.mod-fila .mod-desc input{width:80px!important;padding:5px 8px}
+.mod-fila.mod-on .mod-texto b{color:var(--acento)}
+.interruptor{position:relative;display:inline-block;width:46px;height:26px;flex:none;margin:0}
+.interruptor input{opacity:0;width:0;height:0;position:absolute}
+.interruptor span{position:absolute;inset:0;background:#b9c2be;border-radius:999px;transition:.15s;cursor:pointer}
+.interruptor span:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s}
+.interruptor input:checked+span{background:var(--acento)}.interruptor input:checked+span:before{transform:translateX(20px)}
+.interruptor input:focus-visible+span{outline:2px solid var(--acento);outline-offset:2px}
+@media (max-width:640px){.mod-fila{flex-wrap:wrap}.mod-fila .mod-desc{width:100%;flex-direction:row;align-items:center;gap:8px;justify-content:flex-start}}

@@ -42,7 +42,7 @@ if (!isset($manuales[$m])) {
         </div>
       <?php endforeach; ?>
     </div>
-    <div class="aviso aviso-info" style="margin-top:16px">🎁 ¿Todavía no usa <?= e(marca()) ?>? <a href="solicitar-demo"><b>Pida su demo gratis de <?= (int)ajuste('dias_demo', 7) ?> días</b></a>.</div>
+    <div class="aviso aviso-info" style="margin-top:16px">📅 ¿Todavía no usa <?= e(marca()) ?>? <a href="solicitar-demo"><b>Pida su demo</b></a>.</div>
     <?php
     pie_publico();
     return;

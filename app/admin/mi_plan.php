@@ -4,6 +4,13 @@ $liga = requiere_liga();
 $lid = (int)$liga['id'];
 $yo = usuario();
 $tipo = ($liga['tipo'] ?? 'liga') === 'escuela' ? 'escuela' : 'liga';
+// (Anexo B) Pedir un módulo: crea un pedido «cambio_modulos» que revisa Tukán (Panel Tukán Central o Ligas → Editar)
+if (es_post() && post('accion') === 'pedir_modulo') {
+    if (!puede('config', true)) throw new RuntimeException('Solo el administrador puede pedir módulos.');
+    crear_pedido_modulos($liga, $yo['nombre'] . ' <' . $yo['email'] . '>', [post('modulo')], [], post('mensaje'));
+    flash('¡Listo! Recibimos su pedido. Le avisamos apenas quede encendido (normalmente el mismo día).');
+    ir('admin.php?p=mi_plan#modulos');
+}
 
 $play = en_app_play(); // (v38) dentro de la app de Google Play el plan solo se paga con Google
 if ($play && es_post() && in_array(post('accion'), ['comprobante', 'pagar'], true)) throw new RuntimeException('En la app de Google Play el plan se paga con Google Play.');
@@ -53,13 +60,13 @@ cabecera_admin('Mi plan');
   </div>
   <div class="tarjeta">
     <h2 style="margin-top:0">🧩 Módulos</h2>
-    <ul class="lista-modulos">
-      <?php foreach (modulos_sistema($tipo) as $k => [$ico, $nom, $para]): $si = in_array($k, $mods, true); ?>
-        <li class="<?= $si ? 'mod-si' : 'mod-no' ?>"><?= $si ? '✅' : '➖' ?> <?= $ico ?> <?= e($nom) ?></li>
-      <?php endforeach; ?>
-    </ul>
+    <?php $mc = modulos_cliente($liga); ?>
+    <p style="margin-top:0">Tiene <b><?= count($mods) ?></b> de <?= count(catalogo_modulos($tipo)) ?> módulos encendidos.</p>
+    <p>Su mensual: <b><?= dinero($mc['mensual']) ?> al mes</b><?= $mc['precio_acordado'] !== null ? ' (precio acordado)' : '' ?>.</p>
+    <p><a class="btn btn-sec btn-chico" href="#modulos">Ver mis módulos y agregar más</a></p>
   </div>
 </div>
+<?= html_mi_plan_modulos($liga, puede('config', true)) // (Anexo B) ?>
 
 <div class="tarjeta" style="margin-top:14px" id="deportes">
   <h2 style="margin-top:0">🧩 Deportes de su cuenta</h2>
@@ -101,10 +108,10 @@ elseif ($combo): $pl_c = plan_de_liga($combo); ?>
       <ul><?php foreach (textos_limites_plan($pl, $tipo) as $t): ?><li><?= e($t) ?></li><?php endforeach; ?><li><?= count(array_intersect(modulos_plan($pl), array_keys(modulos_sistema($tipo)))) ?> de <?= count(modulos_sistema($tipo)) ?> módulos · <a target="_blank" href="<?= e(url_plan($pl)) ?>">ver detalle</a></li></ul>
       <?php if (pasarela_activa()): ?>
         <form method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="pagar"><input type="hidden" name="plan_id" value="<?= (int)$pl['id'] ?>">
-          <select name="meses" style="width:100%;margin-bottom:8px"><?php foreach ($ops as $o): ?><option value="<?= $o['meses'] ?>"><?= e($o['nombre']) ?>: <?= dinero($o['precio']) ?><?= $o['combo'] ? ' (antes ' . dinero($o['precio_normal']) . ')' : '' ?><?= $o['gratis'] ? ' (' . $o['gratis'] . ' gratis)' : '' ?><?= $o['dominio'] ? ' + dominio gratis*' : '' ?></option><?php endforeach; ?></select>
+          <select name="meses" style="width:100%;margin-bottom:8px"><?php foreach ($ops as $o): ?><option value="<?= $o['meses'] ?>"><?= e($o['nombre']) ?>: <?= dinero($o['precio']) ?><?= $o['combo'] ? ' (antes ' . dinero($o['precio_normal']) . ')' : '' ?><?= $o['gratis'] ? ' (' . texto_ahorro($o['gratis']) . ')' : '' ?><?= $o['dominio'] ? ' + dominio incluido*' : '' ?></option><?php endforeach; ?></select>
           <button class="btn btn-grande">💳 Pagar con tarjeta</button></form>
       <?php else: ?>
-        <p><?php foreach ($ops as $o): ?><?= $o['combo'] ? '<s class="suave">' . dinero($o['precio_normal']) . '</s> ' : '' ?><b><?= dinero($o['precio']) ?></b> <?= e($o['texto']) ?><?= $o['gratis'] ? ' <small class="suave">(' . $o['gratis'] . ' gratis)</small>' : '' ?><?= $o['dominio'] ? ' <small><b>+ dominio gratis*</b></small>' : '' ?><br><?php endforeach; ?></p>
+        <p><?php foreach ($ops as $o): ?><?= $o['combo'] ? '<s class="suave">' . dinero($o['precio_normal']) . '</s> ' : '' ?><b><?= dinero($o['precio']) ?></b> <?= e($o['texto']) ?><?= $o['gratis'] ? ' <small class="suave">(' . texto_ahorro($o['gratis']) . ')</small>' : '' ?><?= $o['dominio'] ? ' <small><b>+ dominio incluido*</b></small>' : '' ?><br><?php endforeach; ?></p>
       <?php endif; ?>
     </div>
   <?php endforeach; ?>

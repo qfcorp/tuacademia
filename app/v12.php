@@ -96,6 +96,7 @@ function modulo_de_pagina(string $p): string
         'planificacion' => 'esc_entrenamientos', 'formativas' => 'esc_formativas', 'contabilidad' => 'contabilidad',
         'cargas' => 'carga_masiva', 'importar' => 'carga_masiva', // (v27)
         'videos' => 'videos', 'entradas' => 'entradas', // (v28)
+        'pedidos' => 'inscripcion', 'mi_rol' => 'esc_profesores', 'avisos_padres' => 'avisos', // (Anexo B) páginas que faltaban
         'recitales' => 'acad_recitales', 'particulares' => 'acad_particulares', // (TuAcademia)
     ][$p] ?? ($p === 'examenes' && es_academia() ? 'acad_niveles' : '');
 }
@@ -114,16 +115,21 @@ function modulos_plan(?array $pl): array
     return array_values(array_intersect(array_keys(modulos_sistema()), array_map('trim', explode(',', $m))));
 }
 
-/** Módulos que tiene una liga o escuela: los de su plan + los que le regaló el superadministrador. En prueba gratis, la demo o sin plan: todos. */
+/**
+ * Módulos que tiene una liga o escuela. (Anexo B) = (módulos del plan − quitados) + extra, respetando dependencias
+ * (app/modulos_catalogo.php). En la demo (prueba), la demo del sistema o sin plan: todos, salvo que el súper los haya elegido.
+ */
 function modulos_liga(?array $liga): array
 {
     static $cache = [];
     if (!$liga) return array_keys(modulos_sistema());
-    $k = $liga['id'] . ':' . ($liga['plan_id'] ?? '') . ':' . ($liga['modulos_extra'] ?? '') . ':' . ($liga['vence'] ?? '') . ':' . ($liga['es_prueba'] ?? '');
+    $k = $liga['id'] . ':' . ($liga['plan_id'] ?? '') . ':' . ($liga['modulos_extra'] ?? '') . ':' . ($liga['modulos_quitados'] ?? '') . ':' . ($liga['modulos_elegidos'] ?? '')
+        . ':' . ($liga['vence'] ?? '') . ':' . ($liga['es_prueba'] ?? '') . ':' . ($liga['tipo'] ?? '');
     if (isset($cache[$k])) return $cache[$k];
-    if (!empty($liga['es_demo']) || empty($liga['plan_id']) || estado_suscripcion($liga)['estado'] === 'prueba') return $cache[$k] = array_keys(modulos_sistema());
-    $extra = array_filter(array_map('trim', explode(',', (string)($liga['modulos_extra'] ?? ''))));
-    return $cache[$k] = array_values(array_unique(array_merge(modulos_plan(plan_de_liga($liga)), array_intersect($extra, array_keys(modulos_sistema())))));
+    if (cuenta_con_todo($liga)) return $cache[$k] = array_keys(modulos_sistema());
+    // los módulos de su tipo según el Anexo B; los de otro tipo (p. ej. «Imágenes para redes» en una escuela) como siempre: si su plan los trae
+    $otros = array_diff(array_merge(modulos_plan(plan_de_liga($liga)), modulos_extra_cuenta($liga)), array_keys(catalogo_modulos(tipo_modulos($liga))));
+    return $cache[$k] = array_values(array_unique(array_merge(modulos_cliente($liga)['activos'], array_intersect($otros, array_keys(modulos_sistema())))));
 }
 
 function modulo_activo(?array $liga, string $m): bool
@@ -168,13 +174,16 @@ function opciones_precio(array $pl, ?array $liga = null, ?array $deportes = null
     // (v35) módulos deportivos adicionales: los de la cuenta (o los elegidos al contratar), con la misma rebaja del período
     $ds = $deportes ?? ($liga && empty($liga['es_demo']) ? deportes_cobrados($liga) : []);
     $extra_mes = $ds && function_exists('precio_modulos') ? precio_modulos($ds)['extra'] : 0.0;
+    $extra_mes += $liga ? modulos_ajuste_mes($liga, $pl) : 0.0; // (Anexo B) módulos extra − descuento de los quitados
+    $acordado = $liga && empty($liga['es_demo']) ? precio_acordado_cuenta($liga) : null; // (Anexo B) precio acordado fijo por mes
     foreach (periodos_plan() as $k => [$meses, $nom, $txt]) {
         $precio = (float)($pl['precio_' . $k] ?? 0);
         if ($precio <= 0) continue;
         $gratis = $pm > 0 && $meses > 1 ? (int)round($meses - $precio / $pm) : 0;
         $rebaja = $pm > 0 ? $precio / ($pm * $meses) : 1.0;
         $extra = round($extra_mes * $meses * $rebaja, 2);
-        $final = round(($precio + $extra) * $f, 2);
+        $final = round(max(0, $precio + $extra) * $f, 2);
+        if ($acordado !== null) $final = round($acordado * $meses, 2);
         $r[$k] = ['periodo' => $k, 'nombre' => $nom, 'texto' => $txt, 'meses' => $meses, 'precio' => $final, 'por_mes' => round($final / $meses, 2), 'gratis' => max(0, $gratis),
                   'dominio' => $meses >= 12 && (int)($pl['dominio_anual'] ?? 0) === 1, 'combo' => $f < 1, 'precio_normal' => $precio + $extra, 'extra_modulos' => $extra,
                   'base' => $precio, 'rebaja' => $rebaja, 'factor' => $f];
@@ -254,7 +263,7 @@ function textos_limites_plan(array $pl, string $para = ''): array
         $t[] = (int)($pl['max_alumnos'] ?? 0) ? 'Hasta ' . (int)$pl['max_alumnos'] . ' alumnos' : 'Alumnos ilimitados';
         $o = opciones_precio($pl);
         if (count($o) === 1) $t[] = 'Duración: ' . reset($o)['meses'] . ' meses';
-        if ((int)($pl['dominio_anual'] ?? 0)) $t[] = '🌐 Dominio propio gratis pagando 1 año*';
+        if ((int)($pl['dominio_anual'] ?? 0)) $t[] = '🌐 Dominio propio incluido pagando 1 año*';
         return $t;
     }
     $mc = (int)$pl['max_campeonatos'];
@@ -268,7 +277,7 @@ function textos_limites_plan(array $pl, string $para = ''): array
     if ($para === 'ambos') $t[] = (int)($pl['max_alumnos'] ?? 0) ? 'Hasta ' . (int)$pl['max_alumnos'] . ' alumnos (escuelas)' : 'Alumnos ilimitados (escuelas)';
     $o = opciones_precio($pl);
     if (count($o) === 1) $t[] = 'Duración: ' . reset($o)['meses'] . ' mes' . (reset($o)['meses'] === 1 ? '' : 'es');
-    if ((int)($pl['dominio_anual'] ?? 0)) $t[] = '🌐 Dominio propio gratis pagando 1 año*';
+    if ((int)($pl['dominio_anual'] ?? 0)) $t[] = '🌐 Dominio propio incluido pagando 1 año*';
     return $t;
 }
 
@@ -334,9 +343,9 @@ function registrar_pago_suscripcion(array $l, ?int $plan, int $meses, float $mon
     // (v16) Pago de 1 año en un plan con dominio gratis: aviso al superadministrador para registrarle su dominio
     $pl = $plan ? fila('SELECT * FROM planes WHERE id = ?', [$plan]) : null;
     if ($pl && $meses >= 12 && (int)($pl['dominio_anual'] ?? 0) === 1) {
-        bitacora_evento('ventas', 'Pagó 1 año del plan ' . $pl['nombre'] . ': tiene derecho a DOMINIO GRATIS (' . $l['nombre'] . ')', (int)$l['id'], $pago_id);
+        bitacora_evento('ventas', 'Pagó 1 año del plan ' . $pl['nombre'] . ': tiene derecho al DOMINIO INCLUIDO (' . $l['nombre'] . ')', (int)$l['id'], $pago_id);
         foreach (array_column(filas("SELECT tg_chat FROM usuarios WHERE rol = 'super' AND activo = 1 AND tg_chat <> ''"), 'tg_chat') as $c) {
-            tg_encolar(null, $c, '🌐 <b>Dominio gratis</b>' . "\n" . e($l['nombre']) . ' pagó 1 año del plan ' . e($pl['nombre']) . '. Regístrele su dominio y conéctelo (Ligas → Editar → Dominio propio).');
+            tg_encolar(null, $c, '🌐 <b>Dominio incluido</b>' . "\n" . e($l['nombre']) . ' pagó 1 año del plan ' . e($pl['nombre']) . '. Regístrele su dominio y conéctelo (Ligas → Editar → Dominio propio).');
         }
     }
     return ['hasta' => $hasta, 'pago_id' => $pago_id, 'comision_id' => $com_id];

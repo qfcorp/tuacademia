@@ -17,6 +17,7 @@ $pg = preg_match('/^[a-f0-9]{32}$/', get('t')) ? fila('SELECT * FROM pagos_linea
 if (!$pg) $fin(['status' => 'failed', 'message' => 'Pago no encontrado.']);
 if ($pg['estado'] === 'pagado') $fin(['status' => 'success']);
 if ($pg['estado'] !== 'pendiente') $fin(['status' => 'failed', 'message' => 'Este pago ya no se puede completar. Vuelva a generarlo.']);
+if ($pg['destino'] === 'organizacion' && !modulo_activo(fila('SELECT * FROM ligas WHERE id = ?', [$pg['liga_id']]), 'pagos_tarjeta')) $fin(['status' => 'failed', 'message' => 'El pago con tarjeta no está disponible en este momento.']); // (Anexo B)
 if (pasarela_modo() !== 'plux' || !plux_listo() || !plux_configurado()) $fin(['status' => 'failed', 'message' => 'El pago con tarjeta no está disponible en este momento.']);
 if (demasiados_intentos('plux', 20)) $fin(['status' => 'failed', 'message' => 'Demasiados intentos de pago seguidos. Espere una hora o comuníquese con la organización.']);
 // (v24) Autorización de uso de datos del que paga (se registra una sola vez por pago)

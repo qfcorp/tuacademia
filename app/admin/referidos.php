@@ -11,11 +11,11 @@ cabecera_admin('Recomiende y gane');
 ?>
 <h1>🤝 Recomiende y gane</h1>
 <div class="tarjeta" style="border:2px solid var(--acento)">
-  <p style="font-size:1.1rem;margin-top:0">¿Conoce otra <?= es_academia() ? 'academia' : 'liga, escuela o federación' ?> que necesite ordenarse? Recomiéndenos: <b>cuando contrate <?= e(marca()) ?>, usted gana <?= $meses ?> mes<?= $meses === 1 ? '' : 'es' ?> gratis</b> en su plan. Sin límite: mientras más recomiende, más meses gana.</p>
+  <p style="font-size:1.1rem;margin-top:0">¿Conoce otra <?= es_academia() ? 'academia' : 'liga, escuela o federación' ?> que necesite ordenarse? Recomiéndenos: <b>cuando contrate <?= e(marca()) ?>, usted gana <?= $meses ?> mes<?= $meses === 1 ? '' : 'es' ?> de descuento</b> en su plan. Sin límite: mientras más recomiende, más meses gana.</p>
   <?php if ($demo): ?>
     <div class="aviso aviso-info">En la demostración no se generan enlaces de recomendación. Cuando tenga su cuenta, aquí estará su enlace.</div>
   <?php else: $lnk_l = enlace_referido($liga); $lnk_e = enlace_referido($liga, 'escuela');
-      $msg = 'Hola, yo uso ' . marca() . ' para ' . $liga['nombre'] . (es_academia() ? ' y me ha servido mucho: alumnos, asistencia, pensiones, portal de padres y más. Pida su demo gratis aquí: ' : ' y me ha servido mucho: fixture, vocalía en el celular, carnets con QR, pagos y más. Pida su demo gratis aquí: '); ?>
+      $msg = 'Hola, yo uso ' . marca() . ' para ' . $liga['nombre'] . (es_academia() ? ' y me ha servido mucho: alumnos, asistencia, pensiones, portal de padres y más. Pida su demo aquí: ' : ' y me ha servido mucho: fixture, vocalía en el celular, carnets con QR, pagos y más. Pida su demo aquí: '); ?>
     <?php if (!es_academia()): // (arreglos 14-oct) en TuAcademia solo el enlace para academias ?>
     <label>Su enlace para ligas</label>
     <div class="acciones"><input readonly value="<?= e($lnk_l) ?>" onclick="this.select()" style="flex:1;min-width:240px"><button type="button" class="btn btn-sec btn-chico" onclick="navigator.clipboard && navigator.clipboard.writeText('<?= e($lnk_l) ?>'); this.textContent='✓ copiado'">Copiar</button>
@@ -30,7 +30,7 @@ cabecera_admin('Recomiende y gane');
 <div class="cifras">
   <div class="cifra"><b><?= count($lista) ?></b>Recomendados</div>
   <div class="cifra"><b><?= count(array_filter($lista, fn($r) => $r['estado'] === 'premiado')) ?></b>Ya contrataron</div>
-  <div class="cifra"><b><?= $ganados ?></b>Meses gratis ganados</div>
+  <div class="cifra"><b><?= $ganados ?></b>Meses de descuento ganados</div>
 </div>
 <?php if ($lista): ?>
   <div class="tabla-scroll"><table><tr><th>Cuenta recomendada</th><th>Estado</th><th>Premio</th></tr>

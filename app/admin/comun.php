@@ -362,14 +362,7 @@ function html_limites_liga(array $l): void
           <div class="ayuda">"A la vez": al finalizar un campeonato puede crear otro.</div></div>
         <div><label>Máximo de equipos</label><input type="number" name="max_equipos" min="0" max="9999" value="<?= e($v('max_equipos')) ?>" placeholder="según el plan"><div class="ayuda">Vacío = lo del plan · 0 = ilimitado.</div></div>
       </div>
-      <?php if (isset($l['id'])): $del_plan = modulos_plan(plan_de_liga($l)); $extra = array_filter(explode(',', (string)($l['modulos_extra'] ?? ''))); ?>
-      <p style="margin:.6rem 0 .3rem"><b>(v12) Módulos de regalo</b> <span class="suave">— además de los de su plan (los del plan ya vienen marcados y no se pueden quitar aquí)</span></p>
-      <div class="rejilla-modulos">
-        <?php foreach (modulos_sistema() as $k => [$ico, $nom]): $en_plan = in_array($k, $del_plan, true); ?>
-          <label class="check" style="font-weight:400"><input type="checkbox" name="modulos_extra[]" value="<?= e($k) ?>" <?= $en_plan || in_array($k, $extra, true) ? 'checked' : '' ?> <?= $en_plan ? 'disabled' : '' ?>> <?= $ico ?> <?= e($nom) ?></label>
-        <?php endforeach; ?>
-      </div>
-      <?php endif; ?>
+      <?php if (isset($l['id'])): ?><p class="suave" style="margin:.6rem 0 0">🧩 Los módulos (encender, apagar, precio) están en <a href="#modulos-cuenta">Módulos de la cuenta</a>.</p><?php endif; // (Anexo B) ?>
     <?php
 }
 

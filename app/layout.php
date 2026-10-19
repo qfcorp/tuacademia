@@ -16,7 +16,7 @@ function cabecera_admin(string $titulo): void
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($titulo) ?> · Panel <?= e(marca()) ?></title>
-<link rel="stylesheet" href="assets/estilo.css?v=330">
+<link rel="stylesheet" href="assets/estilo.css?v=331">
 <meta name="robots" content="noindex">
 <?= cabecera_app() ?>
 </head>
@@ -43,7 +43,7 @@ function cabecera_admin(string $titulo): void
   <?php endif; ?>
 </header>
 <?php if ($u && !es_super() && !empty($liga['es_demo'])): ?>
-<div class="demo-cinta">👀 Está en la <b>demostración</b> de <?= e(marca()) ?> <?= demo_guardar() ? '(puede probar y guardar; todo se borra cada madrugada)' : '(solo mirar, no se guardan cambios)' ?>. <a href="index.php?v=demo">← Entrar a otro panel</a> · <a href="<?= e(url_empezar()) ?>"><?= prueba_automatica() ? (es_academia() ? 'Cree su academia gratis' : 'Cree su liga gratis') : 'Solicite su demo' ?> →</a></div>
+<div class="demo-cinta">👀 Está en la <b>demostración</b> de <?= e(marca()) ?> <?= demo_guardar() ? '(puede probar y guardar; todo se borra cada madrugada)' : '(solo mirar, no se guardan cambios)' ?>. <a href="index.php?v=demo">← Entrar a otro panel</a> · <a href="<?= e(url_empezar()) ?>">Solicite su demo →</a></div>
 <?php endif; ?>
 <main class="contenedor">
 <?php if ($liga && $u && get('p') !== 'login' && empty($liga['es_demo']) && liga_suspendida($liga)): // (Tukán Central v2) cuenta suspendida por Tukán ?>
@@ -118,7 +118,7 @@ function cabecera_publica(string $titulo, ?array $liga = null): void
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($titulo) ?></title>
 <?= etiqueta_base() ?>
-<link rel="stylesheet" href="assets/estilo.css?v=330">
+<link rel="stylesheet" href="assets/estilo.css?v=331">
 <meta property="og:title" content="<?= e($titulo) ?>">
 <?= html_metas_compartir($titulo, $liga) // (v33) descripción, imagen y dirección para buscadores y WhatsApp ?>
 <?= cabecera_app() ?>

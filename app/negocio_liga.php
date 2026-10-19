@@ -47,7 +47,7 @@ function anotar_referido(int $nueva_id, int $por_id): void
     q("INSERT OR IGNORE INTO referidos (liga_id, referido_id, estado) VALUES (?, ?, 'pendiente')", [$por_id, $nueva_id]);
     $por = fila('SELECT * FROM ligas WHERE id = ?', [$por_id]);
     $nueva = fila('SELECT * FROM ligas WHERE id = ?', [$nueva_id]);
-    if ($por && $nueva) aviso_admins($por, '🤝 <b>¡Gracias por recomendarnos!</b>' . "\n" . e($nueva['nombre']) . ' empezó su demo con su enlace. Cuando contrate, usted gana ' . meses_premio_referido() . ' mes(es) gratis.', 'ref1:' . $nueva_id);
+    if ($por && $nueva) aviso_admins($por, '🤝 <b>¡Gracias por recomendarnos!</b>' . "\n" . e($nueva['nombre']) . ' empezó su demo con su enlace. Cuando contrate, usted gana ' . meses_premio_referido() . ' mes(es) de descuento.', 'ref1:' . $nueva_id);
 }
 
 /** Premia a quien recomendó cuando la cuenta recomendada paga por primera vez. */
@@ -65,8 +65,8 @@ function premiar_referido(array $l): void
     $hasta = $por['vence'] === '' && !$por['es_prueba'] ? '' : date('Y-m-d', strtotime($base . ' +' . $meses . ' months'));
     if ($hasta !== '') q('UPDATE ligas SET vence = ? WHERE id = ?', [$hasta, $por['id']]);
     q("UPDATE referidos SET estado = 'premiado', meses = ?, premiado_en = ? WHERE id = ?", [$meses, date('Y-m-d H:i:s'), $r['id']]);
-    bitacora_evento('ventas', 'Premio por referido: ' . $meses . ' mes(es) gratis por recomendar a ' . $l['nombre'] . ($hasta !== '' ? ' (ahora vence el ' . $hasta . ')' : ''), (int)$por['id']);
-    aviso_admins($por, '🎁 <b>¡Ganó ' . $meses . ' mes(es) gratis!</b>' . "\n" . e($l['nombre']) . ' contrató ' . e(marca()) . ' con su recomendación.' . ($hasta !== '' ? "\nSu cuenta ahora vence el <b>" . $hasta . '</b>.' : ''), 'ref2:' . $l['id']);
+    bitacora_evento('ventas', 'Premio por referido: ' . $meses . ' mes(es) de descuento por recomendar a ' . $l['nombre'] . ($hasta !== '' ? ' (ahora vence el ' . $hasta . ')' : ''), (int)$por['id']);
+    aviso_admins($por, '🎁 <b>¡Ganó ' . $meses . ' mes(es) de descuento!</b>' . "\n" . e($l['nombre']) . ' contrató ' . e(marca()) . ' con su recomendación.' . ($hasta !== '' ? "\nSu cuenta ahora vence el <b>" . $hasta . '</b>.' : ''), 'ref2:' . $l['id']);
     aviso_super('🤝 <b>Referido que pagó</b>' . "\n" . e($l['nombre']) . ' (recomendada por ' . e($por['nombre']) . '). Premio: ' . $meses . ' mes(es) a ' . e($por['nombre']) . '.', 'ref3:' . $l['id']);
 }
 

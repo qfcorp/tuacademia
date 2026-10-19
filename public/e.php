@@ -6,6 +6,7 @@
 require __DIR__ . '/../app/bootstrap.php';
 $t = preg_match('/^T[0-9a-f]{20}$/', get('c')) ? fila('SELECT t.*, l.nombre AS loc, l.tipo, v.titulo, v.fecha, v.hora, v.liga_id FROM bol_tickets t JOIN bol_localidades l ON l.id = t.localidad_id JOIN bol_ventas v ON v.id = t.venta_id WHERE t.codigo = ?', [get('c')]) : null;
 $liga = $t ? fila('SELECT * FROM ligas WHERE id = ?', [$t['liga_id']]) : null;
+exigir_modulo_portal($liga, 'entradas'); // (Anexo B)
 cortar_liga_publica($liga, false, true); // (Anexo A) en la papelera → 404; pausada → «temporalmente no disponible»
 cabecera_publica('Entrada', $liga);
 if (!$t): ?>

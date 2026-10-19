@@ -93,7 +93,7 @@ if ($indiv): ?>
 <section class="cta-final">
   <h2>¿Le gustó?</h2>
   <div class="hero-botones">
-    <a class="btn btn-grande btn-blanco" href="<?= e(url_empezar()) ?>"><?= prueba_automatica() ? (es_academia() ? '🎁 Cree su academia gratis' : '🎁 Cree su liga gratis') : '📝 Solicitar mi demo' ?></a>
+    <a class="btn btn-grande btn-blanco" href="<?= e(url_empezar()) ?>">📝 Solicitar mi demo</a>
     <?php if ($wa): ?><a class="btn btn-grande btn-wa" target="_blank" href="https://wa.me/<?= e($wa) ?>?text=<?= rawurlencode('Hola, vi la demostración de ' . marca() . ' y quiero información') ?>">💬 WhatsApp</a><?php endif; ?>
   </div>
 </section>

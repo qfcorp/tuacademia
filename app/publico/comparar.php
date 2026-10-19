@@ -3,7 +3,6 @@
 $tipo = es_academia() || get('para') === 'escuelas' ? 'escuela' : 'liga'; // (TuAcademia) solo academias
 $planes = array_values(array_filter(filas("SELECT * FROM planes WHERE activo = 1 AND tipo_cuenta IN ('ambos', ?) ORDER BY orden, precio_mensual", [$tipo]), fn($p) => opciones_precio($p)));
 $mods = modulos_sistema($tipo);
-$registro = prueba_automatica();
 $celda = fn(bool $si) => $si ? '<span class="comp-si">✓</span>' : '<span class="comp-no">—</span>';
 cabecera_publica('Comparar planes · ' . marca());
 ?>
@@ -15,7 +14,7 @@ cabecera_publica('Comparar planes · ' . marca());
   <tr><th></th><?php foreach ($planes as $pl): ?><th class="<?= $pl['destacado'] ? 'comp-dest' : '' ?>"><?= e($pl['nombre']) ?><?= $pl['destacado'] ? '<br><small>Recomendado</small>' : '' ?></th><?php endforeach; ?></tr>
   <tr class="comp-grupo"><td colspan="<?= count($planes) + 1 ?>">💲 Precio</td></tr>
   <?php foreach (periodos_plan() as $k => [$meses, $nom]): if (!array_filter($planes, fn($p) => isset(opciones_precio($p)[$k]))) continue; ?>
-    <tr><td><?= e($nom) ?></td><?php foreach ($planes as $pl): $o = opciones_precio($pl)[$k] ?? null; ?><td class="num"><?= $o ? '<b>' . dinero($o['precio']) . '</b>' . ($o['gratis'] ? '<br><small>' . $o['gratis'] . ' gratis</small>' : '') : '—' ?></td><?php endforeach; ?></tr>
+    <tr><td><?= e($nom) ?></td><?php foreach ($planes as $pl): $o = opciones_precio($pl)[$k] ?? null; ?><td class="num"><?= $o ? '<b>' . dinero($o['precio']) . '</b>' . ($o['gratis'] ? '<br><small>' . texto_ahorro($o['gratis']) . '</small>' : '') : '—' ?></td><?php endforeach; ?></tr>
   <?php endforeach; ?>
   <tr class="comp-grupo"><td colspan="<?= count($planes) + 1 ?>">📏 Capacidad</td></tr>
   <tr><td>Torneos a la vez</td><?php foreach ($planes as $pl): ?><td class="num"><?= (int)$pl['max_campeonatos'] ?: 'Ilimitados' ?></td><?php endforeach; ?></tr>
@@ -25,7 +24,7 @@ cabecera_publica('Comparar planes · ' . marca());
   <?php else: ?>
   <tr><td>Alumnos</td><?php foreach ($planes as $pl): ?><td class="num"><?= (int)$pl['max_alumnos'] ?: 'Sin límite' ?></td><?php endforeach; ?></tr>
   <?php endif; ?>
-  <tr><td>🌐 Dominio propio gratis (pago de 1 año)*</td><?php foreach ($planes as $pl): ?><td class="num"><?= $celda((int)($pl['dominio_anual'] ?? 0) === 1) ?></td><?php endforeach; ?></tr>
+  <tr><td>🌐 Dominio propio incluido (pago de 1 año)*</td><?php foreach ($planes as $pl): ?><td class="num"><?= $celda((int)($pl['dominio_anual'] ?? 0) === 1) ?></td><?php endforeach; ?></tr>
   <tr class="comp-grupo"><td colspan="<?= count($planes) + 1 ?>">✅ Incluido en todos</td></tr>
   <?php foreach (funciones_base($tipo) as $f): ?><tr><td><?= e($f) ?></td><?php foreach ($planes as $pl): ?><td class="num"><?= $celda(true) ?></td><?php endforeach; ?></tr><?php endforeach; ?>
   <tr class="comp-grupo"><td colspan="<?= count($planes) + 1 ?>">🧩 Módulos</td></tr>

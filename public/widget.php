@@ -9,6 +9,7 @@ define('VISTA_PUBLICA', true);
 
 $liga = fila('SELECT * FROM ligas WHERE slug = ? AND activa = 1', [get('l')]);
 if (!$liga) { http_response_code(404); exit('Liga no encontrada'); }
+exigir_modulo_corto($liga, 'publico'); // (Anexo B) el widget es de «Patrocinadores y público»
 $lid = (int)$liga['id'];
 $w = in_array(get('w'), ['tabla', 'resultados', 'proximos', 'goleadores', 'vivo'], true) ? get('w') : 'tabla';
 $t = get('t') !== '' ? fila('SELECT * FROM torneos WHERE id = ? AND liga_id = ?', [(int)get('t'), $lid]) : null;

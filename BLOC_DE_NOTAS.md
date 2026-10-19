@@ -334,8 +334,7 @@ Salieron al hacer el material de ventas. Todo probado en una copia local (nunca 
 - En el código, todos los valores por defecto pasaron de 30 a **7** (registro, portada, planes, imagen de venta, vendedores, Panel Tukán Central, Ajustes)
   y el manual de academias ya no dice "14 días".
 - Al actualizar, la base pasa a la **versión 35** y eso deja `dias_prueba` en **7** una sola vez (después se puede cambiar en Ajustes si se quiere).
-- Además hay un comando para ponerlo en 7 y comprobarlo: `sudo bash tuacademia/vps/vps/poner_prueba_7_dias.sh`
-  (debe terminar con **OK: la pagina de registro dice "gratis por 7 dias"**).
+- (18 oct 2026) Ya no hay prueba gratis: ver la sección 14. El comando `poner_prueba_7_dias.sh` se quitó.
 
 ### 13.2 Textos que quedaron de ligas y escuelas
 - La pestaña dice **"Resumen de la academia"** (antes "Resumen de la escuela").
@@ -391,7 +390,57 @@ Capturas revisadas en celular (390 px) y computadora (1440 px): sin scroll de la
 Una línea a la vez en PuTTY (VPS):
 ```
 cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps/vps/vps_2_codigo.sh
-sudo bash tuacademia/vps/vps/poner_prueba_7_dias.sh
-curl -s https://tuacademia.tukanec.com/registro | grep -o "gratis por [0-9]* d"
 ```
 Para los avisos a los padres: Superadministrador → Ajustes → **Bot de Telegram** (token de @BotFather y usuario del bot), si todavía no está.
+
+## 14. Programas modulares (Anexo B) y «nada se da gratis, todo se pide demo» (18 oct 2026)
+
+Pedido de Dimitry: «todos los programas deben ser modulares para encender o apagar las funciones que necesita el cliente, para
+poder cobrar más o menos» y «nada se da gratis, todo se pide demo». El código de los módulos está en `app/modulos_catalogo.php`
+(**el mismo archivo en TuVocalía y TuAcademia**), y el conector en `app/tukan_central.php` (también igual en los dos).
+
+### 14.1 Módulos por academia
+- **Lo básico** (alumnos, cursos, asistencia, pensiones con recibo, página pública, usuarios) lo tiene toda academia: no se apaga.
+- Cada **módulo** tiene **precio al mes**, **depende de** y **grupo**. Precios de fábrica (USD al mes): Carnets 3 · Portal de padres 4 ·
+  Entrenamientos 3 · Evaluaciones 4 · Divisiones formativas 5 (necesita Evaluaciones) · Niveles y certificados 4 · Recitales 3 ·
+  Clases particulares 3 · Cobros con tarjeta 5 · Payphone 4 (necesita Portal de padres) · Tienda 3 · Contabilidad 4 · Avisos por
+  Telegram 3 · Videos 3 · Dominio propio 2 · Profesores y rol de pago 4 · Subida desde Excel 2. Se cambian en
+  **Módulos deportivos → 🧩 Funciones y precios**. Las disciplinas (baile, música…) siguen con sus precios de siempre.
+- **Activos = (los del plan − los quitados) + los extra.** **Mensual = plan + extra − descuentos** (o un **precio acordado** fijo).
+- **Apagar no borra nada**: se esconden menús, páginas, portal de padres (diario, desarrollo, libreta, niveles, recitales, clases
+  particulares, carnet), PDF, Payphone y avisos. Al encender vuelve todo como estaba.
+- La **demo** tiene todos los módulos, salvo que el súper los elija.
+- **Mi plan → 🧩 Mis módulos**: la academia ve lo encendido y lo que puede agregar con su precio, y toca **Pedir este módulo**.
+  El pedido llega por Telegram al súper, a **Ligas → Editar → Pedidos de módulos** y al Panel Tukán Central (`cambio_modulos`).
+- **Súper**: Ligas → Editar → **Módulos de la cuenta** (interruptores, descuento, precio acordado y total).
+- **Panel Tukán Central (revisión 3)**: acción `modulos`, `cliente.modulos`, `cambiar_modulos`, `guardar_modulos`, solicitudes
+  `cambio_modulos` (Aprobar / No aprobar), `finanzas.por_modulo` y `crear_demo` con `plan` y `modulos`.
+
+### 14.2 Sin prueba gratis
+- Se quitó el **registro abierto** (`app/publico/registro.php`) y la prueba gratis: los enlaces viejos `/registro` llevan a
+  **Solicitar demo**. El pedido sale en Ventas → Demos y en el Panel Tukán Central; Tukán crea la demo.
+- Los botones dicen **Solicitar demo** / **Pedir demo** (también en inglés, francés, portugués e italiano). «Meses gratis» pasó a
+  **«ahorra 1 mes / 2 meses»**, «dominio gratis» a **«dominio incluido»** y el premio por recomendar a **«meses de descuento»**.
+- Las academias que ya existen (y las demos de prueba del VPS) siguen igual, con todos sus datos.
+
+### 14.3 Pruebas (18-oct-2026)
+| Prueba | Resultado |
+|---|---|
+| `prueba_academia.py` | **239/239** |
+| `navegador_academia.py` | **19/19** |
+| `prueba_arreglos_14oct.py` | **105/105** (se quitaron las revisiones de la prueba gratis) |
+| `prueba38.py` / `navegador38.py` (modo ligas) | **100/100** / **13/13** |
+| `recorrido.py` | 5.789 páginas sin errores PHP |
+| `tukan_central/prueba_central.py` (academia / ligas) | **125/125** / **121/121** |
+| `tukan_central/prueba_central_v2.py` (academia / ligas) | **380/380** / **374/374** |
+| `tukan_central/prueba_modulos.py` (academia / ligas) | **61/61** / **62/62** (nueva) |
+
+Puertos de prueba usados: 8412 (web) y 8413 (simulador). Capturas: `TA_PUERTO=8412 python3 pruebas/tukan_central/capturas_modulos.py`.
+
+### 14.4 Cómo actualizar el servidor
+Una línea en PuTTY (VPS):
+```
+cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps/vps/vps_2_codigo.sh
+```
+La base se actualiza sola (tablas `modulos_catalogo` y `modulos_pedidos`, columnas nuevas en `ligas`); no se borra nada.
+

@@ -10,6 +10,7 @@ if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
 $k = preg_match('/^[0-9a-f]{20}$/', get('k')) ? get('k') : '';
 $v = $k !== '' ? fila('SELECT * FROM bol_ventas WHERE puerta_clave = ?', [$k]) : null;
 $liga = $v ? fila('SELECT * FROM ligas WHERE id = ?', [$v['liga_id']]) : null;
+exigir_modulo_corto($liga, 'entradas', es_post()); // (Anexo B)
 cortar_liga_publica($liga, false, true); // (Anexo A) en la papelera → 404; pausada → «temporalmente no disponible»
 $json = function (array $d): void { header('Content-Type: application/json'); header('Cache-Control: no-store'); echo json_encode($d, JSON_UNESCAPED_UNICODE); exit; };
 if (!$v || !$liga) {

@@ -520,6 +520,7 @@ function grado_marcial_actual(int $aid): ?array
 /** Tarjeta «Niveles» del alumno para baile, música, natación y deportes (las artes marciales tienen su tarjeta de cinturón). */
 function html_niveles_alumno(array $a, ?array $liga = null): string
 {
+    if (!modulo_activo($liga ?? fila('SELECT * FROM ligas WHERE id = ?', [(int)($a['liga_id'] ?? 0)]), 'acad_niveles')) return ''; // (Anexo B) módulo apagado: no se muestra (los datos siguen)
     $h = '';
     foreach (claves_nivel_alumno($a, $liga) as $c) {
         if (es_clave_marcial($c)) continue;
@@ -970,6 +971,7 @@ function eventos_alumno(int $aid, bool $solo_futuros = true): array
 /** Tarjeta «Recitales» para el portal de los padres. */
 function html_eventos_alumno(array $a): string
 {
+    if (!modulo_activo(fila('SELECT * FROM ligas WHERE id = ?', [(int)($a['liga_id'] ?? 0)]), 'acad_recitales')) return ''; // (Anexo B) módulo apagado: no se muestra (los datos siguen)
     $evs = eventos_alumno((int)$a['id']);
     if (!$evs) return '';
     $h = '<div class="tarjeta"><h3 style="margin-top:0">🎭 Próximos recitales y presentaciones</h3>';
@@ -1100,6 +1102,7 @@ function html_paquete_alumno_chip(int $aid): string
 /** Tarjeta de clases particulares para el portal de los padres. */
 function html_particulares_familia(array $a): string
 {
+    if (!modulo_activo(fila('SELECT * FROM ligas WHERE id = ?', [(int)($a['liga_id'] ?? 0)]), 'acad_particulares')) return ''; // (Anexo B) módulo apagado: no se muestra (los datos siguen)
     $aid = (int)$a['id'];
     $pqs = filas("SELECT p.*, pr.nombre AS profesor FROM acad_paquetes_alumno p LEFT JOIN esc_profesores pr ON pr.id = p.profesor_id WHERE p.alumno_id = ? AND (p.estado = 'activo' OR p.creado >= ?) ORDER BY p.id DESC LIMIT 3", [$aid, date('Y-m-d', strtotime('-60 days'))]);
     $hor = filas('SELECT h.*, pr.nombre AS profesor FROM acad_horario h LEFT JOIN esc_profesores pr ON pr.id = h.profesor_id WHERE h.alumno_id = ? AND h.activo = 1 ORDER BY h.dia, h.hora_inicio', [$aid]);

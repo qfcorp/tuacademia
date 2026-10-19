@@ -24,6 +24,9 @@ function lugares_patrocinio(): array
 /** Patrocinadores vigentes de una liga para un lugar ('en_pagina', 'en_partidos', 'en_imagenes', 'en_carnets'). */
 function patrocinadores_activos(int $liga_id, string $lugar = ''): array
 {
+    static $con = [];
+    $con[$liga_id] ??= modulo_encendido(fila('SELECT * FROM ligas WHERE id = ?', [$liga_id]), 'publico'); // (Anexo B) banners de «Patrocinadores y público»
+    if (!$con[$liga_id]) return [];
     $hoy = date('Y-m-d');
     $col = array_key_exists($lugar, lugares_patrocinio()) ? " AND $lugar = 1" : '';
     return filas("SELECT * FROM patrocinadores WHERE liga_id = ? AND activo = 1 AND (desde = '' OR desde <= ?) AND (hasta = '' OR hasta >= ?)$col ORDER BY orden, id", [$liga_id, $hoy, $hoy]);

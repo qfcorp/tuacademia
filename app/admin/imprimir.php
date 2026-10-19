@@ -31,17 +31,20 @@ if (get('doc') === 'hojas') {
     $t = torneo_de_liga((int)get('t'), (int)$liga['id']);
     $pids = array_column(filas('SELECT id FROM partidos WHERE torneo_id = ? AND jornada = ? ORDER BY fecha, hora, id', [$t['id'], (int)get('j')]), 'id');
     if (!$pids) throw new RuntimeException('Esa fecha no tiene partidos.');
+    if (get('vacia') !== '1') exigir_modulo_panel($liga, 'vocalia'); // (Anexo B) la hoja llena es de la vocalía en vivo; la vacía es base
     doc_hojas_vocalia($pids, $liga, 'admin.php?p=torneo&id=' . (int)$t['id'] . '&s=fixture', get('vacia') !== '1');
     return;
 }
 if (get('doc') === 'hoja') {
     $ph = partido_de_liga((int)get('id'), (int)$liga['id']);
+    if (get('vacia') !== '1') exigir_modulo_panel($liga, 'vocalia'); // (Anexo B)
     doc_hojas_vocalia([(int)$ph['id']], $liga, 'admin.php?p=partido&id=' . (int)$ph['id'], get('vacia') !== '1');
     return;
 }
 $p0 = partido_de_liga((int)get('id'), (int)$liga['id']);
 $p = partido_completo((int)$p0['id']);
 $volver = 'admin.php?p=partido&id=' . (int)$p['id'];
+exigir_modulo_panel($liga, get('doc') === 'informe' ? 'arbitros' : 'vocalia'); // (Anexo B) informe del árbitro / vocalía llena
 if (get('doc') === 'informe') {
     doc_informe($p, $liga, $volver . '&s=arbitro');
 } else {

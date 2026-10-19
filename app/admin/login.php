@@ -175,7 +175,7 @@ cabecera_admin('Ingresar');
     </form>
     <p style="text-align:center;margin:.6rem 0 0"><a href="admin.php?p=login&amp;recuperar=1">¿Olvidó su contraseña?</a></p>
     <p class="ayuda">Aquí ingresan con su correo y contraseña: administradores de <b>ligas</b> y de <b>escuelas deportivas</b>, profesores, árbitros y delegados. Los padres de familia de una escuela ingresan en <a href="familia.php">el portal de la familia</a>.</p>
-    <p class="suave" style="text-align:center">¿Su liga o escuela aún no usa <?= e(marca()) ?>? <a href="<?= e(url_empezar()) ?>"><?= prueba_automatica() ? 'Pruébelo gratis' : 'Solicite una demo' ?></a></p>
+    <p class="suave" style="text-align:center">¿Su liga o escuela aún no usa <?= e(marca()) ?>? <a href="<?= e(url_empezar()) ?>">Solicite una demo</a></p>
   <?php endif; ?>
 </div>
 <?php

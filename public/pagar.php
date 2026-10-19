@@ -18,6 +18,7 @@ if (!$pg) {
 }
 $liga = fila('SELECT * FROM ligas WHERE id = ?', [$pg['liga_id']]);
 cortar_liga_publica($liga, false, true); // (Anexo A) en la papelera → 404; pausada → «temporalmente no disponible»
+if ($pg['destino'] === 'organizacion' && $pg['estado'] === 'pendiente') exigir_modulo_portal($liga, 'pagos_tarjeta'); // (Anexo B) la suscripción siempre se puede pagar
 $datos = json_decode($pg['datos'], true) ?: [];
 $volver = (string)($datos['volver'] ?? '');
 if (!preg_match('#^(admin|delegado|familia|index)\.php(\?[A-Za-z0-9_=&%.-]*)?$#', $volver)) $volver = '';

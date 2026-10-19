@@ -79,6 +79,7 @@ if (es_post()) {
     }
     if ($accion === 'tg_prueba') {
         if ($liga['tg_chat'] === '') throw new RuntimeException('Primero vincule el canal o grupo.');
+        exigir_modulo_panel($liga, 'avisos'); // (Anexo B)
         tg_encolar($lid, $liga['tg_chat'], '🔔 Prueba de avisos de <b>' . e($liga['nombre']) . '</b>. ¡Funciona!');
         tg_procesar_cola();
         flash('Mensaje de prueba enviado al canal.');

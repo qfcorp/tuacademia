@@ -94,6 +94,28 @@ if (es_post()) {
         flash((int)post('combo_id') ? 'Combo guardado: las dos cuentas tienen ' . (float)combo_descuento() . '% de descuento.' : 'Combo quitado.');
         ir('admin.php?p=ligas&editar=' . (int)$l['id'] . '#combo');
     }
+    // (Anexo B) Módulos de la cuenta: encender / apagar (nunca borra datos), descuento de los quitados y precio acordado
+    if ($accion === 'modulos_cuenta') {
+        $l = fila('SELECT * FROM ligas WHERE id = ?', [(int)post('id')]) ?? throw new RuntimeException('Cuenta no encontrada.');
+        $cat = catalogo_modulos(tipo_modulos($l));
+        $act = modulos_cliente($l)['activos'];
+        $marcados = array_keys(array_intersect_key((array)($_POST['mod'] ?? []), $cat));
+        $desc = [];
+        foreach ((array)($_POST['desc'] ?? []) as $k => $v) if (isset($cat[$k]) && trim((string)$v) !== '') $desc[$k] = str_replace(',', '.', trim((string)$v));
+        $u = usuario();
+        $r = cambiar_modulos_cuenta($l, array_values(array_diff($marcados, $act)), array_values(array_diff($act, $marcados)), [
+            'precio_acordado' => trim(str_replace(',', '.', post('precio_acordado'))), 'descuentos' => array_map('floatval', array_filter($desc, 'is_numeric')),
+            'motivo' => post('motivo'), 'por' => $u['nombre'] . ' <' . $u['email'] . '>']);
+        flash($r['sin_cambios'] ? 'Los módulos ya estaban así.' : $r['texto']);
+        ir('admin.php?p=ligas&editar=' . (int)$l['id'] . '#modulos-cuenta');
+    }
+    if ($accion === 'pedido_modulos_aprobar' || $accion === 'pedido_modulos_rechazar') {
+        $u = usuario();
+        $por = $u['nombre'] . ' <' . $u['email'] . '>';
+        if ($accion === 'pedido_modulos_aprobar') flash('Pedido aprobado. ' . aprobar_pedido_modulos((int)post('pedido'), $por)['texto']);
+        else { rechazar_pedido_modulos((int)post('pedido'), $por, post('motivo')); flash('Pedido no aprobado. Le avisamos al cliente con el motivo.'); }
+        ir('admin.php?p=ligas&editar=' . (int)post('id') . '#pedidos-modulos');
+    }
     // (v35) Módulos deportivos de la cuenta
     if ($accion === 'deportes') {
         $l = fila('SELECT * FROM ligas WHERE id = ?', [(int)post('id')]) ?? throw new RuntimeException('Cuenta no encontrada.');
@@ -108,9 +130,8 @@ if (es_post()) {
     if ($accion === 'limites') {
         $l = fila('SELECT * FROM ligas WHERE id = ?', [(int)post('id')]) ?? throw new RuntimeException('Liga no encontrada.');
         $num = fn(string $k) => post($k) === '' ? null : entero(post($k), 0, 9999);
-        q('UPDATE ligas SET max_campeonatos = ?, max_equipos = ?, modo_campeonatos = ?, modulos_extra = ? WHERE id = ?', [
-            $num('max_campeonatos'), $num('max_equipos'), post('modo_campeonatos') === 'total' ? 'total' : '',
-            implode(',', array_intersect(array_keys(modulos_sistema()), (array)($_POST['modulos_extra'] ?? []))), $l['id'],
+        q('UPDATE ligas SET max_campeonatos = ?, max_equipos = ?, modo_campeonatos = ? WHERE id = ?', [ // (Anexo B) los módulos van en «Módulos de la cuenta»
+            $num('max_campeonatos'), $num('max_equipos'), post('modo_campeonatos') === 'total' ? 'total' : '', $l['id'],
         ]);
         flash('Límites de la liga guardados.');
         ir('admin.php?p=ligas&editar=' . (int)$l['id'] . '#limites');
@@ -305,6 +326,8 @@ if ($nueva): ?>
       <select name="combo_id"><option value="0">— sin combo —</option><?php foreach ($otras as $o): ?><option value="<?= (int)$o['id'] ?>" <?= $cb_act && (int)$cb_act['id'] === (int)$o['id'] ? 'selected' : '' ?>><?= $es_e ? '🏆 ' : '🎓 ' ?><?= e($o['nombre']) ?></option><?php endforeach; ?></select>
       <button class="btn btn-sec">Guardar combo</button></form>
   </div>
+  <?= html_pedidos_modulos($editar) // (Anexo B) ?>
+  <?= html_interruptores_modulos($editar) // (Anexo B) ?>
   <div class="tarjeta" id="deportes">
     <h2 style="margin-top:0">🧩 Módulos deportivos</h2>
     <p>Ahora: <b><?= e(texto_modulos(deportes_liga($editar))) ?></b><?= !empty($editar['es_demo']) ? ' <span class="etiqueta">demo del sistema: siempre todos</span>' : '' ?> · Precio de los módulos adicionales: <b><?= dinero(precio_modulos(deportes_liga($editar))['extra']) ?>/mes</b></p>

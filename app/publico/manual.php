@@ -12,7 +12,7 @@ if (PRODUCTO === 'academia') { // (TuAcademia) solo el manual de escuelas y acad
     unset($manuales['ligas']);
     $manuales['escuelas'][0] = 'Manual de academias';
     $manuales['escuelas'][2] = 'Cursos, alumnos, asistencia, pensiones, DeUna y Mensajes de hoy, niveles y certificados, recitales, clases particulares, profesores, evaluaciones y portal de padres.';
-    $manuales['escuelas'][3] = 'Manual-TuAcademia-Academias.pdf'; // PENDIENTE: generar el PDF nuevo
+    $manuales['escuelas'][3] = 'Manual-TuAcademia-Academias.pdf'; // copia de docs/Manual_TuAcademia.pdf (la deja docs/manual/generar/generar.sh)
     if (get('m') === 'ligas') $_GET['m'] = 'escuelas';
 }
 $m = get('m');

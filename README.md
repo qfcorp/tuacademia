@@ -23,6 +23,7 @@ encendido. Todo lo de ligas y campeonatos sigue en el código, apagado.
 | Módulos por academia (Anexo B: encender, apagar, precios, Mi plan, pedidos) | `app/modulos_catalogo.php` (igual en TuVocalía). Ver BLOC_DE_NOTAS §14 |
 | Sin prueba gratis: todo se pide demo | `index.php?v=solicitar` (el registro abierto ya no existe) |
 | Notas para Dimitry | **[BLOC_DE_NOTAS.md](BLOC_DE_NOTAS.md)** (qué se cambió, pendientes, nombres candidatos) |
+| Manual para el cliente | **[docs/Manual_TuAcademia.pdf](docs/Manual_TuAcademia.pdf)** (26 páginas, capturas reales sin precios) · cómo se arma: [docs/MANUAL.md](docs/MANUAL.md) · guía corta: [docs/TuAcademia_Primeros_Pasos.pdf](docs/TuAcademia_Primeros_Pasos.pdf) |
 | Instalar en el VPS | [vps/vps/INSTRUCCIONES.txt](vps/vps/INSTRUCCIONES.txt) (carpeta `/var/www/tuacademia`, puerto 8096) |
 | Panel Tukán Central | `app/tukan_central.php` + `public/tukan_central.php`. Conectar en el VPS: `sudo bash /var/www/tuacademia/vps/conectar_central.sh ID SECRETO URL` (el panel central muestra el comando completo). El panel ve las academias por estado de suscripción y 8 cifras (alumnos, cursos, clases, asistencias, pensiones…) y, con el protocolo v2, las solicitudes, la ficha de cada academia, los pagos y las finanzas, y hace operaciones (crear demo, registrar pago, suspender…) con las funciones de `app/cuentas_super.php`. Ver BLOC_DE_NOTAS §12 y §12.1 |
 

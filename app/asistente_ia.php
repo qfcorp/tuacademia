@@ -15,7 +15,7 @@
  *     escuelas y academias: «Informe del avance del alumno para los padres» y «Mensaje de cobro amable».
  *   Siempre se revisa antes de usar. Si no se puede gastar: el mensaje neutro con el enlace para hacerlo a mano.
  * - Gasto por cuenta y mes: tabla tukan_ia_gasto (negocio_id = id de la liga/escuela; 'super' = el superadministrador sin cuenta).
- *   Tope del mes: ligas.ia_tope_usd (NULL = sugerido: 0.50 sin el módulo y 4.00 con el módulo; -1 = sin tope propio).
+ *   Tope del mes: ligas.ia_tope_usd (NULL = sugerido: 0.50 sin el módulo y 4.00 con el módulo, y 0.50 en total si es demo; -1 = sin tope propio).
  * - NUNCA se le dice al cliente «límite», «cupo» ni «saldo».
  *
  * CONFIGURACIÓN (la clave y el correo NO van a GitHub). El programa busca, en este orden:
@@ -52,6 +52,7 @@ require_once APP_DIR . '/tukan_correo.php';
 
 const IA_TOPE_SIN_MODULO = 0.50;
 const IA_TOPE_CON_MODULO = 4.00;   // (decisión del dueño, 21 oct 2026) con el módulo, venga en el plan o comprado aparte
+const IA_TOPE_DEMO = 0.50;         // (decisión del dueño, 21 oct 2026) una demo gasta como máximo $0,50 al mes en total, aunque tenga todos los módulos
 const IA_NUEVAS_SIN_MODULO = 30;
 const IA_PREGUNTAS_MINUTO = 10;
 
@@ -131,12 +132,21 @@ function ia_modulo(?array $l): bool
     return $l !== null && modulo_activo($l, 'asistente_ia');
 }
 
-/** Tope del mes de la cuenta en USD (null = sin tope propio). */
+/**
+ * ¿La cuenta es una demo? es_prueba = 1 (la demo que crea Tukán: crear_demo del Panel o Ligas → Crear; al registrar el pago queda en 0
+ * y vuelve sola al tope normal) o es_demo = 1 (las cuentas de demostración del sistema).
+ */
+function ia_es_demo(?array $l): bool
+{
+    return $l !== null && (!empty($l['es_prueba']) || !empty($l['es_demo']));
+}
+
+/** Tope del mes de la cuenta en USD (null = sin tope propio): el propio de Tukán; si no, $0,50 en demo; si no, $4,00 con el módulo y $0,50 sin él. */
 function ia_tope_cuenta(?array $l): ?float
 {
     if (!$l) return IA_TOPE_CON_MODULO; // el superadministrador sin cuenta elegida
     $v = $l['ia_tope_usd'] ?? null;
-    if ($v === null || $v === '') return ia_modulo($l) ? IA_TOPE_CON_MODULO : IA_TOPE_SIN_MODULO;
+    if ($v === null || $v === '') return ia_es_demo($l) ? IA_TOPE_DEMO : (ia_modulo($l) ? IA_TOPE_CON_MODULO : IA_TOPE_SIN_MODULO);
     return (float)$v < 0 ? null : round((float)$v, 4);
 }
 

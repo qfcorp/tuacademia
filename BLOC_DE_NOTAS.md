@@ -493,7 +493,7 @@ Guías del Panel: `tukan-central/compartido/LEEME_IA.md` y `LEEME_CORREO.md`. La
   En modo ligas (como TuVocalía) son la crónica del partido y la foto de la hoja de vocalía.
 - **Nunca** se le dice al cliente «límite», «cupo» ni «saldo».
 - **Gasto y tope**: tabla `tukan_ia_gasto` por academia y mes; tope `ligas.ia_tope_usd` (vacío = $0.50 sin el módulo y 30 respuestas nuevas
-  al mes, $4.00 con el módulo, venga en el plan o comprado aparte; -1 = sin tope propio). Las tablas y columnas se crean solas.
+  al mes, $4.00 con el módulo, venga en el plan o comprado aparte; una demo (`es_prueba = 1` o `es_demo = 1`) $0.50 en total aunque tenga todos los módulos (21 oct 2026); -1 = sin tope propio). Las tablas y columnas se crean solas.
   Migración que se puede repetir (`ia_plan_alto`, ajuste una sola vez): el plan activo más caro queda `*,asistente_ia`.
 - **Panel Tukán Central** (revisión 4, Anexo C): `ia_uso` y `ejecutar ia_tope` (botón «Tope de IA del mes» en la ficha de la academia).
 - **Enviar por correo** en «Demo lista» (súper → Ligas → Crear): «Su demo de TuAcademia está lista». La contraseña va sellada (no se guarda),

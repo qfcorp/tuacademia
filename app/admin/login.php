@@ -174,8 +174,13 @@ cabecera_admin('Ingresar');
       <button class="btn btn-grande" type="submit">Ingresar</button>
     </form>
     <p style="text-align:center;margin:.6rem 0 0"><a href="admin.php?p=login&amp;recuperar=1">¿Olvidó su contraseña?</a></p>
+    <?php if (function_exists('es_academia') && es_academia()): // (20 oct 2026) TuAcademia: texto propio (sin ligas, árbitros ni delegados) ?>
+    <p class="ayuda">Aquí ingresan con su correo y contraseña el dueño o la dueña de la academia, la secretaría y los profesores. Los padres de familia ingresan en <a href="familia.php">el portal de la familia</a>.</p>
+    <p class="suave" style="text-align:center">¿Su academia aún no usa <?= e(marca()) ?>? <a href="<?= e(url_empezar()) ?>">Solicite una demo</a></p>
+    <?php else: ?>
     <p class="ayuda">Aquí ingresan con su correo y contraseña: administradores de <b>ligas</b> y de <b>escuelas deportivas</b>, profesores, árbitros y delegados. Los padres de familia de una escuela ingresan en <a href="familia.php">el portal de la familia</a>.</p>
     <p class="suave" style="text-align:center">¿Su liga o escuela aún no usa <?= e(marca()) ?>? <a href="<?= e(url_empezar()) ?>">Solicite una demo</a></p>
+    <?php endif; ?>
   <?php endif; ?>
 </div>
 <?php

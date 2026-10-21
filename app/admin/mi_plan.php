@@ -11,6 +11,20 @@ if (es_post() && post('accion') === 'pedir_modulo') {
     flash('¡Listo! Recibimos su pedido. Le avisamos apenas quede encendido (normalmente el mismo día).');
     ir('admin.php?p=mi_plan#modulos');
 }
+// (20 oct 2026) Pedir cotización de un plan, deporte o disciplina: ticket «Pagos, plan o factura» (llega al súper y al Panel Tukán Central)
+if (es_post() && post('accion') === 'pedir_cotizacion') {
+    if (!puede('config', true)) throw new RuntimeException('Solo el administrador puede pedir cotizaciones.');
+    pedir_cotizacion($liga, (string)post('que'), (string)post('mensaje'));
+    flash('¡Listo! Recibimos su pedido de cotización. Le respondemos en ❓ Soporte y por WhatsApp (normalmente el mismo día).');
+    ir('admin.php?p=mi_plan');
+}
+// (20 oct 2026) el cliente solo renueva SU plan con su valor; otro plan (o contratar desde la demo) se cotiza
+$ver_precios = ver_precios_software();
+$plan_propio = empty($liga['es_prueba']) ? plan_de_liga($liga) : null;
+if (!$ver_precios && es_post() && in_array(post('accion'), ['comprobante', 'pagar'], true)) {
+    $pid_post = post('accion') === 'pagar' ? (int)post('plan_id') : (int)explode(':', post('plan_meses') . ':0')[0];
+    if (!$plan_propio || $pid_post !== (int)$plan_propio['id']) throw new RuntimeException('Para contratar o cambiar de plan, pida su cotización aquí mismo en Mi plan.');
+}
 
 $play = en_app_play(); // (v38) dentro de la app de Google Play el plan solo se paga con Google
 if ($play && es_post() && in_array(post('accion'), ['comprobante', 'pagar'], true)) throw new RuntimeException('En la app de Google Play el plan se paga con Google Play.');
@@ -62,7 +76,8 @@ cabecera_admin('Mi plan');
     <h2 style="margin-top:0">🧩 Módulos</h2>
     <?php $mc = modulos_cliente($liga); ?>
     <p style="margin-top:0">Tiene <b><?= count($mods) ?></b> de <?= count(catalogo_modulos($tipo)) ?> módulos encendidos.</p>
-    <p>Su mensual: <b><?= dinero($mc['mensual']) ?> al mes</b><?= $mc['precio_acordado'] !== null ? ' (precio acordado)' : '' ?>.</p>
+    <?php if ($ver_precios || $plan_propio): ?><p>Su mensual: <b><?= dinero($mc['mensual']) ?> al mes</b><?= $mc['precio_acordado'] !== null ? ' (precio acordado)' : '' ?>.</p>
+    <?php else: ?><p>El valor de su plan se lo cotizamos a su medida.</p><?php endif; ?>
     <p><a class="btn btn-sec btn-chico" href="#modulos">Ver mis módulos y agregar más</a></p>
   </div>
 </div>
@@ -70,8 +85,8 @@ cabecera_admin('Mi plan');
 
 <div class="tarjeta" style="margin-top:14px" id="deportes">
   <h2 style="margin-top:0">🧩 Deportes de su cuenta</h2>
-  <p style="margin-top:0">Tiene: <b><?= e(texto_modulos(deportes_liga($liga))) ?></b><?= !empty($liga['es_demo']) ? '' : ' · ' . e(texto_precio_modulos(deportes_cobrados($liga))) ?></p>
-  <p class="suave">Todos sus deportes quedan en esta misma cuenta: un solo panel, una sola página pública, los mismos usuarios y las mismas finanzas. <?= $play ? 'Para agregar un deporte, use <a href="#play-caja">Deportes adicionales</a> más abajo.' : 'Para agregar o quitar un deporte, márquelo en <a href="#contratar">Contratar o renovar</a> al enviar su comprobante.' ?></p>
+  <p style="margin-top:0">Tiene: <b><?= e(texto_modulos(deportes_liga($liga))) ?></b><?= !empty($liga['es_demo']) ? '' : ($ver_precios ? ' · ' . e(texto_precio_modulos(deportes_cobrados($liga))) : '') ?></p>
+  <p class="suave">Todos sus deportes quedan en esta misma cuenta: un solo panel, una sola página pública, los mismos usuarios y las mismas finanzas. <?= $play ? 'Para agregar un deporte, use <a href="#play-caja">Deportes adicionales</a> más abajo.' : ($ver_precios ? 'Para agregar o quitar un deporte, márquelo en <a href="#contratar">Contratar o renovar</a> al enviar su comprobante.' : 'Agregar otro deporte o disciplina es <b>por cotización</b>: ' . html_boton_cotizacion('deportes')) ?></p>
 </div>
 <?= html_modulos_bloqueados($liga) ?>
 
@@ -80,14 +95,14 @@ $combo = $play ? null : combo_de($liga);
 if ($play):
 elseif ($combo): $pl_c = plan_de_liga($combo); ?>
 <div class="tarjeta combo-caja">
-  <h2 style="margin-top:0">🤝 Combo <?= $tipo === 'escuela' ? 'escuela + liga' : 'liga + escuela' ?>: <?= e((string)(float)combo_descuento()) ?>% de descuento</h2>
-  <p>Esta cuenta está en combo con <b><?= e($combo['nombre']) ?></b> (<?= ($combo['tipo'] ?? 'liga') === 'escuela' ? 'escuela' : 'liga' ?><?= $pl_c ? ', plan ' . e($pl_c['nombre']) : '' ?> · <?= e(estado_suscripcion($combo)['texto']) ?>). Los precios de abajo ya tienen el descuento; la otra cuenta también lo tiene en su propio plan.</p>
+  <h2 style="margin-top:0">🤝 Combo <?= $tipo === 'escuela' ? 'escuela + liga' : 'liga + escuela' ?><?= $ver_precios ? ': ' . e((string)(float)combo_descuento()) . '% de descuento' : '' ?></h2>
+  <p>Esta cuenta está en combo con <b><?= e($combo['nombre']) ?></b> (<?= ($combo['tipo'] ?? 'liga') === 'escuela' ? 'escuela' : 'liga' ?><?= $pl_c ? ', plan ' . e($pl_c['nombre']) : '' ?> · <?= e(estado_suscripcion($combo)['texto']) ?>). <?= $ver_precios ? 'Los precios de abajo ya tienen el descuento; la otra cuenta también lo tiene en su propio plan.' : 'El valor de su plan ya tiene el precio especial del combo.' ?></p>
   <?php if (!es_super()): ?><p><a class="btn btn-sec" href="admin.php?combo=<?= (int)$combo['id'] ?>">🔁 Ir a <?= e($combo['nombre']) ?></a></p><?php endif; ?>
 </div>
 <?php elseif (combo_descuento() > 0): ?>
 <div class="tarjeta combo-caja">
   <h2 style="margin-top:0">🤝 ¿También tiene una <?= $tipo === 'escuela' ? 'liga o campeonato' : 'escuela deportiva' ?>?</h2>
-  <p>Con el <b>combo liga + escuela</b> maneja las dos con este mismo usuario y paga <b><?= e((string)(float)combo_descuento()) ?>% menos</b> en cada plan.<?= $wa ? ' <a target="_blank" href="https://wa.me/' . e($wa) . '?text=' . rawurlencode('Hola, soy de ' . $liga['nombre'] . '. Quiero el combo liga + escuela de ' . marca() . '.') . '">Pídalo por WhatsApp</a>.' : '' ?></p>
+  <p>Con el <b>combo liga + escuela</b> maneja las dos con este mismo usuario <?= $ver_precios ? 'y paga <b>' . e((string)(float)combo_descuento()) . '% menos</b> en cada plan.' : 'con un precio especial en los dos planes (por cotización).' ?><?= $wa ? ' <a target="_blank" href="https://wa.me/' . e($wa) . '?text=' . rawurlencode('Hola, soy de ' . $liga['nombre'] . '. Quiero el combo liga + escuela de ' . marca() . '.') . '">Pídalo por WhatsApp</a>.' : '' ?></p>
 </div>
 <?php endif; ?>
 <?php if (nota_dominio() !== '' && array_filter($planes, fn($p) => (int)($p['dominio_anual'] ?? 0))): ?><p class="suave" style="font-size:.85rem">* <?= e(nota_dominio()) ?></p><?php endif; ?>
@@ -97,16 +112,19 @@ elseif ($combo): $pl_c = plan_de_liga($combo); ?>
 <?= html_mi_plan_play($liga, $planes) ?>
 <?php else: ?>
 <?php if (!pasarela_activa()): ?>
-  <div class="aviso aviso-info">Elija su plan, pague por transferencia y <a href="#contratar"><b>suba el comprobante aquí mismo</b></a>: lo activamos el mismo día.<?= $wa ? ' ¿Dudas? <a target="_blank" href="https://wa.me/' . e($wa) . '?text=' . rawurlencode('Hola, soy de ' . $liga['nombre'] . '. Tengo una consulta sobre mi plan de ' . marca() . '.') . '">Escríbanos por WhatsApp</a>.' : '' ?></div>
+  <div class="aviso aviso-info"><?= $ver_precios ? 'Elija su plan, pague por transferencia y <a href="#contratar"><b>suba el comprobante aquí mismo</b></a>: lo activamos el mismo día.' : ($plan_propio ? 'Para renovar su plan, pague por transferencia y <a href="#contratar"><b>suba el comprobante aquí mismo</b></a>: lo activamos el mismo día. Otro plan se cotiza a su medida.' : 'Su plan se cotiza a su medida: <a href="#contratar"><b>pida su cotización</b></a> y le respondemos el mismo día.') ?><?= $wa ? ' ¿Dudas? <a target="_blank" href="https://wa.me/' . e($wa) . '?text=' . rawurlencode('Hola, soy de ' . $liga['nombre'] . '. Tengo una consulta sobre mi plan de ' . marca() . '.') . '">Escríbanos por WhatsApp</a>.' : '' ?></div>
 <?php endif; ?>
 <div class="planes">
-  <?php foreach ($planes as $pl): $ops = opciones_precio($pl, $liga); if (!$ops) continue; ?>
+  <?php foreach ($planes as $pl): $ops = opciones_precio($pl, $liga); if (!$ops) continue;
+    $es_propio = $plan_propio && (int)$plan_propio['id'] === (int)$pl['id']; ?>
     <div class="plan<?= $plan && (int)$plan['id'] === (int)$pl['id'] ? ' plan-destacado' : '' ?>">
       <?php if ($plan && (int)$plan['id'] === (int)$pl['id']): ?><span class="plan-cinta">Su plan</span><?php endif; ?>
       <h3><?= e($pl['nombre']) ?></h3>
       <p class="suave" style="margin:0 0 6px"><?= e($pl['eslogan']) ?></p>
       <ul><?php foreach (textos_limites_plan($pl, $tipo) as $t): ?><li><?= e($t) ?></li><?php endforeach; ?><li><?= count(array_intersect(modulos_plan($pl), array_keys(modulos_sistema($tipo)))) ?> de <?= count(modulos_sistema($tipo)) ?> módulos · <a target="_blank" href="<?= e(url_plan($pl)) ?>">ver detalle</a></li></ul>
-      <?php if (pasarela_activa()): ?>
+      <?php if (!$ver_precios && !$es_propio): // (20 oct 2026) un plan que no tiene: por cotización ?>
+        <p><b>Por cotización</b></p><p><?= html_boton_cotizacion('plan:' . (int)$pl['id']) ?></p>
+      <?php elseif (pasarela_activa()): ?>
         <form method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="pagar"><input type="hidden" name="plan_id" value="<?= (int)$pl['id'] ?>">
           <select name="meses" style="width:100%;margin-bottom:8px"><?php foreach ($ops as $o): ?><option value="<?= $o['meses'] ?>"><?= e($o['nombre']) ?>: <?= dinero($o['precio']) ?><?= $o['combo'] ? ' (antes ' . dinero($o['precio_normal']) . ')' : '' ?><?= $o['gratis'] ? ' (' . texto_ahorro($o['gratis']) . ')' : '' ?><?= $o['dominio'] ? ' + dominio incluido*' : '' ?></option><?php endforeach; ?></select>
           <button class="btn btn-grande">💳 Pagar con tarjeta</button></form>

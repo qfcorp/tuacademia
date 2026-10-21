@@ -621,10 +621,11 @@ function aplicar_reglas_modulo(array $datos): array
 /** Casillas para elegir módulos (crear cuenta, solicitar demo, registro, contratar). */
 function html_casillas_modulos(array $sel, string $campo = 'deportes', bool $con_precio = false): string
 {
+    $con_precio = $con_precio && ver_precios_software(); // (20 oct 2026) el precio por deporte o disciplina solo lo ve el súper
     ob_start(); ?>
     <div class="casillas-modulos">
       <?php foreach (modulos_deporte(true) as $k => $m): ?>
-        <label class="casilla-mod"><input type="checkbox" name="<?= e($campo) ?>[]" value="<?= e($k) ?>" data-precio="<?= e((string)$m['precio']) ?>" <?= in_array($k, $sel, true) ? 'checked' : '' ?>>
+        <label class="casilla-mod"><input type="checkbox" name="<?= e($campo) ?>[]" value="<?= e($k) ?>" <?= $con_precio ? 'data-precio="' . e((string)$m['precio']) . '"' : '' ?> <?= in_array($k, $sel, true) ? 'checked' : '' ?>>
           <span><b><?= $m['icono'] ?> <?= e($m['nombre']) ?></b><?= $con_precio ? ' <small class="suave">' . dinero($m['precio']) . '/mes</small>' : '' ?><br><small class="suave"><?= e($m['descripcion']) ?></small></span></label>
       <?php endforeach; ?>
     </div>
@@ -638,16 +639,17 @@ function html_modulos_bloqueados(?array $liga): string
     if (!$liga) return '';
     $faltan = array_diff_key(modulos_deporte(true), array_flip(deportes_liga($liga)));
     if (!$faltan) return '';
+    $ver = ver_precios_software(); // (20 oct 2026) el cliente no ve el precio por deporte o disciplina: «por cotización»
     ob_start(); ?>
     <div class="tarjeta modulos-mas" style="margin-top:20px">
       <h2 style="margin-top:0">🧩 Agregue más deportes a su cuenta</h2>
-      <p class="suave" style="margin-top:0">Su cuenta tiene <b><?= e(texto_modulos(deportes_liga($liga))) ?></b>. Cada módulo deportivo se agrega a su plan con <?= modulo_descuento() > 0 ? '<b>' . e(rtrim(rtrim(number_format(modulo_descuento(), 1, ',', ''), '0'), ',')) . ' % de descuento</b>' : 'su precio' ?> y queda todo en la misma cuenta: un solo panel, una sola página pública y los mismos usuarios.</p>
+      <p class="suave" style="margin-top:0">Su cuenta tiene <b><?= e(texto_modulos(deportes_liga($liga))) ?></b>. Cada módulo deportivo se agrega a su plan <?= !$ver ? '(por cotización)' : (modulo_descuento() > 0 ? 'con <b>' . e(rtrim(rtrim(number_format(modulo_descuento(), 1, ',', ''), '0'), ',')) . ' % de descuento</b>' : 'con su precio') ?> y queda todo en la misma cuenta: un solo panel, una sola página pública y los mismos usuarios.</p>
       <div class="rejilla-modulos-mas">
         <?php foreach ($faltan as $k => $m): ?>
-          <div class="mod-bloq"><b><?= $m['icono'] ?> <?= e($m['nombre']) ?> 🔒</b><br><small class="suave"><?= e($m['descripcion']) ?></small><br><small><?= dinero($m['precio']) ?>/mes</small></div>
+          <div class="mod-bloq"><b><?= $m['icono'] ?> <?= e($m['nombre']) ?> 🔒</b><br><small class="suave"><?= e($m['descripcion']) ?></small><br><?= $ver ? '<small>' . dinero($m['precio']) . '/mes</small>' : '<small>Por cotización</small> ' . html_boton_cotizacion('deporte:' . $k, 'Pedir cotización', 'btn btn-sec btn-chico') ?></div>
         <?php endforeach; ?>
       </div>
-      <?php if (!es_super()): ?><p style="margin-bottom:0"><a class="btn btn-sec" href="admin.php?p=mi_plan#contratar">⭐ Agregar módulos en Mi plan</a></p><?php endif; ?>
+      <?php if (!es_super()): ?><p style="margin-bottom:0"><a class="btn btn-sec" href="admin.php?p=mi_plan#deportes">⭐ Ver Mi plan</a></p><?php endif; ?>
     </div>
     <style>.rejilla-modulos-mas{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}.mod-bloq{border:1px dashed var(--borde,#cfd8d4);border-radius:10px;padding:8px 10px;opacity:.9}</style>
     <?php return (string)ob_get_clean();

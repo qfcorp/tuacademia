@@ -48,7 +48,7 @@ function html_inscripcion_indiv_config(array $t): string
       <form method="post" action="admin.php?p=indiv&amp;id=<?= (int)$t['id'] ?>&amp;s=inscripciones"><?= csrf_campo() ?><input type="hidden" name="accion" value="insc_config">
         <div class="campos">
           <div><label>Abierta hasta (fecha)</label><input type="date" name="hasta" value="<?= e($t['insc_indiv_hasta']) ?>"><div class="ayuda">Vacío = cerrada.</div></div>
-          <div><label>Valor de la inscripción ($)</label><input type="text" name="valor" value="<?= (float)$t['insc_indiv_valor'] > 0 ? e(number_format((float)$t['insc_indiv_valor'], 2, '.', '')) : '' ?>" inputmode="decimal" placeholder="0 = gratis"><div class="ayuda">Si la liga cobra con tarjeta, se paga al inscribirse.</div></div>
+          <div><label>Valor de la inscripción ($)</label><input type="text" name="valor" value="<?= (float)$t['insc_indiv_valor'] > 0 ? e(number_format((float)$t['insc_indiv_valor'], 2, '.', '')) : '' ?>" inputmode="decimal" placeholder="0 = sin costo"><div class="ayuda">Si la liga cobra con tarjeta, se paga al inscribirse.</div></div>
           <div class="campo-ancho"><label>Cómo pagar (si no es con tarjeta)</label><textarea name="info" rows="2" maxlength="400" placeholder="Ej: Transferencia a la cuenta… o pago el día de la competencia en la mesa de control."><?= e($t['insc_indiv_info']) ?></textarea></div>
         </div>
         <button class="btn">Guardar</button>
@@ -89,7 +89,7 @@ function html_form_inscripcion_indiv(array $liga, array $t, string $base): strin
     <?php return (string)ob_get_clean(); endif; ?>
     <div class="tarjeta">
       <h2 style="margin-top:0">📝 Inscribirse en <?= e($t['nombre']) ?></h2>
-      <p class="suave">Inscripciones abiertas hasta el <b><?= e(fecha_bonita($t['insc_indiv_hasta'])) ?></b><?= $valor > 0 ? ' · Valor: <b>' . dinero($valor) . '</b>' : ' · Gratis' ?>.</p>
+      <p class="suave">Inscripciones abiertas hasta el <b><?= e(fecha_bonita($t['insc_indiv_hasta'])) ?></b><?= $valor > 0 ? ' · Valor: <b>' . dinero($valor) . '</b>' : ' · Sin costo' ?>.</p>
       <form method="post" enctype="multipart/form-data" action="<?= e($base . '&t=' . (int)$t['id'] . '&v=inscribirse') ?>">
         <?= csrf_campo() ?><input type="text" name="sitio" value="" style="display:none" tabindex="-1" autocomplete="off">
         <div class="campos">

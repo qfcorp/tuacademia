@@ -22,6 +22,7 @@ encendido. Todo lo de ligas y campeonatos sigue en el código, apagado.
 | Migración de la base | `app/db.php` → `esquema_v34()` (user_version 34) |
 | Módulos por academia (Anexo B: encender, apagar, precios, Mi plan, pedidos) | `app/modulos_catalogo.php` (igual en TuVocalía). Ver BLOC_DE_NOTAS §14 |
 | Sin prueba gratis: todo se pide demo | `index.php?v=solicitar` (el registro abierto ya no existe) |
+| Precios del software solo para Tukán (el cliente pide cotización) | `ver_precios_software()` en `app/modulos_catalogo.php`. Ver BLOC_DE_NOTAS §15 |
 | Notas para Dimitry | **[BLOC_DE_NOTAS.md](BLOC_DE_NOTAS.md)** (qué se cambió, pendientes, nombres candidatos) |
 | Manual para el cliente | **[docs/Manual_TuAcademia.pdf](docs/Manual_TuAcademia.pdf)** (26 páginas, capturas reales sin precios) · cómo se arma: [docs/MANUAL.md](docs/MANUAL.md) · guía corta: [docs/TuAcademia_Primeros_Pasos.pdf](docs/TuAcademia_Primeros_Pasos.pdf) |
 | Instalar en el VPS | [vps/vps/INSTRUCCIONES.txt](vps/vps/INSTRUCCIONES.txt) (carpeta `/var/www/tuacademia`, puerto 8096) |

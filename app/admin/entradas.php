@@ -188,7 +188,7 @@ else:
   </div>
 
   <div class="rejilla-2">
-    <?php foreach (['taquilla' => ['💵 Vender en taquilla (efectivo)', 'Vender'], 'cortesia' => ['🎁 Cortesías (gratis)', 'Emitir cortesía']] as $acc => [$tit, $boton]): ?>
+    <?php foreach (['taquilla' => ['💵 Vender en taquilla (efectivo)', 'Vender'], 'cortesia' => ['🎁 Cortesías (sin costo)', 'Emitir cortesía']] as $acc => [$tit, $boton]): ?>
     <form method="post" class="tarjeta"><?= csrf_campo() ?><input type="hidden" name="accion" value="<?= $acc ?>">
       <h2 style="margin-top:0"><?= $tit ?></h2>
       <?php foreach ($locs as $l): ?><label style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span><?= $l['tipo'] === 'parqueo' ? '🚗 ' : '' ?><?= e($l['nombre']) ?><?= $acc === 'taquilla' ? ' · ' . dinero($l['precio']) : '' ?></span><input type="number" name="cant[<?= (int)$l['id'] ?>]" min="0" max="50" value="0" style="max-width:80px"></label><?php endforeach; ?>

@@ -280,7 +280,7 @@ cabecera_admin($t['nombre']);
     $valor = (float)$t['insc_indiv_valor'];
     $abierta = insc_indiv_abierta($t); ?>
   <div class="aviso <?= $abierta ? 'aviso-ok' : 'aviso-info' ?>">
-    <?= $abierta ? '✅ La inscripción en línea está <b>abierta</b> hasta el ' . e(fecha_bonita($t['insc_indiv_hasta'])) . ($valor > 0 ? ' · valor ' . dinero($valor) . (org_cobra_con_tarjeta($liga) ? ' (se cobra con tarjeta al inscribirse)' : '') : ' · gratis') . '. Enlace para compartir: <a href="' . e(url_torneo($liga, $t)) . '?v=inscribirse" target="_blank">' . e(url_torneo($liga, $t)) . '?v=inscribirse</a>'
+    <?= $abierta ? '✅ La inscripción en línea está <b>abierta</b> hasta el ' . e(fecha_bonita($t['insc_indiv_hasta'])) . ($valor > 0 ? ' · valor ' . dinero($valor) . (org_cobra_con_tarjeta($liga) ? ' (se cobra con tarjeta al inscribirse)' : '') : ' · sin costo') . '. Enlace para compartir: <a href="' . e(url_torneo($liga, $t)) . '?v=inscribirse" target="_blank">' . e(url_torneo($liga, $t)) . '?v=inscribirse</a>'
       : '🔒 La inscripción en línea está <b>cerrada</b>. Ábrala abajo para que los competidores se inscriban solos desde la página pública.' ?>
   </div>
   <?php if (!$lista): ?><div class="tarjeta">Todavía no hay inscripciones en línea.</div><?php endif; ?>

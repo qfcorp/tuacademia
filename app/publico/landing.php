@@ -25,7 +25,7 @@ $funciones = [
     ['🔎', 'Auditoría total', 'Quién hizo cada cambio, cuándo y desde dónde. Nada se borra a escondidas.'],
     ['🤝', 'Patrocinadores que pagan', 'Banners, "partido presentado por…" y logo en carnets e imágenes, con reporte de vistas para su patrocinador.'],
     ['🗳', 'Votación del público', 'Jugador del partido y gol de la fecha votados por los hinchas, con premio del auspiciante.'],
-    ['🎯', 'Polla de la liga', 'Los hinchas pronostican los resultados gratis y compiten en una tabla. Sin apuestas.'],
+    ['🎯', 'Polla de la liga', 'Los hinchas pronostican los resultados y compiten en una tabla, sin costo y sin apuestas.'],
     ['📸', 'Cromo del jugador', 'Cada jugador descarga su tarjeta con foto y estadísticas para compartir en Instagram.'],
     ['📥', 'Importar desde Excel', 'Cargue todos sus equipos y jugadores de una sola vez con una plantilla de Excel.'],
     ['👥', 'Usuarios con perfiles', 'Secretario, tesorero, comisión disciplinaria, comunicación: cada uno ve solo lo suyo.'],

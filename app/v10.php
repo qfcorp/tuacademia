@@ -132,8 +132,10 @@ function plan_para_renovar(array $liga): ?array
 /** Texto con el valor a pagar: "$10 por mes o $100 por el año (2 meses gratis)". */
 function texto_valor_renovacion(array $liga): string
 {
-    $pl = plan_para_renovar($liga);
-    if (!$pl || !($o = opciones_precio($pl, $liga))) return ''; // (v16) con el descuento del combo si lo tiene
+    // (20 oct 2026) solo el valor de SU plan; en la demo o sin plan no se muestra el precio de ningún plan: se cotiza
+    $pl = empty($liga['es_prueba']) ? plan_de_liga($liga) : null;
+    if (!$pl) return 'El valor de su plan se lo cotizamos a su medida';
+    if (!($o = opciones_precio($pl, $liga))) return ''; // (v16) con el descuento del combo si lo tiene
     // (v12) todos los períodos del plan: "$10 al mes · $50 por 6 meses (1 mes gratis) · $100 al año (2 meses gratis)"
     return 'Plan ' . $pl['nombre'] . (factor_combo($liga) < 1 ? ' (combo ' . (float)combo_descuento() . '%)' : '') . ': ' . implode(' · ', array_map(fn($x) => dinero($x['precio']) . ' ' . $x['texto'] . ($x['gratis'] ? ' (' . texto_ahorro($x['gratis']) . ')' : ''), $o));
 }
@@ -934,7 +936,7 @@ function html_seguir_equipo(array $eq): string
 <div class="seguir-equipo" id="seguir-box">
   <button type="button" class="btn" id="btn-seguir" data-eq="<?= (int)$eq['id'] ?>">🔔 Seguir a este equipo</button>
   <span id="seguir-msg" class="suave"></span>
-  <p class="ayuda" style="margin:.4rem 0 0">Le llega un aviso al celular con cada gol, el resultado final y los horarios de <?= e($eq['nombre']) ?>. Gratis, sin Telegram ni WhatsApp.
+  <p class="ayuda" style="margin:.4rem 0 0">Le llega un aviso al celular con cada gol, el resultado final y los horarios de <?= e($eq['nombre']) ?>. No necesita Telegram ni WhatsApp.
     <span id="seguir-ios" style="display:none"><br>📱 <b>iPhone:</b> primero instale la aplicación: botón compartir <b>⬆</b> → <b>Agregar a inicio</b>, ábrala desde el ícono y vuelva a esta página.</span></p>
 </div>
 <script>

@@ -175,7 +175,7 @@ cabecera_admin(nombre_jugador($j));
     <?= csrf_campo() ?><input type="hidden" name="accion" value="pase">
     <div class="campos">
       <div><label>Equipo que lo recibe</label><select name="destino_id" required><option value="">— elegir —</option><?= opciones_equipos($equipos) ?></select></div>
-      <div><label>Valor del pase ($)</label><input type="number" name="costo" min="0" step="0.01" value="<?= e(number_format((float)$liga['costo_pase'], 2, '.', '')) ?>"><div class="ayuda">Se carga al equipo que lo recibe. 0 = gratis.</div></div>
+      <div><label>Valor del pase ($)</label><input type="number" name="costo" min="0" step="0.01" value="<?= e(number_format((float)$liga['costo_pase'], 2, '.', '')) ?>"><div class="ayuda">Se carga al equipo que lo recibe. 0 = sin costo.</div></div>
       <div class="campo-ancho"><label>Motivo / observación</label><input type="text" name="motivo" maxlength="300"></div>
       <div class="campo-ancho"><label class="check" style="font-weight:400"><input type="checkbox" name="forzar" value="1"> Autorizar aunque tenga una suspensión pendiente</label></div>
     </div>

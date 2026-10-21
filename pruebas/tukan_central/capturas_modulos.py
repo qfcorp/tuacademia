@@ -63,6 +63,8 @@ with sync_playwright() as p:
                 continue
             ancho_doc = pg.evaluate('document.documentElement.scrollWidth')
             chk(ancho_doc <= ancho + 1, '%s %s: sin scroll de lado (%s px)' % (quien, nombre, ancho_doc))
+            # (20 oct 2026) el valor que paga cada cuenta se tapa (los precios del software no se publican)
+            pg.add_style_tag(content='.mod-total b{background:#dde1ea!important;color:transparent!important;border-radius:6px}')
             el.scroll_into_view_if_needed()
             pg.screenshot(path=os.path.join(SALIDA, '%s_%s_%s.png' % (os.path.basename(REPO), archivo, nombre)), full_page=False)
             el.screenshot(path=os.path.join(SALIDA, '%s_%s_%s_bloque.png' % (os.path.basename(REPO), archivo, nombre)))

@@ -603,6 +603,56 @@ function texto_ahorro(int|float|string $meses): string
 }
 
 /* ============================================================
+ * 6.1) PRECIOS DEL SOFTWARE: SOLO TUKÁN LOS VE (20 oct 2026)
+ *  Regla del dueño: los precios del software Tukán nunca se publican; siempre se pide cotización. El cliente ve solo el
+ *  total que ya paga por su propio plan. Lo que no tiene (módulos, planes, deportes o disciplinas) dice «Pedir cotización»
+ *  y el pedido llega al Panel Tukán Central (módulos: cambio_modulos; planes y deportes: ticket de soporte «Pagos, plan o
+ *  factura»). El súper usuario y el Panel Tukán Central siguen viendo todos los precios.
+ * ============================================================ */
+
+/** ¿Puede ver los precios del software? Solo el súper usuario de Tukán (el panel central los lee por el conector). */
+function ver_precios_software(): bool
+{
+    return function_exists('es_super') && es_super();
+}
+
+/** Lo que se puede cotizar desde Mi plan: 'plan' (el suyo), 'plan:ID', 'deporte:CLAVE' o 'deportes'. Devuelve [asunto, texto] o lanza. */
+function tema_cotizacion(array $l, string $que): array
+{
+    $tipo = ($l['tipo'] ?? 'liga') === 'escuela' ? 'escuela' : 'liga';
+    $disc = function_exists('es_academia') && es_academia() ? 'disciplina' : 'deporte';
+    if (preg_match('/^plan:(\d+)$/', $que, $m)) {
+        $pl = fila("SELECT * FROM planes WHERE id = ? AND activo = 1 AND tipo_cuenta IN ('ambos', ?)", [(int)$m[1], $tipo]) ?? throw new RuntimeException('Ese plan ya no está disponible.');
+        return ['Cotización: plan ' . $pl['nombre'], 'Hola, queremos la cotización del plan ' . $pl['nombre'] . ' para ' . $l['nombre'] . '.'];
+    }
+    if (preg_match('/^deporte:([a-z0-9_]+)$/', $que, $m) && function_exists('modulos_deporte')) {
+        $md = modulos_deporte(true)[$m[1]] ?? throw new RuntimeException('Elija el ' . $disc . ' que quiere agregar.');
+        return ['Cotización: ' . $disc . ' ' . $md['nombre'], 'Hola, queremos agregar ' . $md['nombre'] . ' a ' . $l['nombre'] . '. ¿Nos envían la cotización?'];
+    }
+    if ($que === 'plan') return ['Cotización: mi plan', 'Hola, queremos la cotización del plan para ' . $l['nombre'] . '.'];
+    if ($que === 'deportes') return ['Cotización: otro ' . $disc, 'Hola, queremos agregar otro ' . $disc . ' a ' . $l['nombre'] . '. ¿Nos envían la cotización?'];
+    throw new RuntimeException('Elija qué quiere cotizar.');
+}
+
+/** El cliente pide una cotización: queda como ticket «Pagos, plan o factura» (llega al súper y al Panel Tukán Central). */
+function pedir_cotizacion(array $l, string $que, string $mensaje = ''): int
+{
+    [$asunto, $texto] = tema_cotizacion($l, $que);
+    $ya = fila("SELECT id FROM soporte_tickets WHERE liga_id = ? AND asunto = ? AND estado NOT IN ('resuelto', 'cerrado')", [$l['id'], mb_substr($asunto, 0, 120)]);
+    if ($ya) throw new RuntimeException('Ya pidió esa cotización. Le respondemos en ❓ Soporte apenas la tengamos.');
+    $mensaje = trim(strip_tags($mensaje));
+    return crear_ticket($l, ['tipo' => 'pagos', 'asunto' => $asunto, 'texto' => $texto . ($mensaje !== '' ? "\n\n" . $mensaje : ''), 'pagina' => 'mi_plan', 'detalle' => ['cotizacion' => $que]]);
+}
+
+/** Botón «Pedir cotización» (formulario a Mi plan). */
+function html_boton_cotizacion(string $que, string $etiqueta = 'Pedir cotización', string $clase = 'btn btn-chico'): string
+{
+    if (function_exists('puede') && !puede('config', true)) return '<span class="etiqueta">Por cotización</span>';
+    return '<form method="post" action="admin.php?p=mi_plan" class="inline">' . csrf_campo() . '<input type="hidden" name="accion" value="pedir_cotizacion">'
+        . '<input type="hidden" name="que" value="' . e($que) . '"><button class="' . e($clase) . '">' . e($etiqueta) . '</button></form>';
+}
+
+/* ============================================================
  * 7) PANTALLAS
  * ============================================================ */
 
@@ -672,9 +722,10 @@ function html_pedidos_modulos(array $l): string
     return (string)ob_get_clean();
 }
 
-/** Mi plan: módulos encendidos y los que puede agregar con su precio y el botón «Pedir este módulo». */
+/** Mi plan: módulos encendidos y los que puede agregar. El cliente no ve precios: «Pedir cotización» / «Solicitar este módulo». */
 function html_mi_plan_modulos(array $l, bool $puede_pedir): string
 {
+    $ver = ver_precios_software(); // (20 oct 2026) solo el súper ve el precio de cada módulo
     $cat = catalogo_modulos(tipo_modulos($l));
     $m = modulos_cliente($l);
     $act = array_flip($m['activos']);
@@ -697,17 +748,19 @@ function html_mi_plan_modulos(array $l, bool $puede_pedir): string
               <p><?= e($x['descripcion']) ?></p>
               <?php if ($x['depende_de']): ?><p class="suave" style="font-size:.82rem">Necesita: <?= e(nombres_modulos($x['depende_de'], $cat)) ?></p><?php endif; ?>
               <div class="mod-pie">
-                <?php if ($encendidos): ?><span class="etiqueta verde"><?= in_array($k, $m['del_plan'], true) ? 'En su plan' : 'Extra · ' . dinero($x['precio_mensual']) . ' al mes' ?></span>
-                <?php else: ?><b><?= dinero($x['precio_mensual']) ?> al mes</b>
+                <?php if ($encendidos): ?><span class="etiqueta verde"><?= in_array($k, $m['del_plan'], true) ? 'En su plan' : 'Extra' . ($ver ? ' · ' . dinero($x['precio_mensual']) . ' al mes' : '') ?></span>
+                <?php else: ?><b><?= $ver ? dinero($x['precio_mensual']) . ' al mes' : 'Pedir cotización' ?></b>
                   <?php if (isset($pend[$k])): ?><span class="etiqueta amarilla">Pedido, por revisar</span>
-                  <?php elseif ($puede_pedir): ?><form method="post" class="inline"><?= csrf_campo() ?><input type="hidden" name="accion" value="pedir_modulo"><input type="hidden" name="modulo" value="<?= e($k) ?>"><button class="btn btn-chico">Pedir este módulo</button></form><?php endif; ?>
+                  <?php elseif ($puede_pedir): ?><form method="post" class="inline"><?= csrf_campo() ?><input type="hidden" name="accion" value="pedir_modulo"><input type="hidden" name="modulo" value="<?= e($k) ?>"><button class="btn btn-chico">Solicitar este módulo</button></form><?php endif; ?>
                 <?php endif; ?>
               </div>
             </div>
           <?php endforeach; ?>
         </div>
       <?php endforeach; ?>
-      <p class="mod-total">Su mensual: plan <?= dinero($m['precio_plan']) ?><?= $m['precio_extra'] > 0 ? ' + módulos extra ' . dinero($m['precio_extra']) : '' ?><?= $m['precio_deportes'] > 0 ? ' + deportes ' . dinero($m['precio_deportes']) : '' ?><?= $m['descuento'] > 0 ? ' − descuentos ' . dinero($m['descuento']) : '' ?> = <b><?= dinero($m['mensual']) ?> al mes</b><?= $m['precio_acordado'] !== null ? ' (precio acordado con ' . e(ajuste('empresa', 'QF Producciones')) . ')' : '' ?></p>
+      <?php if ($ver): ?><p class="mod-total">Su mensual: plan <?= dinero($m['precio_plan']) ?><?= $m['precio_extra'] > 0 ? ' + módulos extra ' . dinero($m['precio_extra']) : '' ?><?= $m['precio_deportes'] > 0 ? ' + deportes ' . dinero($m['precio_deportes']) : '' ?><?= $m['descuento'] > 0 ? ' − descuentos ' . dinero($m['descuento']) : '' ?> = <b><?= dinero($m['mensual']) ?> al mes</b><?= $m['precio_acordado'] !== null ? ' (precio acordado con ' . e(ajuste('empresa', 'QF Producciones')) . ')' : '' ?></p>
+      <?php elseif (empty($l['es_prueba']) && !$m['todos_en_demo']): ?><p class="mod-total">Lo que paga hoy por su plan: <b><?= dinero($m['mensual']) ?> al mes</b>. Lo que agregue se lo cotizamos y le confirmamos el nuevo valor.</p>
+      <?php else: ?><p class="mod-total">El valor de su plan se lo cotizamos a su medida, con los módulos que elija.</p><?php endif; ?>
     </div>
     <?php
     return (string)ob_get_clean();

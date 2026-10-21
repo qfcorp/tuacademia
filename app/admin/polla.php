@@ -32,7 +32,7 @@ cabecera_admin('Polla');
 subnav_publico('polla');
 ?>
 <h1>🎯 Polla de pronósticos</h1>
-<p class="suave">Los hinchas adivinan los resultados de los próximos partidos desde la página de la liga y suman puntos. <b>Es gratis y sin apuestas</b>: el premio lo pone un patrocinador (camiseta, cena, recarga…). Hace que la gente entre a la página todas las semanas, y eso le da más vistas a sus patrocinadores.</p>
+<p class="suave">Los hinchas adivinan los resultados de los próximos partidos desde la página de la liga y suman puntos. <b>Sin costo y sin apuestas</b>: el premio lo pone un patrocinador (camiseta, cena, recarga…). Hace que la gente entre a la página todas las semanas, y eso le da más vistas a sus patrocinadores.</p>
 
 <div class="tarjeta">
   <form method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="config">
@@ -44,7 +44,7 @@ subnav_publico('polla');
     </div>
     <?php if (puede('comunicacion', true)): ?><button class="btn">Guardar</button><?php endif; ?>
   </form>
-  <?php if ($liga['polla_activa']): ?><p style="margin-bottom:0">Enlace para compartir: <a href="<?= e($enlace_pub) ?>" target="_blank"><?= e($enlace_pub) ?></a> · <a target="_blank" href="https://wa.me/?text=<?= rawurlencode('🎯 ¡Juega gratis la polla de ' . $liga['nombre'] . '! Adivina los resultados y gana premios 👉 ' . $enlace_pub) ?>">📲 Compartir por WhatsApp</a></p><?php endif; ?>
+  <?php if ($liga['polla_activa']): ?><p style="margin-bottom:0">Enlace para compartir: <a href="<?= e($enlace_pub) ?>" target="_blank"><?= e($enlace_pub) ?></a> · <a target="_blank" href="https://wa.me/?text=<?= rawurlencode('🎯 ¡Juega sin costo la polla de ' . $liga['nombre'] . '! Adivina los resultados y gana premios 👉 ' . $enlace_pub) ?>">📲 Compartir por WhatsApp</a></p><?php endif; ?>
 </div>
 
 <div class="rejilla-2">

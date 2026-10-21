@@ -130,7 +130,7 @@ cabecera_admin('Google Play');
 <div class="tarjeta" style="margin-top:16px">
   <h2 style="margin-top:0">📘 Guía rápida (una sola vez)</h2>
   <ol>
-    <li><b>Play Console</b> → Crear app «TuAcademia», idioma <b>Español (Latinoamérica)</b>, App, Gratis.</li>
+    <li><b>Play Console</b> → Crear app «TuAcademia», idioma <b>Español (Latinoamérica)</b>, App y, en el precio, la opción sin pago.</li>
     <li>Subir <code>tuacademia-play.aab</code> a <b>Pruebas → Prueba cerrada</b> (así Google habilita las suscripciones) y crear el perfil de pagos (Configuración → Perfil de pagos).</li>
     <li><b>Google Cloud</b> (console.cloud.google.com) → crear un proyecto → activar <b>Google Play Android Developer API</b> → <b>Cuentas de servicio</b> → crear una → <b>Claves → Agregar clave → JSON</b> (se descarga el archivo).</li>
     <li><b>Play Console</b> → Usuarios y permisos → Invitar al correo de la cuenta de servicio → permisos de la app: <b>Ver información financiera</b>, <b>Administrar pedidos y suscripciones</b> y <b>Administrar productos y precios</b>.</li>

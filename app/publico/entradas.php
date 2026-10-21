@@ -36,7 +36,7 @@ if ($v && es_post() && post('accion') === 'comprar') {
             }
         }
         $o = crear_orden_entradas($liga, $v, $items, $total, ['nombre' => $nombre, 'cedula' => $ced, 'telefono' => post('telefono'), 'email' => post('email')], 'web', $total > 0 ? $metodo : 'cortesia', $comp);
-        if ($total <= 0 && $o['estado'] !== 'pagada') pagar_orden_entradas($o, 'Gratis');
+        if ($total <= 0 && $o['estado'] !== 'pagada') pagar_orden_entradas($o, 'Sin costo');
         registrar_consentimiento('entradas', $lid, $nombre, 'titular', ['ref_tabla' => 'bol_ordenes', 'ref_id' => (int)$o['id'], 'documento' => $ced,
             'texto' => 'Autorizo a ' . $liga['nombre'] . ' a usar mi nombre, cédula, celular y correo solo para emitir y controlar mis entradas, según la política de privacidad (datos guardados en servidores fuera del Ecuador).']);
         anotar_intento('entradas');
@@ -113,7 +113,7 @@ elseif ($v && venta_abierta($v)):
     <?= csrf_campo() ?><input type="hidden" name="accion" value="comprar"><input type="text" name="sitio" value="" style="display:none" tabindex="-1" autocomplete="off">
     <h2 style="margin-top:0">1 · ¿Cuántas?</h2>
     <?php foreach ($locs as $l): $libres = (int)$l['cupo'] > 0 ? max(0, (int)$l['cupo'] - ocupadas_localidad((int)$l['id'])) : null; ?>
-      <div class="fila-titulo" style="margin:6px 0"><span><b><?= $l['tipo'] === 'parqueo' ? '🚗 ' : '' ?><?= e($l['nombre']) ?></b> · <?= (float)$l['precio'] > 0 ? dinero($l['precio']) : 'Gratis' ?>
+      <div class="fila-titulo" style="margin:6px 0"><span><b><?= $l['tipo'] === 'parqueo' ? '🚗 ' : '' ?><?= e($l['nombre']) ?></b> · <?= (float)$l['precio'] > 0 ? dinero($l['precio']) : 'Sin costo' ?>
           <?= $libres !== null ? '<small class="suave"> · ' . ($libres ? 'quedan ' . $libres : '<b style="color:var(--roja)">AGOTADO</b>') . '</small>' : '' ?></span>
         <input type="number" name="cant[<?= (int)$l['id'] ?>]" data-precio="<?= (float)$l['precio'] ?>" min="0" max="<?= $libres === null ? (int)$v['max_por_orden'] : min($libres, (int)$v['max_por_orden']) ?>" value="<?= (int)($f['cant'][$l['id']] ?? 0) ?>" style="max-width:90px" <?= $libres === 0 ? 'disabled' : '' ?> oninput="totalEntradas()"></div>
     <?php endforeach; ?>
@@ -153,7 +153,7 @@ else:
   <?php foreach ($ventas as $x): $min = (float)valor('SELECT MIN(precio) FROM bol_localidades WHERE venta_id = ? AND tipo = \'entrada\'', [$x['id']]); ?>
     <a class="tarjeta" style="text-decoration:none;color:inherit" href="<?= e($base_e . '&venta=' . (int)$x['id']) ?>">
       <b style="font-size:1.1rem">🎟 <?= e($x['titulo']) ?></b><br><span class="suave"><?= e(fecha_bonita($x['fecha'])) ?> <?= e($x['hora']) ?><?= $x['lugar'] !== '' ? ' · ' . e($x['lugar']) : '' ?></span>
-      <p style="margin:.4rem 0 0"><?= $min > 0 ? 'Desde <b>' . dinero($min) . '</b>' : '<b>Gratis</b>' ?> · <span class="btn btn-chico">Comprar</span></p></a>
+      <p style="margin:.4rem 0 0"><?= $min > 0 ? 'Desde <b>' . dinero($min) . '</b>' : '<b>Sin costo</b>' ?> · <span class="btn btn-chico">Comprar</span></p></a>
   <?php endforeach; ?>
   </div>
 <?php endif;

@@ -40,7 +40,7 @@ cabecera_publica('Ejercer mis derechos' . ($liga ? ' · ' . $liga['nombre'] : ''
   <div class="aviso aviso-ok">✓ Recibimos su solicitud <b>N.º <?= (int)$numero ?></b>. Le responderemos por correo o celular en un plazo máximo de 15 días. Guarde este número.</div>
   <p><a href="<?= e($liga ? url_liga($liga) : 'index.php') ?>">← Volver</a></p>
 <?php else: ?>
-  <p>Usted (o el representante de un menor de edad) puede pedir <?= $liga ? 'a <b>' . e($liga['nombre']) . '</b>' : '' ?> ver, corregir o borrar sus datos personales, entre otros derechos. Es gratis. <a href="<?= e($url_priv) ?>" target="_blank">Ver la política de privacidad</a>.</p>
+  <p>Usted (o el representante de un menor de edad) puede pedir <?= $liga ? 'a <b>' . e($liga['nombre']) . '</b>' : '' ?> ver, corregir o borrar sus datos personales, entre otros derechos. No tiene costo. <a href="<?= e($url_priv) ?>" target="_blank">Ver la política de privacidad</a>.</p>
   <?php foreach ($errores as $er): ?><div class="aviso aviso-error"><?= e($er) ?></div><?php endforeach; ?>
   <form method="post" action="<?= e($accion) ?>">
     <?= csrf_campo() ?>

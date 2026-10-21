@@ -247,11 +247,17 @@ function html_contratar_transferencia(array $liga, array $planes): string
     $wa = telefono_wa((string)ajuste('ventas_whatsapp'));
     $actual = plan_de_liga($liga);
     $prueba = !empty($liga['es_prueba']);
+    // (20 oct 2026) el cliente solo ve el valor de SU plan (renovar); cambiar de plan o contratar desde la demo = cotización
+    $ver = ver_precios_software();
+    if (!$ver) $planes = $actual && !$prueba ? [$actual] : [];
     ob_start(); ?>
 <div class="tarjeta" id="contratar">
   <h2 style="margin-top:0">💵 <?= $prueba ? 'Contratar mi plan' : 'Renovar o cambiar de plan' ?> por transferencia</h2>
   <?php if ($pend): $pp = fila('SELECT nombre FROM planes WHERE id = ?', [$pend['plan_id']]); ?>
     <div class="aviso aviso-info">⏳ <b>Su comprobante está en revisión</b> (plan <?= e($pp['nombre'] ?? '') ?>, <?= (int)$pend['meses'] ?> mes(es), <?= dinero((float)$pend['monto']) ?>, enviado el <?= e(substr($pend['creado'], 0, 16)) ?>). Le avisamos apenas lo aprobemos, normalmente el mismo día.<?= $wa ? ' Si es urgente, <a target="_blank" href="https://wa.me/' . e($wa) . '?text=' . rawurlencode('Hola, envié el comprobante de ' . $liga['nombre'] . ' en ' . marca() . '. ¿Me lo pueden revisar?') . '">escríbanos por WhatsApp</a>.' : '' ?></div>
+  <?php elseif (!$planes): ?>
+    <p>El valor de su plan se lo <b>cotizamos a su medida</b>, según <?= function_exists('es_academia') && es_academia() ? 'las disciplinas' : 'los deportes' ?> y los módulos que necesite. Pida su cotización: le respondemos en ❓ Soporte y por WhatsApp<?= $prueba ? ', y todo lo que ya cargó en la demo se queda' : '' ?>.</p>
+    <p><?= html_boton_cotizacion($actual ? 'plan:' . (int)$actual['id'] : 'plan', 'Pedir cotización', 'btn') ?><?= $wa ? ' <a class="btn btn-sec" target="_blank" href="https://wa.me/' . e($wa) . '?text=' . rawurlencode('Hola, soy de ' . $liga['nombre'] . '. Quiero la cotización de mi plan de ' . marca() . '.') . '">📲 Pedirla por WhatsApp</a>' : '' ?></p>
   <?php else: ?>
     <ol class="pasos-pago">
       <li><b>Elija el plan y el tiempo</b> que va a pagar.</li>
@@ -259,13 +265,17 @@ function html_contratar_transferencia(array $liga, array $planes): string
       <li><b>Suba la foto o captura</b> del comprobante y envíe. Lo revisamos y su cuenta queda activa el mismo día<?= $prueba ? ', con todo lo que ya cargó' : '' ?>.</li>
     </ol>
     <form method="post" enctype="multipart/form-data" class="form-contratar" data-desc="<?= e((string)modulo_descuento()) ?>" data-incluido="<?= modulo_incluido() ? 1 : 0 ?>"><?= csrf_campo() ?><input type="hidden" name="accion" value="comprobante">
+      <?php if ($ver): ?>
       <label>🧩 Deportes que quiere tener <small class="suave">(el plan incluye uno; cada deporte adicional con <?= e(rtrim(rtrim(number_format(modulo_descuento(), 1, ',', ''), '0'), ',')) ?> % de descuento)</small></label>
       <?= html_casillas_modulos(deportes_cobrados($liga), 'deportes', true) ?>
+      <?php else: ?>
+      <p style="margin:.2rem 0">🧩 Su cuenta tiene: <b><?= e(texto_modulos(deportes_liga($liga))) ?></b>. Para agregar otro, <a href="#deportes">pida cotización</a>.</p>
+      <?php endif; ?>
       <div class="campos">
         <div class="campo-ancho"><label>Plan y tiempo</label>
           <select name="plan_meses" required>
             <?php foreach ($planes as $pl): foreach (opciones_precio($pl, $liga) as $o): $k = (int)$pl['id'] . ':' . $o['meses']; $sel = $actual && (int)$actual['id'] === (int)$pl['id'] && $o['meses'] === 1 && !$prueba; ?>
-              <option value="<?= $k ?>" <?= $sel ? 'selected' : '' ?> data-base="<?= e((string)$o['base']) ?>" data-meses="<?= (int)$o['meses'] ?>" data-rebaja="<?= e((string)$o['rebaja']) ?>" data-factor="<?= e((string)$o['factor']) ?>"><?= e($pl['nombre']) ?> · <?= e($o['nombre']) ?>: <?= dinero($o['precio']) ?><?= $o['gratis'] ? ' (' . texto_ahorro($o['gratis']) . ')' : '' ?><?= $o['dominio'] ? ' + dominio incluido' : '' ?><?= $o['combo'] ? ' · combo' : '' ?></option>
+              <option value="<?= $k ?>" <?= $sel ? 'selected' : '' ?> data-base="<?= e((string)$o['base']) ?>" data-meses="<?= (int)$o['meses'] ?>" data-rebaja="<?= e((string)$o['rebaja']) ?>" data-factor="<?= e((string)$o['factor']) ?>" data-total="<?= e((string)$o['precio']) ?>"><?= e($pl['nombre']) ?> · <?= e($o['nombre']) ?>: <?= dinero($o['precio']) ?><?= $o['gratis'] ? ' (' . texto_ahorro($o['gratis']) . ')' : '' ?><?= $o['dominio'] ? ' + dominio incluido' : '' ?><?= $o['combo'] ? ' · combo' : '' ?></option>
             <?php endforeach; endforeach; ?>
           </select></div>
         <div><label>Forma de pago</label><select name="forma_pago"><option value="transferencia">Transferencia</option><option value="deposito">Depósito</option><option value="efectivo">Efectivo</option><option value="otro">Otro</option></select></div>
@@ -281,6 +291,7 @@ function html_contratar_transferencia(array $liga, array $planes): string
       var desc = parseFloat(f.dataset.desc) || 0, incl = f.dataset.incluido === '1';
       function calc() {
         var o = f.elements.plan_meses.options[f.elements.plan_meses.selectedIndex]; if (!o || !o.dataset.base) return;
+        if (!f.querySelector('input[name="deportes[]"]')) { f.querySelector('.total-valor').textContent = '$' + parseFloat(o.dataset.total).toFixed(2); return; } // sin casillas: el valor de su plan
         var p = [].slice.call(f.querySelectorAll('input[name="deportes[]"]:checked')).map(function (c) { return parseFloat(c.dataset.precio) || 0; }).sort(function (a, b) { return b - a; });
         var extra = 0; p.forEach(function (v, i) { if (i === 0 && incl) return; extra += Math.round(v * (1 - (i === 0 ? 0 : desc) / 100) * 100) / 100; });
         var m = parseInt(o.dataset.meses, 10), reb = parseFloat(o.dataset.rebaja), fac = parseFloat(o.dataset.factor);

@@ -178,11 +178,11 @@ chk(php("echo (int)valor('SELECT COUNT(*) FROM usuarios WHERE liga_id = " + LID 
 
 # ---------- 5) Mi plan y pedido ----------
 mp = s.get(B + 'admin.php?p=mi_plan').text
-chk('Mis módulos' in mp and 'Pedir este módulo' in mp and 'Encendidos' in mp and 'Puede agregar' in mp, 'Mi plan: módulos encendidos y para agregar con «Pedir este módulo»')
+chk('Mis módulos' in mp and 'Solicitar este módulo' in mp and 'Pedir cotización' in mp and 'Encendidos' in mp and 'Puede agregar' in mp, 'Mi plan: módulos encendidos y para agregar con «Pedir cotización» / «Solicitar este módulo»')
 pedir = next(k for k in catT if k not in pj('modulos_cliente(' + L + ')')['activos'])
 r = postear(s, 'admin.php?p=mi_plan', {'accion': 'pedir_modulo', 'modulo': pedir})
 pid = php("echo (int)valor(\"SELECT id FROM modulos_pedidos WHERE liga_id = " + LID + " AND encender = '" + pedir + "' AND estado = 'pendiente'\");")
-chk(r.status_code in (302, 303) and pid != '0', 'Mi plan: «Pedir este módulo» crea el pedido')
+chk(r.status_code in (302, 303) and pid != '0', 'Mi plan: «Solicitar este módulo» crea el pedido (cambio_modulos, llega al Panel Tukán Central)')
 r = postear(s, 'admin.php?p=mi_plan', {'accion': 'pedir_modulo', 'modulo': pedir})
 chk('Ya pidió eso' in s.get(B + 'admin.php?p=mi_plan').text, 'Mi plan: el mismo pedido dos veces → avisa que ya está pedido')
 chk('Pedido, por revisar' in s.get(B + 'admin.php?p=mi_plan').text, 'Mi plan: el módulo pedido dice «Pedido, por revisar»')
@@ -236,11 +236,65 @@ chk(not GRATIS.search(t) and ('Solicitar' in t or 'demo' in t), 'folleto del pla
 sol = requests.get(B + 'index.php?v=solicitar').text
 chk('Solicite su demo' in sol, 'solicitar demo: es la única puerta de entrada')
 aj = su.get(B + 'admin.php?p=ajustes').text
-chk('registro_abierto' not in aj and 'prueba gratis automática' not in aj and 'No hay prueba gratis' in aj, 'ajustes: ya no se puede abrir la prueba gratis')
+chk('registro_abierto' not in aj and 'prueba gratis automática' not in aj and 'No hay registro abierto' in aj, 'ajustes: ya no se puede abrir la prueba gratis')
 mp = s.get(B + 'admin.php?p=mi_plan').text
 chk(not re.search(r'meses? gratis|dominio gratis', mp, re.I), 'Mi plan: sin «meses gratis» ni «dominio gratis»')
 ref = s.get(B + 'admin.php?p=referidos').text
 chk(not re.search(r'meses? gratis|demo gratis', ref, re.I), 'Recomiende y gane: sin «meses gratis»')
+
+# ---------- 8) Regla del dueño (20 oct 2026): los precios del software solo los ve Tukán; nunca «gratis» ----------
+def visible(html):
+    html = re.sub(r'(?is)<(script|style)\b.*?</\1>', ' ', html)
+    return re.sub(r'<[^>]+>', ' ', html)
+
+
+PRECIO = re.compile(r'\$\s?\d[\d.,]*')
+PALABRA_GRATIS = re.compile(r'gratis|gratuit|\bfree\b', re.I)
+mp = s.get(B + 'admin.php?p=mi_plan').text
+v = visible(mp)
+propios = pj('(function () { $l = ' + L + '; $r = [dinero(modulos_cliente($l)["mensual"])]; foreach (opciones_precio(plan_de_liga($l), $l) as $o) $r[] = dinero($o["precio"]); return $r; })()')
+ajenos = sorted(set(PRECIO.findall(v)) - set(propios))
+chk(propios[0] in v, 'Mi plan: muestra lo que ya paga por su plan (%s)' % propios[0])
+chk(not ajenos, 'Mi plan: ningún precio de otros planes, módulos ni deportes (%s)' % ajenos)
+chk(not any(dinero in v for dinero in pj('array_map("dinero", array_values(array_filter(array_column(catalogo_modulos("' + T + '"), "precio_mensual"))))')
+            if dinero not in propios), 'Mi plan: ningún precio del catálogo de módulos')
+chk('data-precio' not in mp and 'Por cotización' in v, 'Mi plan: sin precios escondidos (data-precio); lo que no tiene es «Por cotización»')
+chk(not PALABRA_GRATIS.search(v), 'Mi plan: no dice «gratis»')
+falta = pj('array_values(array_diff(array_keys(modulos_deporte(true)), deportes_liga(' + L + ')))')
+if falta:
+    r = postear(s, 'admin.php?p=mi_plan', {'accion': 'pedir_cotizacion', 'que': 'deporte:' + falta[0]})
+    t = pj('fila("SELECT tipo, asunto FROM soporte_tickets WHERE liga_id = ' + LID + ' ORDER BY id DESC")')
+    chk(t and t['tipo'] == 'pagos' and t['asunto'].startswith('Cotización: '), 'Mi plan: «Pedir cotización» de un deporte o disciplina crea el ticket «Pagos, plan o factura» (%s)' % t)
+otro = php("echo (int)valor(\"SELECT id FROM planes WHERE activo = 1 AND tipo_cuenta IN ('ambos', '" + T + "') AND id <> " + PL + " AND precio_mensual > 0 ORDER BY id LIMIT 1\");")
+if otro != '0':
+    r = postear(s, 'admin.php?p=mi_plan', {'accion': 'pedir_cotizacion', 'que': 'plan:' + otro})
+    chk(pj('valor("SELECT COUNT(*) FROM soporte_tickets WHERE liga_id = ' + LID + ' AND asunto LIKE \'Cotización: plan%\'")') == 1, 'Mi plan: «Pedir cotización» de otro plan crea el ticket')
+    r = postear(s, 'admin.php?p=mi_plan', {'accion': 'comprobante', 'plan_meses': otro + ':1', 'forma_pago': 'transferencia', 'nota': ''})
+    chk('pida su cotización' in (r.text + s.get(B + 'admin.php?p=mi_plan').text) and pj('valor("SELECT COUNT(*) FROM solicitudes_pago WHERE liga_id = ' + LID + ' AND plan_id = ' + otro + '")') == 0,
+        'Mi plan: no puede contratar otro plan con un precio (se cotiza)')
+chk('$' not in pj('texto_valor_renovacion(' + D + ')') and 'cotizamos' in pj('texto_valor_renovacion(' + D + ')'), 'aviso y correo de vencimiento de una demo: sin precio, «se lo cotizamos»')
+chk(PRECIO.search(pj('texto_valor_renovacion(' + L + ')')), 'aviso de vencimiento de una cuenta pagada: el valor de su propio plan')
+chk(PRECIO.search(visible(su.get(B + 'admin.php?p=planes').text)), 'el súper usuario sí ve los precios de los planes')
+# palabra «gratis» o «free» en ninguna pantalla del cliente ni pública (español)
+con = []
+for ses, url in [(requests, 'index.php'), (requests, 'index.php?v=solicitar'), (requests, 'admin.php?p=login'), (requests, 'index.php?v=demo'), (requests, 'index.php?v=derechos'),
+                 (requests, 'index.php?l=' + CUENTA['slug']), (s, 'admin.php'), (s, 'admin.php?p=mi_plan'), (s, 'admin.php?p=referidos'), (s, 'admin.php?p=soporte'),
+                 (s, 'admin.php?p=seguridad'), (s, 'admin.php?p=polla'), (s, 'admin.php?p=entradas')]:
+    if PALABRA_GRATIS.search(visible(ses.get(B + url).text)): con.append(url)
+chk(not con, 'ninguna pantalla dice «gratis» ni «free» (%s)' % con)
+# manuales del cliente (5 idiomas): sin precios del software ni «gratis»
+malos = []
+for f in sorted(os.listdir(os.path.join(REPO, 'app', 'manuales'))):
+    t = open(os.path.join(REPO, 'app', 'manuales', f), encoding='utf-8').read()
+    t = re.sub(r'(?i)free text|texte libre|texto livre|testo libero', '', t)
+    if re.search(r'\$\s?\d+(\.\d+)?\s*(al mes|por \d+ meses|al año|per month|/mes|par mois|por mês|al mese)|Pedir este módulo|\d+\s?% (menos|less|de moins|in meno)', t) or PALABRA_GRATIS.search(t):
+        malos.append(f)
+chk(not malos, 'manuales del cliente sin precios del software ni «gratis» (%s)' % malos)
+lg = visible(requests.get(B + 'admin.php?p=login').text)
+if ACADEMIA:
+    chk('dueño o la dueña de la academia, la secretaría y los profesores' in lg and 'árbitros' not in lg and 'delegados' not in lg, 'ingreso (academia): dueño, secretaría y profesores; sin árbitros ni delegados')
+else:
+    chk('profesores, árbitros y delegados' in lg and 'secretaría' not in lg, 'ingreso (ligas): el texto de TuVocalía sigue igual')
 
 # ---------- php -S sin errores ----------
 for log in [os.path.join(DIR, 'web.log'), os.path.join(REPO, 'pruebas', 'v38', 'web.log')]:

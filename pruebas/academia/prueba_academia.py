@@ -57,6 +57,16 @@ def pj(codigo):
     return json.loads(php('echo json_encode(' + codigo + ', JSON_UNESCAPED_UNICODE);') or 'null')
 
 
+def visible(html):
+    """Texto que ve la persona (sin scripts, estilos ni etiquetas)."""
+    html = re.sub(r'(?is)<(script|style)\b.*?</\1>', ' ', html)
+    return re.sub(r'<[^>]+>', ' ', html)
+
+
+PRECIO = re.compile(r'\$\s?\d[\d.,]*')
+GRATIS = re.compile(r'gratis|gratuit|\bfree\b', re.I)
+
+
 def entrar(email, clave='clave12345'):
     s = requests.Session()
     r = s.get(B + 'admin.php?p=login')
@@ -97,8 +107,10 @@ r = anon.get(B + 'index.php')
 limpio(r, 'portada')
 chk('TuAcademia' in r.text and 'TuVocal' not in r.text, 'portada con la marca TuAcademia')
 chk('Academias de baile' in r.text and 'Escuelas de música' in r.text and 'Escuelas de natación' in r.text, 'portada habla de baile, música y natación')
-chk('$19.00' in r.text and '$29.00' in r.text, 'planes Básico $19 y Completo $29 en la portada')
-chk('$95.00' in r.text and '$290.00' in r.text, 'semestral $95 (paga 5) y anual $290 (paga 10)')
+# (20 oct 2026) regla del dueño: los precios del software nunca se publican; siempre se pide cotización
+chk(not PRECIO.search(visible(r.text)), 'portada SIN precios del software (%s)' % PRECIO.findall(visible(r.text))[:5])
+chk('$19' not in r.text and '$29' not in r.text and '$95' not in r.text and '$290' not in r.text, 'portada: ni Básico $19 / Completo $29 ni semestral $95 / anual $290')
+chk('cotizaci' in r.text.lower(), 'portada: los planes dicen «cotización»')
 chk('Vocalía' not in r.text and 'Árbitros' not in r.text and 'campeonato' not in r.text.lower(), 'portada sin ligas, campeonatos, árbitros ni vocalía')
 chk('Solicitar demo' in r.text and 'prueba gratis' not in r.text.lower() and 'gratis' not in r.text.lower(), 'portada: «Solicitar demo», nada gratis')
 planes = pj('filas("SELECT slug, precio_mensual, precio_semestral, precio_anual, dominio_anual FROM planes WHERE activo = 1 ORDER BY orden")')
@@ -554,8 +566,50 @@ chk('Ballet infantil' in r.text and 'Salón de espejos' in r.text and 'Sub-' not
 # =====================================================================
 r = ba.get(B + 'admin.php?p=mi_plan')
 limpio(r, 'mi plan')
-chk('$19.00' in r.text and '$29.00' in r.text and 'Escuela Completo' not in r.text, 'mi plan: solo los planes de TuAcademia')
+# (20 oct 2026) demo: ningún precio del software; todo «Pedir cotización»
+v = visible(r.text)
+chk('Básico' in v and 'Completo' in v and 'Escuela Completo' not in r.text, 'mi plan: solo los planes de TuAcademia')
+chk(not PRECIO.search(v), 'mi plan (demo): ningún precio de planes, módulos ni disciplinas (%s)' % PRECIO.findall(v)[:6])
+chk('Pedir cotización' in v and 'Por cotización' in v and 'cotizamos a su medida' in v, 'mi plan (demo): «Pedir cotización» y «Por cotización»; su plan se cotiza a su medida')
+chk('data-precio' not in r.text, 'mi plan (demo): sin precios escondidos (data-precio)')
+chk(not GRATIS.search(v), 'mi plan (demo): no dice «gratis»')
 chk('play-caja' not in r.text, 'mi plan: sin Google Play')
+# academia pagada (música, plan Completo): ve solo el valor de SU plan; el otro plan (Básico) y las disciplinas, por cotización
+r = mu.get(B + 'admin.php?p=mi_plan')
+limpio(r, 'mi plan de una academia pagada')
+v = visible(r.text)
+propios = pj('(function () { $l = fila("SELECT * FROM ligas WHERE id = ' + str(LM) + '"); $r = [dinero(modulos_cliente($l)["mensual"])]; foreach (opciones_precio(plan_de_liga($l), $l) as $o) $r[] = dinero($o["precio"]); return $r; })()')
+ajenos = sorted(set(PRECIO.findall(v)) - set(propios))
+chk(propios and propios[0] in v, 'mi plan (pagada): muestra lo que ya paga (%s)' % (propios[:1]))
+chk(not ajenos, 'mi plan (pagada): ningún precio que no sea de su propio plan (%s)' % ajenos)
+chk('$19.00' not in v and '$95.00' not in v and '$190.00' not in v, 'mi plan (pagada): el plan Básico (que no tiene) no muestra su precio')
+chk(v.count('Por cotización') >= 2 and 'Pedir cotización' in v, 'mi plan (pagada): el otro plan y las disciplinas que no tiene son por cotización')
+basico = pj('valor("SELECT id FROM planes WHERE slug = \'academia-basico\'")')
+r = post(mu, 'admin.php?p=mi_plan', {'accion': 'pedir_cotizacion', 'que': 'plan:' + str(basico)})
+limpio(r, 'pedir cotización del plan Básico')
+t = pj('fila("SELECT * FROM soporte_tickets WHERE liga_id = ' + str(LM) + ' ORDER BY id DESC")')
+chk(t and t['tipo'] == 'pagos' and t['asunto'] == 'Cotización: plan Básico', 'pedir cotización: queda como ticket «Pagos, plan o factura» (llega al súper y al Panel Tukán Central)')
+r = post(mu, 'admin.php?p=mi_plan', {'accion': 'pedir_cotizacion', 'que': 'deporte:baile'})
+chk(pj('valor("SELECT COUNT(*) FROM soporte_tickets WHERE liga_id = ' + str(LM) + ' AND asunto LIKE \'Cotización: disciplina%\'")') == 1, 'pedir cotización de una disciplina')
+r = post(mu, 'admin.php?p=mi_plan', {'accion': 'pedir_cotizacion', 'que': 'plan:' + str(basico)})
+chk('Ya pidió esa cotización' in r.text and pj('valor("SELECT COUNT(*) FROM soporte_tickets WHERE liga_id = ' + str(LM) + '")') == 2, 'la misma cotización no se repite')
+r = post(mu, 'admin.php?p=mi_plan', {'accion': 'comprobante', 'plan_meses': str(basico) + ':1', 'forma_pago': 'transferencia', 'nota': ''})
+chk('pida su cotización' in r.text and pj('valor("SELECT COUNT(*) FROM solicitudes_pago WHERE liga_id = ' + str(LM) + '")') == 0, 'no puede contratar otro plan con un precio: se cotiza')
+r = su.get(B + 'admin.php?p=planes')
+chk('$29.00' in r.text and '$19.00' in r.text, 'el súper usuario sí ve los precios de los planes')
+# pantalla de ingreso: texto propio de academia (sin ligas, árbitros ni delegados)
+r = anon.get(B + 'admin.php?p=login')
+limpio(r, 'ingreso')
+v = visible(r.text)
+chk('dueño o la dueña de la academia, la secretaría y los profesores' in v and '¿Su academia aún no usa' in v, 'ingreso: texto propio para academias (dueño, secretaría, profesores)')
+chk('árbitros' not in v and 'delegados' not in v and 'ligas' not in v.lower(), 'ingreso: sin «ligas», «árbitros» ni «delegados»')
+# nunca «gratis» en lo que ven el cliente y el público
+con_gratis = []
+for ses, url in [(anon, 'index.php'), (anon, 'index.php?v=solicitar'), (anon, 'admin.php?p=login'), (anon, 'index.php?l=academia-de-danza-allegro'), (anon, 'index.php?v=derechos'),
+                 (ba, 'admin.php'), (ba, 'admin.php?p=mi_plan'), (ba, 'admin.php?p=soporte'), (ba, 'admin.php?p=referidos'), (ba, 'admin.php?p=seguridad'),
+                 (mu, 'admin.php?p=mi_plan'), (mu, 'admin.php?p=grupos'), (mu, 'admin.php?p=particulares')]:
+    if GRATIS.search(visible(ses.get(B + url).text)): con_gratis.append(url)
+chk(not con_gratis, 'ninguna pantalla dice «gratis» ni «free» (%s)' % con_gratis)
 
 # =====================================================================
 # 11. Academia de demostración (Súper → Ajustes → Demostraciones)

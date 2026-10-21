@@ -237,7 +237,7 @@ function formulario_liga(?array $l, string $accion): void
   <fieldset>
     <legend>🔁 Pases entre equipos</legend>
     <div class="campos">
-      <div><label>Valor del pase ($)</label><input type="number" name="costo_pase" min="0" step="0.01" value="<?= e(number_format((float)($l['costo_pase'] ?? 0), 2, '.', '')) ?>"><div class="ayuda">Se carga al equipo que recibe al jugador. 0 = gratis. Se puede cambiar en cada pase.</div></div>
+      <div><label>Valor del pase ($)</label><input type="number" name="costo_pase" min="0" step="0.01" value="<?= e(number_format((float)($l['costo_pase'] ?? 0), 2, '.', '')) ?>"><div class="ayuda">Se carga al equipo que recibe al jugador. 0 = sin costo. Se puede cambiar en cada pase.</div></div>
       <div><label class="check" style="margin-top:28px"><input type="checkbox" name="pases_delegados" value="1" <?= !isset($l['pases_delegados']) || $l['pases_delegados'] ? 'checked' : '' ?>> Los delegados pueden pedir pases en línea</label><div class="ayuda">Solo mientras la inscripción de jugadores esté abierta. La liga aprueba cada pase.</div></div>
     </div>
   </fieldset>

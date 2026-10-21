@@ -76,7 +76,7 @@ cabecera_admin('Mi cuenta');
     <?php endif; ?>
   <?php elseif ($nuevo !== ''): ?>
     <ol class="pasos">
-      <li>Instale en su celular la aplicación gratuita <b>Google Authenticator</b> (o Microsoft Authenticator).</li>
+      <li>Instale en su celular la aplicación <b>Google Authenticator</b> (o Microsoft Authenticator).</li>
       <li>En la aplicación toque <b>+</b> → <b>Escanear código QR</b> y apunte a este código:
         <div id="qr2fa" class="qr-2fa"></div>
         <p class="ayuda">¿No puede escanear? Elija "Ingresar clave de configuración" y escriba: <code style="word-break:break-all"><?= e(trim(chunk_split($nuevo, 4, ' '))) ?></code> (tipo: basada en el tiempo).</p></li>

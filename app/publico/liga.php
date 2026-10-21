@@ -661,13 +661,13 @@ elseif ($v === 'goleadores'):
 ?>
   <?php foreach (tomar_flash() as [$tipo_f, $msg_f]): ?><div class="aviso aviso-<?= e($tipo_f) ?>"><?= e($msg_f) ?></div><?php endforeach; ?>
   <h2>🎯 Polla de <?= e($liga['nombre']) ?></h2>
-  <p>Adivine los resultados de los próximos partidos y sume puntos: <b><?= (int)$liga['polla_exacto'] ?> puntos</b> si acierta el marcador exacto y <b><?= (int)$liga['polla_resultado'] ?></b> si acierta solo quién gana (o el empate). <b>Es gratis</b>: no se apuesta dinero.</p>
+  <p>Adivine los resultados de los próximos partidos y sume puntos: <b><?= (int)$liga['polla_exacto'] ?> puntos</b> si acierta el marcador exacto y <b><?= (int)$liga['polla_resultado'] ?></b> si acierta solo quién gana (o el empate). <b>Sin costo</b>: no se apuesta dinero.</p>
   <?php if ($liga['polla_premio'] !== ''): ?><div class="aviso aviso-info">🎁 <b>Premio:</b> <?= e($liga['polla_premio']) ?></div><?php endif; ?>
   <div class="rejilla-2">
     <div>
     <?php if (!$polla_yo): ?>
       <div class="tarjeta">
-        <h3 style="margin-top:0">Participar (gratis)</h3>
+        <h3 style="margin-top:0">Participar (sin costo)</h3>
         <form method="post" action="<?= e($base . '&v=polla') ?>">
           <?= csrf_campo() ?><input type="hidden" name="accion" value="registrar">
           <input type="text" name="sitio" value="" style="display:none" tabindex="-1" autocomplete="off">

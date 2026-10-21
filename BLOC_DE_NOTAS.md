@@ -1,6 +1,6 @@
 # Bloc de notas — TuAcademia (nombre provisional)
 
-Para Dimitry. Escrito en español sencillo. Última actualización: 14 de octubre de 2026 (ver **§13 Arreglos del 14 de octubre**).
+Para Dimitry. Escrito en español sencillo. Última actualización: 20 de octubre de 2026 (ver **§15 Sin precios del software y sin «gratis»**).
 
 ---
 
@@ -444,3 +444,29 @@ cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps/vps/vps_2_codigo.
 ```
 La base se actualiza sola (tablas `modulos_catalogo` y `modulos_pedidos`, columnas nuevas en `ligas`); no se borra nada.
 
+
+## 15. Sin precios del software para el cliente y sin «gratis» (20 oct 2026)
+
+Regla de Dimitry: **los precios del software Tukán nunca se publican; siempre se pide cotización**. Nunca se escribe «gratis»
+ni «prueba gratis»: solo hay demos, y en textos de venta se dice «meses de regalo».
+
+- **Quién ve precios**: solo el súper usuario (`ver_precios_software()` en `app/modulos_catalogo.php`) y el Panel Tukán Central.
+- **Mi plan de la academia**: ve solo **lo que ya paga por su plan** (y las opciones para renovar ese mismo plan). El otro plan,
+  los módulos que no tiene y las disciplinas adicionales dicen **Por cotización / Pedir cotización**.
+  - Módulos: **Solicitar este módulo** (el pedido `cambio_modulos` de siempre).
+  - Planes y disciplinas: **Pedir cotización** crea un ticket «Pagos, plan o factura» (le llega al súper por Telegram y al
+    Panel Tukán Central como solicitud `soporte`). La misma cotización no se repite.
+  - Si intenta contratar otro plan con comprobante o tarjeta, el programa le pide cotizar.
+  - En la **demo** no se ve el precio de ningún plan (tampoco en el aviso ni en el correo de vencimiento: «el valor de su plan se lo cotizamos»).
+- Sin precio por disciplina en «Agregue más deportes», sin «% de descuento» y sin `data-precio` escondido en el HTML.
+- **«gratis» → «sin costo»** en todo lo que se ve (polla, pases, inscripciones, cortesías, derechos de datos, ayudas) y en los
+  diccionarios de los 5 idiomas; «Gratis, sin Telegram ni WhatsApp» → «No necesita Telegram ni WhatsApp».
+- **Pantalla de ingreso** en modo academia: «Aquí ingresan con su correo y contraseña el dueño o la dueña de la academia, la
+  secretaría y los profesores…». En modo ligas (TuVocalía) sigue el texto de siempre.
+- **Manuales**: Mi plan reescrito en los 5 idiomas (sin tabla de precios), capturas nuevas con los valores tapados, capítulo 14
+  del manual de TuAcademia al día, captura nueva del ingreso y PDF regenerados.
+- **Pruebas** (20 oct 2026): `prueba_academia` **259/259** (ya no busca precios en la portada: revisa que NO haya), `navegador_academia`
+  **19/19**, `recorrido` sin errores PHP, `prueba_arreglos_14oct` **105/105**, conector v1 **125/125** y **121/121**, v2 **380/380** y
+  **374/374**, `prueba_modulos` **75/75** (academia) y **76/76** (ligas), `prueba38` **100/100** y `navegador38` **13/13** (modo ligas).
+  - `prueba38` en esta computadora necesita `TA_SIM=8462` porque `pruebas/v38/cuenta_servicio.json` (no va a GitHub) quedó con ese puerto.
+- Servidor: solo `cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps/vps/vps_2_codigo.sh` (no hay tablas nuevas).

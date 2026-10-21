@@ -139,7 +139,7 @@ if (es_post()) {
     if (in_array($accion, ['admin_crear', 'admin_clave', 'admin_activo', 'admin_eliminar', 'admin_perfil'], true)) {
         $l = fila('SELECT * FROM ligas WHERE id = ?', [(int)post('id')]) ?? throw new RuntimeException('Liga no encontrada.');
         if ($accion === 'admin_crear') {
-            crear_usuario_liga((int)$l['id'], post('nombre'), post('email'), post('clave'), post('perfil', 'admin'));
+            crear_usuario_liga((int)$l['id'], post('nombre'), post('email'), post('clave'), post('perfil')); // (seguridad 21-oct) sin perfil por defecto
             flash('Usuario creado para ' . $l['nombre'] . '. Entréguele su correo y contraseña.');
         } else {
             $uid = (int)post('usuario_id');
@@ -150,12 +150,16 @@ if (es_post()) {
                 bitacora_evento('usuarios', 'Cambió la contraseña del usuario ' . $ul['email'], (int)$l['id'], $uid);
                 flash('Contraseña cambiada.');
             } elseif ($accion === 'admin_activo') {
+                exigir_otro_admin_activo($ul, 'desactivar'); // (seguridad 21-oct) siempre 1 Administrador activo
                 q('UPDATE usuarios SET activo = 1 - activo WHERE id = ?', [$uid]);
                 flash('Estado del usuario cambiado.');
             } elseif ($accion === 'admin_perfil') {
-                q('UPDATE usuarios SET perfil = ? WHERE id = ?', [isset(perfiles()[post('perfil')]) ? post('perfil') : 'admin', $uid]);
+                $perfil_nuevo = validar_perfil_cuenta(post('perfil'), $l); // (seguridad 21-oct) error, nunca 'admin' en silencio
+                if ($perfil_nuevo !== 'admin') exigir_otro_admin_activo($ul, 'quitarle el perfil Administrador');
+                q('UPDATE usuarios SET perfil = ? WHERE id = ?', [$perfil_nuevo, $uid]);
                 flash('Perfil cambiado.');
             } else {
+                exigir_otro_admin_activo($ul, 'eliminar'); // (seguridad 21-oct)
                 q('DELETE FROM usuarios WHERE id = ?', [$uid]);
                 flash('Usuario eliminado.');
             }
@@ -357,7 +361,7 @@ if ($nueva): ?>
       <?php foreach ($admins as $ua): ?>
       <tr><td><?= e($ua['nombre']) ?></td><td><?= e($ua['email']) ?></td>
         <td><form class="inline" method="post" action="admin.php?p=ligas&amp;editar=<?= (int)$editar['id'] ?>"><?= csrf_campo() ?><input type="hidden" name="accion" value="admin_perfil"><input type="hidden" name="id" value="<?= (int)$editar['id'] ?>"><input type="hidden" name="usuario_id" value="<?= (int)$ua['id'] ?>">
-          <select name="perfil" onchange="this.form.submit()"><?php foreach (perfiles() as $k => [$pn]): ?><option value="<?= $k ?>" <?= $ua['perfil'] === $k ? 'selected' : '' ?>><?= e($pn) ?></option><?php endforeach; ?></select></form></td>
+          <select name="perfil" onchange="this.form.submit()"><?php foreach (perfiles_para($editar) as $k => [$pn]): ?><option value="<?= $k ?>" <?= $ua['perfil'] === $k ? 'selected' : '' ?>><?= e($pn) ?></option><?php endforeach; ?></select></form></td>
         <td><?= $ua['activo'] ? 'Activo' : '<span class="etiqueta gris">Inactivo</span>' ?><?= $ua['ultimo_ingreso'] ? '<br><small>' . e($ua['ultimo_ingreso']) . '</small>' : '' ?></td>
         <td class="acciones">
           <form class="inline" method="post" action="admin.php?p=ligas&amp;editar=<?= (int)$editar['id'] ?>" onsubmit="var c=prompt('Nueva contraseña (mínimo 8 caracteres):'); if(!c) return false; this.clave.value=c; return true;"><?= csrf_campo() ?><input type="hidden" name="accion" value="admin_clave"><input type="hidden" name="id" value="<?= (int)$editar['id'] ?>"><input type="hidden" name="usuario_id" value="<?= (int)$ua['id'] ?>"><input type="hidden" name="clave" value=""><button class="btn btn-sec btn-chico">Cambiar clave</button></form>
@@ -374,7 +378,7 @@ if ($nueva): ?>
         <div><label>Nombre *</label><input type="text" name="nombre" required maxlength="80"></div>
         <div><label>Correo (usuario) *</label><input type="email" name="email" required></div>
         <div><label>Contraseña (mín. 8) *</label><input type="text" name="clave" required minlength="8" value="<?= e(substr(str_replace(['+', '/', '='], '', base64_encode(random_bytes(9))), 0, 10)) ?>"></div>
-        <div><label>Perfil</label><select name="perfil"><?php foreach (perfiles() as $k => [$pn, $pd]): ?><option value="<?= $k ?>" title="<?= e($pd) ?>"><?= e($pn) ?></option><?php endforeach; ?></select></div>
+        <div><label>Perfil</label><select name="perfil"><?php foreach (perfiles_para($editar) as $k => [$pn, $pd]): ?><option value="<?= $k ?>" title="<?= e($pd) ?>"><?= e($pn) ?></option><?php endforeach; ?></select></div>
       </div>
       <button class="btn btn-sec">Crear usuario</button>
     </form>

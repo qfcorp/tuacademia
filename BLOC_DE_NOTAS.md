@@ -147,6 +147,10 @@ Resultados del 13 de octubre de 2026:
 - `prueba_central_v2.py` (Panel Tukán Central, v2): **343/343** en modo academia y **338/338** en modo ligas (con el anexo A: pausar y papelera).
 - `recorrido.py`: **11.074 páginas, 0 con error de PHP**.
 
+Seguridad de usuarios (21-oct-2026, igual que en TuVocalía): el perfil tiene que estar en `perfiles_para()` de la cuenta al crear
+y al cambiar (si no, error y no se guarda nada; antes quedaba «Administrador»), y siempre queda al menos 1 Administrador activo
+por academia, escuela o liga. Prueba: `python3 pruebas/usuarios/prueba_usuarios.py` (43/43). Detalle en `README_GITHUB.md`.
+
 ## 7. Cómo instalar en el servidor (VPS del ERP)
 
 TuAcademia va **aparte** de TuVocalía: carpeta `/var/www/tuacademia`, contenedor `tuacademia-php`, nginx en el puerto

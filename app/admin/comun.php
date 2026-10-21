@@ -373,7 +373,7 @@ function crear_usuario_liga(int $liga_id, string $nombre, string $email, string 
     if (mb_strlen(trim($nombre)) < 3 || !filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('Nombre y correo válido son obligatorios.');
     if (strlen($clave) < 8) throw new RuntimeException('La contraseña debe tener al menos 8 caracteres.');
     if (fila('SELECT id FROM usuarios WHERE lower(email) = ?', [$email])) throw new RuntimeException('Ese correo ya está registrado en el sistema. Use otro.');
-    $perfil = isset(perfiles()[$perfil]) ? $perfil : 'admin';
+    $perfil = validar_perfil_cuenta($perfil, fila('SELECT * FROM ligas WHERE id = ?', [$liga_id])); // (seguridad 21-oct) error, nunca 'admin' en silencio
     q("INSERT INTO usuarios (nombre, email, clave, rol, liga_id, perfil) VALUES (?,?,?, 'liga', ?, ?)", [mb_substr(trim($nombre), 0, 80), $email, password_hash($clave, PASSWORD_DEFAULT), $liga_id, $perfil]);
     return (int)db()->lastInsertId();
 }

@@ -174,3 +174,35 @@ function puede_pagina(string $p, bool $editar = false, string $accion = ''): boo
     if ($p === 'pedidos') return $accion === 'resolver_disciplina' ? puede('disciplina', true) : puede('campeonatos', true);
     return puede($area, true);
 }
+
+/**
+ * (seguridad 21-oct) El perfil tiene que estar en perfiles_para() de la cuenta (liga o escuela). Si no: error y no se guarda
+ * nada (antes se guardaba como 'admin' en silencio). Lo usan crear_usuario_liga() y los cambios de perfil.
+ */
+function validar_perfil_cuenta(string $perfil, ?array $liga): string
+{
+    if (!$liga) throw new RuntimeException('Elija la liga o escuela del usuario.');
+    if ($perfil === '' || !isset(perfiles_para($liga)[$perfil])) {
+        throw new RuntimeException('El perfil elegido no es válido para esta cuenta. No se guardó nada.');
+    }
+    return $perfil;
+}
+
+/** (seguridad 21-oct) ¿Es un Administrador activo de su liga o escuela? */
+function es_admin_activo_liga(array $u): bool
+{
+    return ($u['rol'] ?? '') === 'liga' && ($u['perfil'] ?? '') === 'admin' && (int)($u['activo'] ?? 0) === 1;
+}
+
+/**
+ * (seguridad 21-oct) Siempre queda al menos 1 Administrador activo por liga o escuela: si $u es el último, no se le puede
+ * quitar el perfil, desactivar ni eliminar. $que = lo que se intentó ('quitarle el perfil', 'desactivar', 'eliminar').
+ */
+function exigir_otro_admin_activo(array $u, string $que): void
+{
+    if (!es_admin_activo_liga($u)) return;
+    $otros = (int)valor("SELECT COUNT(*) FROM usuarios WHERE liga_id = ? AND rol = 'liga' AND perfil = 'admin' AND activo = 1 AND id <> ?", [(int)$u['liga_id'], (int)$u['id']]);
+    if ($otros === 0) {
+        throw new RuntimeException('No se puede ' . $que . ' a ' . $u['nombre'] . ': es el último Administrador activo de la cuenta. Primero cree o active otro Administrador.');
+    }
+}

@@ -29,7 +29,7 @@ if (es_post()) {
         } else {
             $liga_id = $super ? (int)post('liga_id') : (int)$liga_propia['id'];
             if (!fila('SELECT id FROM ligas WHERE id = ?', [$liga_id])) throw new RuntimeException('Elija la liga del usuario.');
-            $nuevo_id = crear_usuario_liga($liga_id, post('nombre'), post('email'), post('clave'), post('perfil', 'admin'));
+            $nuevo_id = crear_usuario_liga($liga_id, post('nombre'), post('email'), post('clave'), post('perfil')); // (seguridad 21-oct) sin perfil por defecto
             // (v30) Asistente: los permisos que eligió el administrador al crearlo
             if (post('perfil') === 'asistente') q('UPDATE usuarios SET permisos = ? WHERE id = ?', [leer_permisos_asistente(fila('SELECT * FROM ligas WHERE id = ?', [$liga_id])), $nuevo_id]);
         }
@@ -44,7 +44,10 @@ if (es_post()) {
             flash('Contraseña cambiada.');
         } elseif ($accion === 'perfil') {
             if ((int)$u['id'] === (int)$yo['id']) throw new RuntimeException('No puede cambiar su propio perfil (pídaselo a otro administrador).');
-            q('UPDATE usuarios SET perfil = ? WHERE id = ?', [isset(perfiles()[post('perfil')]) ? post('perfil') : 'admin', $u['id']]);
+            if ($u['rol'] !== 'liga') throw new RuntimeException('Solo los usuarios de una liga o escuela tienen perfil.');
+            $perfil_nuevo = validar_perfil_cuenta(post('perfil'), fila('SELECT * FROM ligas WHERE id = ?', [(int)$u['liga_id']])); // (seguridad 21-oct)
+            if ($perfil_nuevo !== 'admin') exigir_otro_admin_activo($u, 'quitarle el perfil Administrador');
+            q('UPDATE usuarios SET perfil = ? WHERE id = ?', [$perfil_nuevo, $u['id']]);
             // (v17) Área del cuerpo técnico (preparador físico, psicólogo, médico…): define qué notas confidenciales ve
             if (post('area') !== '' || post('perfil') === 'staff') q('UPDATE usuarios SET area = ? WHERE id = ?', [array_key_exists(post('area'), areas_staff()) ? post('area') : '', $u['id']]);
             flash('Perfil de ' . $u['nombre'] . ': ' . nombre_perfil(post('perfil')) . '.' . (post('perfil') === 'asistente' ? ' Ahora elija qué puede ver y cambiar con el botón ⚙ Permisos.' : ''));
@@ -62,10 +65,12 @@ if (es_post()) {
             flash('Doble verificación quitada. El usuario puede ingresar solo con su contraseña y volver a activarla.');
         } elseif ($accion === 'activo') {
             if ((int)$u['id'] === (int)$yo['id']) throw new RuntimeException('No puede desactivarse a sí mismo.');
+            exigir_otro_admin_activo($u, 'desactivar'); // (seguridad 21-oct) solo si hoy está activo
             q('UPDATE usuarios SET activo = 1 - activo WHERE id = ?', [$u['id']]);
             flash('Estado del usuario cambiado.');
         } elseif ($accion === 'eliminar') {
             if ((int)$u['id'] === (int)$yo['id']) throw new RuntimeException('No puede eliminarse a sí mismo.');
+            exigir_otro_admin_activo($u, 'eliminar'); // (seguridad 21-oct)
             q('DELETE FROM usuarios WHERE id = ?', [$u['id']]);
             flash('Usuario eliminado.');
         }
@@ -109,7 +114,7 @@ cabecera_admin('Usuarios');
     <td><?= e($u['email']) ?></td>
     <td><?php if ($u['rol'] === 'liga' && (int)$u['id'] !== (int)$yo['id']): ?>
       <form class="inline" method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="perfil"><input type="hidden" name="id" value="<?= (int)$u['id'] ?>">
-        <select name="perfil" onchange="this.form.submit()" aria-label="Perfil"><?php foreach ($super ? perfiles() : perfiles_para($liga_propia) as $k => [$pn]): ?><option value="<?= $k ?>" <?= $u['perfil'] === $k ? 'selected' : '' ?>><?= e($pn) ?></option><?php endforeach; ?></select>
+        <select name="perfil" onchange="this.form.submit()" aria-label="Perfil"><?php foreach (perfiles_para($super ? fila('SELECT * FROM ligas WHERE id = ?', [(int)$u['liga_id']]) : $liga_propia) as $k => [$pn]): // (seguridad 21-oct) solo los de su cuenta ?><option value="<?= $k ?>" <?= $u['perfil'] === $k ? 'selected' : '' ?>><?= e($pn) ?></option><?php endforeach; ?></select>
         <?php if ($u['perfil'] === 'staff'): ?><select name="area" onchange="this.form.submit()" aria-label="Área"><option value="">— área —</option><?php foreach (areas_staff() as $k => [$ic, $an]): ?><option value="<?= $k ?>" <?= ($u['area'] ?? '') === $k ? 'selected' : '' ?>><?= $ic ?> <?= e($an) ?></option><?php endforeach; ?></select><?php endif; ?></form>
       <?php if ($u['perfil'] === 'asistente'): $lg_u = $super ? fila('SELECT * FROM ligas WHERE id = ?', [(int)$u['liga_id']]) : $liga_propia; // (v30) ?>
         <div style="margin-top:6px"><a class="btn btn-sec btn-chico" href="#permisos-<?= (int)$u['id'] ?>" onclick="document.getElementById('permisos-<?= (int)$u['id'] ?>').open = true">⚙ Permisos</a></div>

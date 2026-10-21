@@ -263,6 +263,7 @@ function html_boton_ayuda(): string
     ob_start(); ?>
     <div class="ayuda-flotante no-imprimir" id="ayuda-flotante">
       <div class="ayuda-menu" id="ayuda-menu" hidden>
+        <a href="admin.php?p=ayuda">❓ <b>Pregunte cómo se hace algo</b><small>Le respondemos al instante con el manual</small></a>
         <a href="manual/<?= e($man) ?>#<?= e($ancla) ?>" target="_blank" rel="noopener">📘 <b>Ayuda de esta pantalla</b><small>Abre el manual en la parte que explica lo que está viendo</small></a>
         <a href="manual/<?= e($man) ?>" target="_blank" rel="noopener">📖 Manual completo<small>Para leer o descargar en PDF</small></a>
         <?php if (!es_super()): ?>

@@ -51,6 +51,7 @@ if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE && !defined('TC_
 }
 
 require APP_DIR . '/db.php';
+require APP_DIR . '/asistente_ia.php'; // (21 oct 2026) Ayuda con preguntas frecuentes, módulo «Asistente IA» y correo de Tukán (librerías del Panel)
 require APP_DIR . '/modulos_catalogo.php'; // (Anexo B) programas modulares: catálogo, precios, quitados, pedidos y mapa de páginas
 require APP_DIR . '/helpers.php';
 require APP_DIR . '/deportes.php';

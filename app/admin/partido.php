@@ -309,6 +309,7 @@ if ($reglas['bloqueo_deuda'] !== 'no'):
   <div class="tarjeta" id="eventos">
     <h2><?= $dep === 'basquet' ? 'Canastas y faltas' : ($dep === 'ecuavoley' ? 'Tarjetas' : 'Goles y tarjetas') ?> (oficiales)</h2>
     <p class="suave" style="margin-top:-6px;font-size:.85rem">Los que carga el vocal en vivo aparecen aquí automáticamente.</p>
+    <?php if (modulo_activo($liga, 'asistente_ia')): // (21 oct 2026) módulo extra «Asistente IA» ?><div class="acciones" style="margin-bottom:8px"><a class="btn btn-sec btn-chico" href="admin.php?p=asistente&amp;f=hoja&amp;partido=<?= $pid ?>">✨ Leer la foto de la hoja de vocalía</a><a class="btn btn-sec btn-chico" href="admin.php?p=asistente&amp;f=cronica&amp;partido=<?= $pid ?>">✨ Crónica para redes</a></div><?php endif; ?>
     <?php if (!$eventos): ?><p class="suave">Sin eventos registrados.</p><?php endif; ?>
     <ul class="eventos">
       <?php foreach ($eventos as $x): ?>

@@ -15,3 +15,11 @@ Código en `app/perfiles.php` (`validar_perfil_cuenta`, `exigir_otro_admin_activ
   ni se elimina (tampoco el súper). Un Administrador desactivado no cuenta.
 - Prueba: `TA_PUERTO=8241 TA_SIM=8242 bash pruebas/v38/reiniciar.sh && TA_PUERTO=8241 python3 pruebas/usuarios/prueba_usuarios.py` → **43/43 en modo academia y en modo ligas** (con el código anterior fallan 26).
 
+### Ayuda, Asistente IA y «Enviar por correo» (21 oct 2026)
+Ver BLOC_DE_NOTAS §16. Código en `app/asistente_ia.php` (igual que en TuVocalía) con las librerías del Panel `app/tukan_ia.php` y
+`app/tukan_correo.php` (copias sin cambios). Ayuda para todos (`admin.php?p=ayuda`), preguntas frecuentes del súper (`ayuda_faq`),
+módulo «Asistente IA» (`asistente_ia`: incluido en el plan Completo; en los demás planes, extra por cotización; tope de IA $4 al mes por academia), `ia_uso` / `ia_tope` en el conector (revisión 4) y «Enviar por correo» en
+«Demo lista». Configuración del VPS: `sudo bash /var/www/tuacademia/vps/configurar_ia_correo.sh` (escribe `data/tukan-ia.env` y
+`data/tukan-correo.env`). Prueba: `TA_PUERTO=8441 TA_SIM=8462 bash pruebas/v38/reiniciar.sh && TA_PUERTO=8441 python3 pruebas/ia/prueba_ia.py`
+(necesita `../tukan-central/tests`, o `TUKAN_CENTRAL_DIR`).
+

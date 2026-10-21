@@ -55,6 +55,11 @@ if [ -f "$T/vps/conectar_central.sh" ]; then
   mkdir -p "$DESTINO/vps" && cp "$T/vps/conectar_central.sh" "$DESTINO/vps/conectar_central.sh" \
     && chown -R root:root "$DESTINO/vps" && chmod 755 "$DESTINO/vps" && chmod 644 "$DESTINO/vps/conectar_central.sh"
 fi
+# IA y correo de Tukan (21 oct 2026): sudo bash $DESTINO/vps/configurar_ia_correo.sh (el contenedor no ve /etc: lo guarda en data/)
+if [ -f "$T/vps/configurar_ia_correo.sh" ]; then
+  mkdir -p "$DESTINO/vps" && cp "$T/vps/configurar_ia_correo.sh" "$DESTINO/vps/configurar_ia_correo.sh" \
+    && chown -R root:root "$DESTINO/vps" && chmod 755 "$DESTINO/vps" && chmod 644 "$DESTINO/vps/configurar_ia_correo.sh"
+fi
 docker exec "$CONTENEDOR" kill -USR2 1 >/dev/null 2>&1   # PHP toma el programa nuevo al instante
 verde "Programa copiado."
 paso "3/4 Base de datos"

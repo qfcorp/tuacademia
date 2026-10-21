@@ -69,6 +69,8 @@ function modulos_sistema_base(): array
         'pago_payphone' => ['💳', 'Pago con tarjeta por Payphone', 'escuela', 'Los padres pagan la pensión con tarjeta desde su portal con Payphone; el pago se confirma solo y sale el recibo.'],
         'videos' => ['🎬', 'Videos del jugador y del alumno', 'ambos', 'Suba videos cortos (hasta 2 minutos) de cada jugador o alumno: su gol, una jugada, su técnica. Le llegan a su portal para verlos y descargarlos; se borran solos a los 10 días.'],
         'carga_masiva' => ['📥', 'Subida masiva desde Excel', 'ambos', 'Plantillas de Excel para subir de una sola vez equipos, jugadores, árbitros, canchas y competidores (ligas) o sedes, profesores, grupos y alumnos (escuelas).'],
+        // (21 oct 2026) Incluido en el plan más caro; en los demás, extra por cotización; no entra en la demo (app/asistente_ia.php)
+        'asistente_ia' => ['✨', 'Asistente IA', 'ambos', 'Lee fotos de documentos y llena los datos por usted, y responde las dudas al instante.'],
         'contabilidad' => ['📒', 'Contabilidad con importador del SRI', 'ambos', 'Gastos con o sin factura, facturas recibidas importadas del SRI (XML, TXT o clave de acceso) que usted elige incluir, resumen de ingresos y gastos por mes y por campeonato, y reportes en PDF y Excel para su contador.'],
     ];
 }
@@ -97,6 +99,7 @@ function modulo_de_pagina(string $p): string
         'cargas' => 'carga_masiva', 'importar' => 'carga_masiva', // (v27)
         'videos' => 'videos', 'entradas' => 'entradas', // (v28)
         'pedidos' => 'inscripcion', 'mi_rol' => 'esc_profesores', 'avisos_padres' => 'avisos', // (Anexo B) páginas que faltaban
+        'asistente' => 'asistente_ia', // (21 oct 2026)
         'recitales' => 'acad_recitales', 'particulares' => 'acad_particulares', // (TuAcademia)
     ][$p] ?? ($p === 'examenes' && es_academia() ? 'acad_niveles' : '');
 }
@@ -109,10 +112,13 @@ function nombre_modulo(string $m): string
 /** Módulos de un plan (lista de claves). */
 function modulos_plan(?array $pl): array
 {
-    if (!$pl) return array_keys(modulos_sistema());
+    // (21 oct 2026) «*» = todos los módulos de siempre; el Asistente IA (extra) solo si el plan lo nombra: «*,asistente_ia» (el plan más alto)
+    $todos = array_values(array_diff(array_keys(modulos_sistema()), modulos_fuera_de_planes()));
+    if (!$pl) return $todos;
     $m = trim((string)($pl['modulos'] ?? '*'));
-    if ($m === '*' || $m === '') return array_keys(modulos_sistema());
-    return array_values(array_intersect(array_keys(modulos_sistema()), array_map('trim', explode(',', $m))));
+    $lista = $m === '' ? ['*'] : array_map('trim', explode(',', $m));
+    if (in_array('*', $lista, true)) return array_values(array_merge($todos, array_intersect(modulos_fuera_de_planes(), $lista)));
+    return array_values(array_intersect(array_keys(modulos_sistema()), $lista));
 }
 
 /**
@@ -122,11 +128,12 @@ function modulos_plan(?array $pl): array
 function modulos_liga(?array $liga): array
 {
     static $cache = [];
-    if (!$liga) return array_keys(modulos_sistema());
+    if (!$liga) return array_values(array_diff(array_keys(modulos_sistema()), modulos_fuera_de_planes()));
     $k = $liga['id'] . ':' . ($liga['plan_id'] ?? '') . ':' . ($liga['modulos_extra'] ?? '') . ':' . ($liga['modulos_quitados'] ?? '') . ':' . ($liga['modulos_elegidos'] ?? '')
         . ':' . ($liga['vence'] ?? '') . ':' . ($liga['es_prueba'] ?? '') . ':' . ($liga['tipo'] ?? '');
     if (isset($cache[$k])) return $cache[$k];
-    if (cuenta_con_todo($liga)) return $cache[$k] = array_keys(modulos_sistema());
+    // en la demo: todo, menos los extras por cotización (salvo que el súper los haya encendido)
+    if (cuenta_con_todo($liga)) return $cache[$k] = array_values(array_diff(array_keys(modulos_sistema()), array_diff(modulos_fuera_de_planes(), modulos_extra_cuenta($liga))));
     // los módulos de su tipo según el Anexo B; los de otro tipo (p. ej. «Imágenes para redes» en una escuela) como siempre: si su plan los trae
     $otros = array_diff(array_merge(modulos_plan(plan_de_liga($liga)), modulos_extra_cuenta($liga)), array_keys(catalogo_modulos(tipo_modulos($liga))));
     return $cache[$k] = array_values(array_unique(array_merge(modulos_cliente($liga)['activos'], array_intersect($otros, array_keys(modulos_sistema())))));

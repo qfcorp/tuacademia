@@ -87,7 +87,7 @@ function esquema_modulos(PDO $pdo): void
 function grupos_modulos(): array
 {
     return ['partidos' => 'Partidos y campeonatos', 'personas' => 'Jugadores, alumnos y familias', 'clases' => 'Clases y avance',
-            'dinero' => 'Dinero y cobros', 'difusion' => 'Difusión y público', 'equipo' => 'Equipo de trabajo', 'herramientas' => 'Herramientas'];
+            'dinero' => 'Dinero y cobros', 'difusion' => 'Difusión y público', 'equipo' => 'Equipo de trabajo', 'herramientas' => 'Herramientas', 'extras' => 'Extras'];
 }
 
 /** Valores de fábrica: módulo => [precio mensual USD, depende_de, grupo, orden]. */
@@ -103,6 +103,7 @@ function modulos_de_fabrica(): array
         'redes' => [3, [], 'difusion', 50], 'publico' => [3, [], 'difusion', 52], 'avisos' => [3, [], 'difusion', 54], 'videos' => [3, [], 'difusion', 56], 'dominio' => [2, [], 'difusion', 58],
         'esc_profesores' => [4, [], 'equipo', 60],
         'carga_masiva' => [2, [], 'herramientas', 70],
+        'asistente_ia' => [0, [], 'extras', 90], // (21 oct 2026) por cotización: precio 0 en el catálogo (el valor va como precio acordado); fuera de los planes y de la demo
     ];
 }
 
@@ -251,7 +252,7 @@ function modulos_cliente(array $l, ?array $pl = null): array
     $extra = array_values(array_filter(modulos_extra_cuenta($l), fn($k) => isset($cat[$k]) && !in_array($k, $del_plan, true)));
     $quit = array_filter(modulos_quitados_cuenta($l), fn($k) => in_array($k, $del_plan, true), ARRAY_FILTER_USE_KEY);
     $todo = cuenta_con_todo($l);
-    $activos = $todo ? array_keys($cat) : calcular_activos($del_plan, $extra, $quit, $cat);
+    $activos = $todo ? array_values(array_diff(array_keys($cat), array_diff(modulos_fuera_de_planes(), $extra))) : calcular_activos($del_plan, $extra, $quit, $cat);
     $p_plan = precio_mensual_plan($pl);
     $p_extra = round(array_sum(array_map(fn($k) => $cat[$k]['precio_mensual'], $extra)), 2);
     $p_dep = empty($l['es_demo']) && function_exists('precio_modulos') ? (float)precio_modulos(deportes_cobrados($l))['extra'] : 0.0;
@@ -427,8 +428,11 @@ function guardar_catalogo_modulos(array $mods, array $planes, string $por): int
         $pl = (is_string($cod) || is_int($cod)) && ctype_digit((string)$cod) ? fila('SELECT * FROM planes WHERE id = ?', [(int)$cod]) : null;
         if (!$pl) throw new RuntimeException('Plan ' . ($i + 1) . ': no existe.');
         $ms = $p['modulos'] ?? null;
+        $regulares = array_values(array_diff(array_keys($cat2), modulos_fuera_de_planes())); // (21 oct 2026) «*» no incluye el Asistente IA: se nombra aparte
         if ($ms === '*') $txt = '*';
-        elseif (is_array($ms) && !array_diff($ms, array_keys($cat2))) $txt = count(array_unique($ms)) === count($cat2) ? '*' : implode(',', array_values(array_filter(array_keys($cat2), fn($k) => in_array($k, $ms, true))));
+        elseif (is_array($ms) && !array_diff($ms, array_keys($cat2))) $txt = !array_diff($regulares, $ms)
+            ? '*' . implode('', array_map(fn($k) => ',' . $k, array_values(array_intersect(modulos_fuera_de_planes(), $ms))))
+            : implode(',', array_values(array_filter(array_keys($cat2), fn($k) => in_array($k, $ms, true))));
         else throw new RuntimeException('Módulos no válidos en el plan ' . $pl['nombre'] . '.');
         if (array_key_exists('precio_mensual', $p)) {
             if (!is_numeric($p['precio_mensual']) || (float)$p['precio_mensual'] < 0 || (float)$p['precio_mensual'] > 100000) throw new RuntimeException('Precio no válido en el plan ' . $pl['nombre'] . '.');
@@ -518,13 +522,14 @@ function paginas_base(): array
     return [
         // entrar y cuenta
         'login', 'salir', 'inicio', 'clave', 'seguridad', 'mis_datos', 'usuarios', 'bitacora', 'config', 'mi_plan', 'soporte', 'novedades', 'datos', 'referidos', 'indicadores',
+        'ayuda', // (21 oct 2026) Ayuda con preguntas frecuentes: para todos los planes
         // liga: equipos, jugadores, campeonatos (base)
         'equipos', 'equipo', 'jugador', 'torneos', 'torneo', 'partido', 'planilla', 'programar', 'acumuladas', 'competencias', 'carrera', 'duelo', 'bolos', 'pruebas', 'indiv',
         'federacion', 'olimpiadas', 'requisitos', 'requisito_doc', 'examenes', 'imprimir',
         // escuela (base)
         'alumnos', 'alumno', 'grupos', 'asistencia', 'cobros', 'esc_recibo', 'escuela_config', 'escuela_inicio', 'mensajes',
         // solo el súper usuario de Tukán
-        'ligas', 'planes', 'suscripciones', 'ajustes', 'vendedores', 'negocio', 'demos', 'portales', 'embudo', 'modulos', 'pasarela', 'google_play',
+        'ligas', 'planes', 'suscripciones', 'ajustes', 'vendedores', 'negocio', 'demos', 'portales', 'embudo', 'modulos', 'pasarela', 'google_play', 'ayuda_faq',
     ];
 }
 

@@ -8,6 +8,7 @@ if (es_post()) {
     $accion = post('accion');
     if ($accion === 'guardar') {
         if (mb_strlen(post('nombre')) < 2) throw new RuntimeException('Escriba el nombre del plan.');
+        $mods_plan = array_values(array_diff(array_keys(modulos_sistema()), modulos_fuera_de_planes())); // (21 oct 2026) «*» = los de siempre; el Asistente IA se nombra aparte
         $mods = array_values(array_intersect(array_keys(modulos_sistema()), (array)($_POST['modulos'] ?? [])));
         $slug = slugify(post('slug') !== '' ? post('slug') : post('nombre'));
         if (fila('SELECT id FROM planes WHERE slug = ? AND id <> ?', [$slug, (int)post('id')])) $slug .= '-' . random_int(2, 99);
@@ -17,7 +18,7 @@ if (es_post()) {
             'precio_semestral' => $dinero_post('precio_semestral'), 'precio_anual' => $dinero_post('precio_anual'),
             'max_campeonatos' => entero(post('max_campeonatos'), 0, 999), 'max_equipos_torneo' => entero(post('max_equipos_torneo'), 0, 9999),
             'max_equipos' => entero(post('max_equipos'), 0, 9999), 'max_alumnos' => entero(post('max_alumnos'), 0, 99999),
-            'modulos' => count($mods) === count(modulos_sistema()) ? '*' : implode(',', $mods),
+            'modulos' => !array_diff($mods_plan, $mods) ? '*' . implode('', array_map(fn($k) => ',' . $k, array_values(array_intersect(modulos_fuera_de_planes(), $mods)))) : implode(',', $mods),
             'tipo_cuenta' => in_array(post('tipo_cuenta'), ['ambos', 'liga', 'escuela'], true) ? post('tipo_cuenta') : 'ambos',
             'descripcion' => mb_substr(post('descripcion'), 0, 2000),
             'destacado' => post('destacado') === '1' ? 1 : 0, 'dominio_anual' => post('dominio_anual') === '1' ? 1 : 0, 'activo' => post('activo') === '1' ? 1 : 0, 'orden' => entero(post('orden'), 0, 99),

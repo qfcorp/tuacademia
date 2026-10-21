@@ -281,11 +281,11 @@ chk(r.status_code == 200 and r.headers.get('Content-Type', '').startswith('appli
 chk(cap.get('ok') is True and cap.get('protocolo') == 2 and cap.get('accion') == 'capacidades' and cap.get('producto') == PRODUCTO and re.search(r'[+-]\d\d:\d\d$', cap.get('generado', '')),
     'capacidades: ok, protocolo 2, accion, producto y generado con zona')
 OPS = ['crear_demo', 'extender_prueba', 'registrar_pago', 'anular_pago', 'aprobar_comprobante', 'rechazar_comprobante', 'suspender', 'reactivar', 'cambiar_plan',
-       'nueva_clave_dueno', 'nota_interna', 'atender_solicitud', 'responder_ticket', 'pausar', 'borrar_cliente', 'restaurar_cliente', 'cambiar_modulos', 'guardar_modulos']
-chk(cap.get('ejecutar') == OPS, 'capacidades: las 18 operaciones de TuVocalía/TuAcademia, con las del anexo A y B (sin guardar_plan ni cancelar)')
-chk(set(cap.get('acciones', [])) == {'capacidades', 'estado', 'sso', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar', 'modulos'}, 'capacidades: las 13 acciones (con «modulos»)')
+       'nueva_clave_dueno', 'nota_interna', 'atender_solicitud', 'responder_ticket', 'pausar', 'borrar_cliente', 'restaurar_cliente', 'cambiar_modulos', 'guardar_modulos', 'ia_tope']
+chk(cap.get('ejecutar') == OPS, 'capacidades: las 19 operaciones de TuVocalía/TuAcademia, con las del anexo A, B y C (sin guardar_plan ni cancelar)')
+chk(set(cap.get('acciones', [])) == {'capacidades', 'estado', 'sso', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar', 'modulos', 'ia_uso'}, 'capacidades: las 14 acciones (con «modulos» e «ia_uso»)')
 chk(cap.get('sso_ir') is True and cap.get('rutas_sso') == ['/admin.php'] and cap.get('unico') is False and cap.get('moneda') == 'USD' and cap.get('zona_horaria') == 'America/Guayaquil', 'capacidades: sso_ir, rutas, moneda y zona')
-chk(cap.get('meses_libres') is True and cap.get('planes_editar') is False and cap.get('limites', {}).get('dias_prueba_max') == 90 and cap.get('revision') == 3, 'capacidades: meses libres, planes no editables, límites (revisión 3: anexo B)')
+chk(cap.get('meses_libres') is True and cap.get('planes_editar') is False and cap.get('limites', {}).get('dias_prueba_max') == 90 and cap.get('revision') == 4, 'capacidades: meses libres, planes no editables, límites (revisión 4: anexo C)')
 chk(len(cap.get('tipos_solicitud', [])) == 12 and 'cambio_modulos' in cap.get('tipos_solicitud', []) and 'cambio_plan' not in cap.get('tipos_solicitud', []), 'capacidades: 12 tipos de solicitud (con cambio_modulos)')
 chk(cap.get('modulos') is True and cap.get('finanzas_por_modulo') is True, 'capacidades: programa modular (anexo B)')
 campos_demo = [c['campo'] for c in cap.get('formularios', {}).get('crear_demo', [])]
@@ -1152,7 +1152,7 @@ chk(r.status_code == 200 and dm.get('activos') == [BX['del'][0]] and dm.get('ele
 r, d = ejecutar('crear_demo', {'nombre': 'Demo Con Todo', 'contacto_nombre': 'Eva Demo', 'email': 'demo.todo@v2.ejemplo.com', 'telefono': '0991112288', 'enviar_correo': False,
                                'extra': {'ciudad': 'Quito'} if ACADEMIA else {'tipo': 'liga', 'ciudad': 'Quito'}})
 dm = d.get('resultado', {}).get('modulos', {})
-chk(r.status_code == 200 and dm.get('todos_en_demo') is True and set(dm.get('activos', [])) == {k for k, x in m2.items() if ('escuela' if ACADEMIA else 'liga') in x['para']}, 'crear_demo sin módulos: la demo tiene todo')
+chk(r.status_code == 200 and dm.get('todos_en_demo') is True and set(dm.get('activos', [])) == {k for k, x in m2.items() if ('escuela' if ACADEMIA else 'liga') in x['para'] and k != 'asistente_ia'}, 'crear_demo sin módulos: la demo tiene todo (menos el Asistente IA, que se cotiza)')
 r, d = ejecutar('crear_demo', {'nombre': 'Demo Mala', 'contacto_nombre': 'Eva Demo', 'email': 'demo.mala@v2.ejemplo.com', 'telefono': '0991112277', 'modulos': ['no_existe'],
                                'extra': {'ciudad': 'Quito'} if ACADEMIA else {'tipo': 'liga', 'ciudad': 'Quito'}})
 chk(es_error(r, 'invalido', 422), 'crear_demo con un módulo que no existe → 422')

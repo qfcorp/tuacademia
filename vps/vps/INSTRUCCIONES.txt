@@ -87,3 +87,14 @@ CONECTAR CON EL PANEL TUKAN CENTRAL (panel.tukanec.com)
   Que ve el panel central: las academias (sin la demo) en prueba, activas, por vencer, vencidas y suspendidas, lo cobrado
   por suscripciones, y alumnos activos, cursos, clases y asistencias del mes, pensiones cobradas del mes, profesores y usuarios.
   (vps_2_codigo.sh baja el programa de GitHub: el conector tiene que estar subido a GitHub antes del paso 1.)
+
+AYUDA, ASISTENTE IA Y CORREO DE TUKAN (21 oct 2026)
+  Viene con el codigo: cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps/vps/vps_2_codigo.sh
+  La base se actualiza sola (tablas tukan_ia_faq y tukan_ia_gasto).
+  El contenedor de PHP NO ve /etc/tukan-ia.env ni /etc/tukan-correo.env: la configuracion va en
+  /var/www/tuacademia/data/tukan-ia.env y /var/www/tuacademia/data/tukan-correo.env (no van a GitHub). Una sola vez:
+    sudo bash /var/www/tuacademia/vps/configurar_ia_correo.sh
+  Si en el VPS ya existen /etc/tukan-ia.env y /etc/tukan-correo.env los copia; si no, pregunta la clave de Anthropic y
+  los datos del correo (no se ven al escribir) y hace la prueba como el usuario de PHP ("IA: FUNCIONA").
+  Otras ordenes:  --probar su@correo.com  |  --pausar  |  --reanudar  |  --ia  |  --correo  |  --quitar
+  Sin configurar, la Ayuda responde con el manual y "Enviar por correo" dice "Configure el correo de Tukan".

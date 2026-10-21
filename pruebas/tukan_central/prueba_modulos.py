@@ -109,8 +109,10 @@ for archivo, buscar in [('app/avisos.php', "modulo_activo($liga, 'avisos')"), ('
 # ---------- 2) Catálogo ----------
 cat = pj('catalogo_modulos()')
 chk(set(cat) == mods_sis, 'catálogo: tiene todos los módulos del sistema')
-chk(all(isinstance(x['precio_mensual'], (int, float)) and x['precio_mensual'] > 0 and x['grupo'] in pj('grupos_modulos()') and all(d in cat for d in x['depende_de']) for x in cat.values()),
-    'catálogo: precio, grupo y dependencias válidas en cada módulo')
+FUERA = pj('modulos_fuera_de_planes()')
+chk(all(isinstance(x['precio_mensual'], (int, float)) and (x['precio_mensual'] > 0 or x['id'] in FUERA) and x['grupo'] in pj('grupos_modulos()') and all(d in cat for d in x['depende_de']) for x in cat.values()),
+    'catálogo: precio, grupo y dependencias válidas en cada módulo (el Asistente IA: precio 0, por cotización)')
+chk(FUERA == ['asistente_ia'] and cat.get('asistente_ia', {}).get('grupo') == 'extras' and 'asistente_ia' not in pj('modulos_plan(null)'), 'catálogo: «Asistente IA» en Extras y fuera de los planes')
 chk(all(k not in pj('dependencias_modulo("' + k + '", catalogo_modulos())') for k in cat), 'catálogo: sin círculos de dependencias')
 r = php('try { guardar_catalogo_modulos([["id" => "reservas", "depende_de" => ["finanzas"]], ["id" => "finanzas", "depende_de" => ["reservas"]]], [], "prueba"); echo "guardo"; } catch (RuntimeException $e) { echo "no: ", $e->getMessage(); }')
 chk(r.startswith('no:') and 'círculo' in r, 'catálogo: no deja guardar dependencias en círculo') if 'reservas' in cat else chk(True, 'catálogo: (sin reservas)')
@@ -152,7 +154,7 @@ chk(e == 'no', 'cambiar: un módulo que no existe se rechaza')
 php("q(\"DELETE FROM ligas WHERE slug = 'demo-mods-x'\");")
 php("q(\"INSERT INTO ligas (nombre, slug, vence, es_prueba, activa, es_demo, tipo, plan_id) VALUES ('Demo Mods', 'demo-mods-x', ?, 1, 1, 0, '" + T + "', " + PL + ")\", [date('Y-m-d', strtotime('+5 days'))]);")
 D = "fila(\"SELECT * FROM ligas WHERE slug = 'demo-mods-x'\")"
-chk(set(pj('modulos_cliente(' + D + ')')['activos']) == set(catT) and pj('modulos_cliente(' + D + ')')['todos_en_demo'] is True, 'demo: tiene todos los módulos')
+chk(set(pj('modulos_cliente(' + D + ')')['activos']) == set(catT) - {'asistente_ia'} and pj('modulos_cliente(' + D + ')')['todos_en_demo'] is True, 'demo: tiene todos los módulos (menos el Asistente IA, que se cotiza)')
 r = pj('cambiar_modulos_cuenta(' + D + ', [], ["' + APAGAR + '"], [])')
 chk(set(r['despues']['activos']) == set(catT) - {APAGAR}, 'demo: si el súper apaga uno, se apaga solo ese (lo demás sigue)')
 

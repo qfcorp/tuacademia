@@ -23,6 +23,7 @@ encendido. Todo lo de ligas y campeonatos sigue en el código, apagado.
 | Módulos por academia (Anexo B: encender, apagar, precios, Mi plan, pedidos) | `app/modulos_catalogo.php` (igual en TuVocalía). Ver BLOC_DE_NOTAS §14 |
 | Sin prueba gratis: todo se pide demo | `index.php?v=solicitar` (el registro abierto ya no existe) |
 | Precios del software solo para Tukán (el cliente pide cotización) | `ver_precios_software()` en `app/modulos_catalogo.php`. Ver BLOC_DE_NOTAS §15 |
+| Ayuda («¿En qué le ayudamos?»), Asistente IA (incluido en el plan Completo; extra por cotización en los demás; tope $4 al mes) y «Enviar por correo» de la demo | `app/asistente_ia.php` (+ `app/tukan_ia.php`, `app/tukan_correo.php`). En el VPS: `sudo bash /var/www/tuacademia/vps/configurar_ia_correo.sh`. Ver BLOC_DE_NOTAS §16 |
 | Notas para Dimitry | **[BLOC_DE_NOTAS.md](BLOC_DE_NOTAS.md)** (qué se cambió, pendientes, nombres candidatos) |
 | Manual para el cliente | **[docs/Manual_TuAcademia.pdf](docs/Manual_TuAcademia.pdf)** (26 páginas, capturas reales sin precios) · cómo se arma: [docs/MANUAL.md](docs/MANUAL.md) · guía corta: [docs/TuAcademia_Primeros_Pasos.pdf](docs/TuAcademia_Primeros_Pasos.pdf) |
 | Instalar en el VPS | [vps/vps/INSTRUCCIONES.txt](vps/vps/INSTRUCCIONES.txt) (carpeta `/var/www/tuacademia`, puerto 8096) |
@@ -42,6 +43,7 @@ python3 pruebas/v38/navegador38.py               # Chromium real con la Digital 
 
 bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central.py      # conector del Panel Tukán Central v1 (125/125; en modo ligas 121/121)
 bash pruebas/v38/reiniciar.sh && python3 pruebas/tukan_central/prueba_central_v2.py   # conector v2 con el anexo A (343/343; en modo ligas 338/338)
+bash pruebas/v38/reiniciar.sh && python3 pruebas/ia/prueba_ia.py                     # Ayuda, Asistente IA, ia_uso/ia_tope y correo de la demo (servidores de mentira de ../tukan-central/tests)
 ```
 (Para otro puerto: `TA_PUERTO=8221 TA_SIM=8222`. Si se cambia `TA_SIM`, borrar antes `pruebas/v38/cuenta_servicio.json`
 y los `.pem` para que `reiniciar.sh` los cree con el puerto nuevo.)

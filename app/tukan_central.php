@@ -30,14 +30,15 @@
 
 const TC_PROTOCOLO = 1;          // estado y sso siguen siendo v1
 const TC_PROTOCOLO_MAX = 2;
-const TC_REVISION = 3;           // sube cuando se agregan cosas al v2 sin romper nada (2: Anexo A, pausar y papelera; 3: Anexo B, módulos)
+const TC_REVISION = 4;           // sube cuando se agregan cosas al v2 sin romper nada (2: Anexo A, pausar y papelera; 3: Anexo B, módulos; 4: Anexo C, IA)
 const TC_LIMITE_MINUTO = 120;    // pedidos por minuto por IP (todos)
 const TC_LIMITE_RECHAZOS = 30;   // pedidos rechazados (401) por minuto por IP
-const TC_ACCIONES_V2 = ['capacidades', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar', 'modulos'];
+const TC_ACCIONES_V2 = ['capacidades', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar', 'modulos', 'ia_uso'];
 const TC_OPERACIONES = ['crear_demo', 'extender_prueba', 'registrar_pago', 'anular_pago', 'aprobar_comprobante', 'rechazar_comprobante',
     'suspender', 'reactivar', 'cambiar_plan', 'nueva_clave_dueno', 'nota_interna', 'atender_solicitud', 'responder_ticket',
     'pausar', 'borrar_cliente', 'restaurar_cliente', // (Anexo A)
-    'cambiar_modulos', 'guardar_modulos']; // (Anexo B)
+    'cambiar_modulos', 'guardar_modulos', // (Anexo B)
+    'ia_tope']; // (Anexo C) tope del mes de la IA de un cliente
 const TC_TIPOS_SOLICITUD = ['registro_nuevo', 'demo_pedida', 'comprobante', 'soporte', 'derechos_datos', 'pago_automatico',
     'seguimiento_prueba', 'renovacion', 'dominio_gratis', 'comision_vendedor', 'liquidacion_pendiente', 'cambio_modulos']; // (Anexo B) cambio_modulos
 const TC_ESTADOS = ['prueba', 'activo', 'por_vencer', 'vencido', 'suspendido'];
@@ -366,6 +367,7 @@ function tc2_despachar(string $accion, array $p, array $d): never
         'finanzas'    => tc2_ok('finanzas', tc2_finanzas($d)),
         'ejecutar'    => tc2_ejecutar($p, $d),
         'modulos'     => tc2_ok('modulos', tc2_modulos()), // (Anexo B)
+        'ia_uso'      => tc2_ok('ia_uso', tc2_ia_uso($d)), // (Anexo C) gasto de la IA del mes (solo lectura)
     };
     exit;
 }
@@ -759,7 +761,7 @@ function tc2_capacidades(): array
         'revision' => TC_REVISION, 'nombre' => $nombre, 'version' => tc_version(),
         'unico' => false, 'moneda' => 'USD', 'zona_horaria' => date_default_timezone_get(),
         'url_publica' => rtrim(url_base(), '/'),
-        'acciones' => ['capacidades', 'estado', 'sso', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar', 'modulos'],
+        'acciones' => ['capacidades', 'estado', 'sso', 'clientes', 'cliente', 'cotizar', 'planes', 'solicitudes', 'solicitud', 'adjunto', 'finanzas', 'ejecutar', 'modulos', 'ia_uso'],
         'sso_ir' => true,
         'rutas_sso' => TC_RUTAS_SSO,
         'ejecutar' => TC_OPERACIONES,
@@ -1117,6 +1119,9 @@ function tc2_acciones_cliente(array $l, array $c): array
         tc2_campo('motivo', 'Motivo del borrado', 'texto', true, ['min' => 3, 'max' => 300]),
     ]);
     $b[] = tc2_boton_modulos($l); // (Anexo B) encender / apagar módulos
+    // (Anexo C) tope del mes de la IA (el cliente nunca lo ve)
+    $b[] = tc2_boton('ia_tope', 'Tope de IA del mes', 'normal', null, ['cliente_id' => $id], [tc2_campo('tope_usd', 'Tope de IA del mes (USD)', 'dinero', false, ['valor' => ia_tope_cuenta($l), 'min' => 0, 'max' => 1000,
+        'ayuda' => 'Sugerido: $' . number_format(IA_TOPE_SIN_MODULO, 2) . ' sin el módulo «Asistente IA» y $' . number_format(IA_TOPE_CON_MODULO, 2) . ' con el módulo. Vacío = sin tope propio (vale el del programa).'])]);
     if (usuario_dueno($l)) $b[] = tc2_boton('nueva_clave_dueno', 'Nueva clave del dueño', 'normal', '¿Crear una contraseña nueva para el dueño de ' . $n . '? La anterior deja de servir.', ['cliente_id' => $id]);
     $b[] = tc2_boton('nota_interna', 'Nota interna', 'normal', null, ['cliente_id' => $id],
         [tc2_campo('texto', 'Nota (el cliente no la ve)', 'texto_largo', false, ['valor' => (string)($l['notas_admin'] ?? ''), 'max' => 4000])]);
@@ -2173,6 +2178,24 @@ function tc2_operacion(string $accion, array $d, array $ctx): array
         case 'guardar_modulos':
             return tc2_op_guardar_modulos($d, $ctx);
 
+        case 'ia_tope': // (Anexo C) tope del mes de la IA del cliente: número de 0 a 1000 (USD) o null = sin tope propio
+            $l = tc2_op_liga($ctx);
+            $otros = array_diff(array_keys($d), ['tope_usd', 'cliente_id']);
+            if ($otros) throw tc2_mal('datos.' . reset($otros), 'Campo desconocido: ' . implode(', ', $otros) . '.');
+            if (!array_key_exists('tope_usd', $d)) throw tc2_mal('datos.tope_usd', 'Falta el tope (tope_usd: número o null).');
+            $t = $d['tope_usd'];
+            if ($t !== null && (!(is_int($t) || is_float($t)) || $t < 0 || $t > 1000)) throw tc2_mal('datos.tope_usd', 'El tope debe ser un número de 0 a 1000 (USD) o vacío.');
+            $nuevo = $t === null ? null : round((float)$t, 2);
+            $antes = ia_tope_cuenta($l);
+            $txt = fn(?float $x) => $x === null ? 'sin tope propio' : '$' . number_format($x, 2);
+            $guardado = $l['ia_tope_usd'] ?? null;
+            if ($guardado !== null && $guardado !== '' && $antes === $nuevo) {
+                return ['mensaje' => 'El tope de IA de ' . $l['nombre'] . ' ya era ' . $txt($nuevo) . '.', 'resultado' => ['tope_usd' => $nuevo], 'liga_id' => (int)$l['id'], 'sin_cambios' => true];
+            }
+            q('UPDATE ligas SET ia_tope_usd = ? WHERE id = ?', [$nuevo === null ? -1 : $nuevo, $l['id']]);
+            return ['mensaje' => 'Tope de IA del mes de ' . $l['nombre'] . ': ' . $txt($nuevo) . '.', 'resultado' => ['tope_usd' => $nuevo, 'antes' => $antes], 'liga_id' => (int)$l['id'],
+                    'bitacora' => 'Tope de IA del mes: ' . $txt($antes) . ' → ' . $txt($nuevo)];
+
         case 'responder_ticket':
             [, $tid, $sol] = tc2_op_solicitud($d, ['soporte']);
             $texto = $d['texto'] ?? '';
@@ -2423,7 +2446,7 @@ function tc2_modulos(): array
         $cat_p = catalogo_modulos($para === 'ambos' ? ($acad ? 'escuela' : '') : $para);
         $planes[] = ['codigo' => (string)$pl['id'], 'nombre' => (string)$pl['nombre'], 'activo' => (int)$pl['activo'] === 1, 'para' => $para,
                      'precio_mensual' => precio_mensual_plan($pl), 'modulos' => array_values(array_intersect(array_keys($cat_p), modulos_plan($pl))),
-                     'todos' => in_array(trim((string)$pl['modulos']), ['*', ''], true)];
+                     'todos' => trim((string)$pl['modulos']) === '' || in_array('*', array_map('trim', explode(',', (string)$pl['modulos'])), true)];
     }
     $base = [];
     foreach ($tipos as $t) $base[$t] = funciones_base($t);
@@ -2565,3 +2588,18 @@ function tc2_op_guardar_modulos(array $d, array $ctx): array
     return ['mensaje' => $n ? 'Catálogo de módulos guardado (' . $n . ' cambio' . ($n === 1 ? '' : 's') . '). Los precios nuevos se usan desde ya.' : 'El catálogo ya estaba así.', 'sin_cambios' => $n === 0,
             'resultado' => ['cambios' => $n, 'catalogo' => tc2_modulos()], 'liga_id' => null, 'bitacora' => 'Guardó el catálogo de módulos (' . $n . ' cambios)'];
 }
+
+/* ============================================================
+ * v2 — ANEXO C: INTELIGENCIA ARTIFICIAL (ia_uso, solo lectura)
+ * ============================================================ */
+
+/** {"mes": "AAAA-MM"} (opcional). Otro campo → 422. Un renglón por cuenta con gasto en el mes (app/asistente_ia.php). */
+function tc2_ia_uso(array $d): array
+{
+    $otros = array_diff(array_keys($d), ['mes']);
+    if ($otros) throw tc2_mal((string)reset($otros), 'Campo desconocido: ' . implode(', ', $otros) . '.');
+    $mes = $d['mes'] ?? date('Y-m');
+    if (!is_string($mes) || !preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $mes)) throw tc2_mal('mes', 'Mes no válido (use AAAA-MM).');
+    return ia_uso_central($mes);
+}
+

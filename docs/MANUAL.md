@@ -24,7 +24,8 @@ La guía corta de 3 páginas sigue en [docs/TuAcademia_Primeros_Pasos.pdf](TuAca
 | 12 | El profesor en su celular (Mi rol de pago) | Perfil Profesor · rol de pago: módulo |
 | 13 | Reportes (indicadores, contabilidad, descargar mis datos, bitácora) | Base · Contabilidad: módulo |
 | 14 | Mi plan y los módulos | Base |
-| 15 | Preguntas frecuentes y contacto | — |
+| 15 | Ayuda y Asistente IA (la Ayuda «¿En qué le ayudamos?» para todos; informe para los padres y cobro amable) | Ayuda: base · Asistente IA: módulo extra |
+| 16 | Preguntas frecuentes y contacto | — |
 
 ## Reglas que cumple
 
@@ -38,7 +39,7 @@ bash docs/manual/generar/generar.sh          # base de prueba nueva + Academia D
 SOLO_PDF=1 bash docs/manual/generar/generar.sh   # solo vuelve a armar los PDF con las capturas que ya hay
 ```
 
-- `docs/manual/manual.html`: el texto del manual (se edita aquí).
+- `docs/manual/manual.html`: el texto del manual (se edita aquí). `generar.sh` lo copia a `app/manuales/academia.html`: lo lee la Ayuda del programa.
 - `docs/manual/generar/capturas.py`: capturas reales con Playwright (celular 390 px y computadora 1280 px); con `--guia` también las de la guía Primeros pasos.
 - `docs/manual/generar/pdf.py`: HTML → PDF A4 con índice de páginas.
 - `docs/manual/fonts/`: Space Grotesk y DM Sans (sin internet).

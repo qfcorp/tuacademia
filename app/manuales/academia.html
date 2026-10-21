@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="es-EC">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual de TuAcademia</title>
+<style>
+@font-face { font-family: "DM Sans"; font-weight: 400; src: url("fonts/dm-sans-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "DM Sans"; font-weight: 400; font-style: italic; src: url("fonts/dm-sans-latin-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "DM Sans"; font-weight: 700; src: url("fonts/dm-sans-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Space Grotesk"; font-weight: 500; src: url("fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Space Grotesk"; font-weight: 700; src: url("fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); }
+:root { --marino: #14213D; --marino-2: #22315A; --amarillo: #FFC93C; --naranja: #FF8A1F; --agua: #2A9D8F; --tinta: #1C2333; --suave: #5B6478;
+        --linea: #DDE1EA; --fondo: #F4F5F8; --consejo: #EAF6EE; --consejo-borde: #2E9B57; --ojo: #FFF2E6; }
+@page { size: A4; margin: 16mm 15mm 18mm 15mm; }
+@page portada { margin: 0; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; font-family: "DM Sans", system-ui, sans-serif; font-size: 10.4pt; line-height: 1.5; color: var(--tinta); background: #fff; }
+h1, h2, h3 { font-family: "Space Grotesk", "DM Sans", sans-serif; color: var(--marino); line-height: 1.2; }
+p { margin: 0 0 7px; }
+.portada { page: portada; width: 210mm; height: 297mm; background: var(--marino); color: #fff; position: relative; overflow: hidden; padding: 26mm 20mm; display: flex; flex-direction: column; break-after: page; }
+.portada .marca { font-family: "Space Grotesk"; font-size: 15pt; font-weight: 700; letter-spacing: .5px; }
+.portada .marca i { color: var(--amarillo); font-style: normal; }
+.portada .marca small { display: block; font-family: "DM Sans"; font-weight: 400; font-size: 9.5pt; opacity: .75; }
+.portada h1 { color: #fff; font-size: 44pt; margin: 30mm 0 4mm; letter-spacing: -1px; }
+.portada h1 em { font-style: normal; color: var(--amarillo); }
+.portada .raya { width: 46mm; height: 5px; background: var(--amarillo); border-radius: 3px; margin-bottom: 8mm; }
+.portada .bajada { font-size: 13.5pt; max-width: 96mm; opacity: .92; line-height: 1.45; }
+.portada .lema { max-width: 92mm; margin-top: 6mm; color: var(--amarillo); font-weight: 700; font-size: 12pt; }
+.portada .telefonos { position: absolute; right: 12mm; bottom: 28mm; display: flex; gap: 6mm; align-items: flex-end; }
+.portada .telefonos img { width: 48mm; height: 104mm; object-fit: cover; object-position: top; border: 7px solid #0A1530; border-radius: 26px; box-shadow: 0 14px 40px rgba(0,0,0,.45); background: #fff; }
+.portada .telefonos img + img { width: 42mm; height: 91mm; margin-bottom: 14mm; }
+.portada .pie { margin-top: auto; font-size: 9.5pt; opacity: .85; line-height: 1.6; max-width: 76mm; }
+.portada .pie b { color: var(--amarillo); }
+.portada .franja { position: absolute; left: 0; right: 0; bottom: 0; height: 9mm; background: linear-gradient(90deg, var(--amarillo) 0 70%, var(--naranja) 70%); }
+.indice { break-after: page; }
+.indice h1 { font-size: 22pt; margin: 0 0 4mm; }
+.intro-caja { background: var(--fondo); border-radius: 10px; padding: 10px 14px; margin-bottom: 5mm; font-size: 9.8pt; }
+.indice ol { list-style: none; padding: 0; margin: 0; }
+.indice li { display: flex; align-items: baseline; gap: 10px; padding: 4.2px 0; border-bottom: 1px solid var(--linea); }
+.indice li .n { font-family: "Space Grotesk"; font-weight: 700; color: #fff; background: var(--marino); border-radius: 6px; padding: 1px 7px; font-size: 9pt; min-width: 26px; text-align: center; }
+.indice li a { text-decoration: none; color: var(--tinta); font-weight: 700; flex: 1; }
+.indice li small { display: block; font-weight: 400; color: var(--suave); font-size: 8.8pt; }
+.indice li .pag { font-family: "Space Grotesk"; color: var(--marino); font-weight: 700; min-width: 18px; text-align: right; }
+section.cap { break-before: page; }
+section.cap > h1 { font-size: 21pt; margin: 0 0 3mm; padding-bottom: 3mm; border-bottom: 4px solid var(--amarillo); display: flex; align-items: center; gap: 10px; }
+section.cap > h1 .num { background: var(--marino); color: var(--amarillo); border-radius: 8px; padding: 2px 9px; font-size: 15pt; }
+.plan { display: inline-block; font-size: 8.6pt; color: var(--marino); background: #E8ECF5; border-radius: 999px; padding: 2px 10px; margin: 0 0 4mm; }
+.plan::before { content: "◆ "; color: var(--naranja); }
+.plan.base { background: #E6F4EC; }
+.plan.base::before { color: var(--consejo-borde); }
+h2 { font-size: 13.5pt; margin: 5mm 0 2.5mm; break-after: avoid; }
+h3 { font-size: 11pt; margin: 4mm 0 2mm; break-after: avoid; }
+h2 .mod { font-family: "DM Sans"; font-size: 8.4pt; font-weight: 400; color: var(--marino); background: #E8ECF5; border-radius: 999px; padding: 1px 8px; margin-left: 6px; vertical-align: middle; }
+h2 .mod::before { content: "◆ "; color: var(--naranja); }
+.tarea { display: grid; grid-template-columns: 1fr 50mm; gap: 7mm; align-items: start; break-inside: avoid; margin-bottom: 4mm; }
+.tarea.doble { grid-template-columns: 1fr 1fr; }
+ol.pasos { list-style: none; counter-reset: paso; padding: 0; margin: 0 0 3mm; }
+ol.pasos > li { counter-increment: paso; position: relative; padding: 0 0 0 30px; margin: 0 0 6px; min-height: 22px; }
+ol.pasos > li::before { content: counter(paso); position: absolute; left: 0; top: 0; width: 21px; height: 21px; border-radius: 50%; background: var(--amarillo); color: var(--marino); font-weight: 700; font-size: 9.5pt; display: flex; align-items: center; justify-content: center; }
+ul.lista { margin: 0 0 3mm; padding-left: 18px; } ul.lista li { margin-bottom: 3px; }
+figure { margin: 0 0 4mm; break-inside: avoid; }
+figcaption { font-size: 8.4pt; color: var(--suave); text-align: center; margin-top: 2mm; }
+figure.cel img { width: 100%; max-height: 106mm; object-fit: cover; object-position: top; display: block; border: 6px solid #10192F; border-radius: 22px; box-shadow: 0 6px 16px rgba(20,33,61,.18); background: #fff; }
+figure.pc img { width: 100%; max-height: 118mm; object-fit: cover; object-position: top; display: block; border: 1px solid var(--linea); border-radius: 8px; box-shadow: 0 6px 18px rgba(20,33,61,.12); }
+figure.pc.bajo img { max-height: 92mm; }
+figure.pc.mb img { max-height: 74mm; }
+figure.pc.mb2 img { max-height: 60mm; }
+.compacto { line-height: 1.42; }
+.compacto table.t { font-size: 8.7pt; }
+.compacto table.t td, .compacto table.t th { padding: 3px 7px; }
+.compacto ul.lista li { margin-bottom: 1px; }
+.figs2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; break-inside: avoid; }
+.figs2 figure.pc img { max-height: 84mm; }
+.c11 figure.cel img { max-height: 84mm; }
+.dos-cel { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6mm; align-items: start; break-inside: avoid; }
+.consejo, .ojo, .nota { border-radius: 9px; padding: 8px 12px; margin: 0 0 4mm; font-size: 9.8pt; break-inside: avoid; }
+.consejo { background: var(--consejo); border-left: 5px solid var(--consejo-borde); }
+.ojo { background: var(--ojo); border-left: 5px solid var(--naranja); }
+.nota { background: var(--fondo); border-left: 5px solid var(--marino); }
+.consejo > b:first-child, .ojo > b:first-child, .nota > b:first-child { display: block; font-family: "Space Grotesk"; font-size: 9.5pt; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 2px; }
+.consejo > b:first-child { color: var(--consejo-borde); } .ojo > b:first-child { color: #C25A0C; } .nota > b:first-child { color: var(--marino); }
+table.t { width: 100%; border-collapse: collapse; margin: 0 0 4mm; font-size: 9.1pt; break-inside: avoid; }
+table.t th { background: var(--marino); color: #fff; text-align: left; padding: 4px 8px; font-weight: 700; }
+table.t td { padding: 4px 8px; border-bottom: 1px solid var(--linea); vertical-align: top; }
+table.t tr:nth-child(even) td { background: #FAFBFD; }
+.si { color: #2E9B57; font-weight: 700; }
+.preg { break-inside: avoid; margin: 0 0 3.2mm; }
+.preg b.q { display: block; font-family: "Space Grotesk"; color: var(--marino); font-size: 10.6pt; margin-bottom: 1px; }
+.contacto { background: var(--marino); color: #fff; border-radius: 12px; padding: 12px 16px; margin-top: 5mm; break-inside: avoid; }
+.contacto b { color: var(--amarillo); }
+</style>
+</head>
+<body>
+
+<div class="portada">
+  <div class="marca">tukán<i>.</i><small>Sistemas que trabajan por tu negocio</small></div>
+  <h1>Manual de <em>TuAcademia</em></h1>
+  <div class="raya"></div>
+  <p class="bajada">Alumnos, cursos y horarios, asistencia, pensiones con recordatorio por WhatsApp, cobros y caja, y el portal de los padres, para academias de baile, música, natación y deportes.</p>
+  <p class="lema">Todo es por módulos: usted elige lo que su academia necesita.</p>
+  <div class="telefonos"><img src="capturas/03_resumen_celular.png" alt=""><img src="capturas/30_portal_padres.png" alt=""></div>
+  <p class="pie">Para el dueño de la academia, los profesores y la secretaría.<br>Capturas reales de la academia de ejemplo <b>Academia Demo</b>.<br>tukansoftware.com · WhatsApp 099 640 8397</p>
+  <div class="franja"></div>
+</div>
+
+<div class="indice">
+  <h1>Contenido</h1>
+  <div class="intro-caja"><b>Cómo leer este manual.</b> Cada capítulo es una parte de TuAcademia. Arriba de cada uno dice si es de la <b>base</b> (la tienen todas las academias) o de un <b>módulo</b> (se enciende o se apaga según lo que contrató). Lo que no está en su plan no aparece en su menú. En las capturas, los valores en dólares se ven como <b>•••</b>: en su programa verá sus propios valores.</div>
+  <ol>
+    <li><span class="n">1</span><a href="#c1">Qué es TuAcademia y cómo se arma<small>La base, los módulos y los planes</small></a><span class="pag" data-pag="c1"></span></li>
+    <li><span class="n">2</span><a href="#c2">Entrar y el Resumen<small>Computadora, celular, menú y botón de Ayuda</small></a><span class="pag" data-pag="c2"></span></li>
+    <li><span class="n">3</span><a href="#c3">Quién hace qué: usuarios y perfiles<small>Dueño, secretaría, tesorería, profesores y padres</small></a><span class="pag" data-pag="c3"></span></li>
+    <li><span class="n">4</span><a href="#c4">Configurar la academia<small>Datos, pensiones, DeUna, inscripción en línea y sedes</small></a><span class="pag" data-pag="c4"></span></li>
+    <li><span class="n">5</span><a href="#c5">Cursos, horarios y profesores<small>Disciplinas, edades, días y rol de pago</small></a><span class="pag" data-pag="c5"></span></li>
+    <li><span class="n">6</span><a href="#c6">Alumnos e inscripciones<small>Ficha, representante, hermanos y por aprobar</small></a><span class="pag" data-pag="c6"></span></li>
+    <li><span class="n">7</span><a href="#c7">Asistencia y clases<small>Tomar lista, planificar y clases particulares</small></a><span class="pag" data-pag="c7"></span></li>
+    <li><span class="n">8</span><a href="#c8">Pensiones, cobros y caja<small>Estado de pagos, cobrar, comprobantes y caja del mes</small></a><span class="pag" data-pag="c8"></span></li>
+    <li><span class="n">9</span><a href="#c9">Mensajes de hoy y avisos<small>WhatsApp con un toque y avisos por Telegram</small></a><span class="pag" data-pag="c9"></span></li>
+    <li><span class="n">10</span><a href="#c10">Niveles, exámenes y recitales<small>Certificados con QR, coreografías y vestuario</small></a><span class="pag" data-pag="c10"></span></li>
+    <li><span class="n">11</span><a href="#c11">Portal de padres y página de la academia<small>Inscripción en línea, pagos y carnet digital</small></a><span class="pag" data-pag="c11"></span></li>
+    <li><span class="n">12</span><a href="#c12">El profesor en su celular<small>Su lista, sus clases y su rol de pago</small></a><span class="pag" data-pag="c12"></span></li>
+    <li><span class="n">13</span><a href="#c13">Reportes<small>Indicadores, contabilidad y sus datos en Excel</small></a><span class="pag" data-pag="c13"></span></li>
+    <li><span class="n">14</span><a href="#c14">Mi plan y los módulos<small>Ver, pedir o quitar un módulo</small></a><span class="pag" data-pag="c14"></span></li>
+    <li><span class="n">15</span><a href="#c16">Ayuda y Asistente IA<small>Preguntas al instante · módulo extra</small></a><span class="pag" data-pag="c16"></span></li>
+    <li><span class="n">16</span><a href="#c15">Preguntas frecuentes<small>Y cómo contactarnos</small></a><span class="pag" data-pag="c15"></span></li>
+  </ol>
+</div>
+
+<section class="cap compacto" id="c1">
+  <h1><span class="num">1</span> Qué es TuAcademia y cómo se arma</h1>
+  <p>TuAcademia es el programa para <b>academias de baile, música, natación y escuelas deportivas</b> de Ecuador. Funciona en el celular, la tablet y la computadora, sin instalar nada: se entra desde el navegador con su correo y su contraseña. Una misma academia puede tener cursos de varias disciplinas (ballet, salsa, piano, canto, natación, fútbol…) y varias sedes.</p>
+  <h2>La base (la tienen todas las academias)</h2>
+  <ul class="lista">
+    <li><b>Alumnos</b> con foto, ficha médica, representante y contacto de emergencia.</li>
+    <li><b>Cursos y horarios</b> con su disciplina, edades, sede, profesor, días, hora, lugar y cupo.</li>
+    <li><b>Asistencia</b> (presente, tarde, justificó, faltó) y lo que se practicó en cada clase.</li>
+    <li><b>Pensiones</b> que se crean solas cada mes, con día de vencimiento, becas, descuento por hermano y matrícula.</li>
+    <li><b>Pagos</b> con recibo, semáforo (al día, por vencer, vencido), comprobantes de DeUna o transferencia y caja del mes.</li>
+    <li><b>Mensajes de hoy</b>: el recordatorio de pago de cada familia, listo para enviar por WhatsApp.</li>
+    <li><b>Página pública</b> de la academia, indicadores, usuarios con perfiles y bitácora de cambios.</li>
+  </ul>
+  <h2>Los módulos (se encienden o se apagan)</h2>
+  <table class="t">
+    <tr><th>Módulo</th><th>Para qué sirve</th></tr>
+    <tr><td>👨‍👩‍👦 Portal de padres e inscripción en línea</td><td>Los padres inscriben a sus hijos por internet y ven asistencia, pagos y recibos desde el celular</td></tr>
+    <tr><td>🪪 Carnets con QR del alumno</td><td>Carnet con foto y código QR, y carnet digital en el celular de los padres</td></tr>
+    <tr><td>🎖️ Niveles, exámenes y certificados</td><td>Niveles de baile, música y natación, exámenes con cobro, acta y certificado con QR</td></tr>
+    <tr><td>🎭 Recitales y presentaciones</td><td>Coreografías u obras, participantes con su talla, ensayos y cobro del vestuario</td></tr>
+    <tr><td>🎹 Clases particulares con paquetes</td><td>Paquetes de 4, 8 o 12 clases, horario 1 a 1 y saldo de clases</td></tr>
+    <tr><td>📅 Planificación de clases</td><td>Planificar por adelantado con la biblioteca de ejercicios; diario de clases para los padres</td></tr>
+    <tr><td>📏 Evaluaciones, desarrollo y libreta</td><td>Tests, medidas, evaluación técnica, metas e informe trimestral en PDF</td></tr>
+    <tr><td>🧑‍🏫 Profesores y rol de pago</td><td>Pago por clase, por alumno o sueldo fijo; cada profesor ve su rol en el celular</td></tr>
+    <tr><td>📲 Avisos por Telegram a los padres</td><td>Pensión por vencer y vencida, pago recibido, falta a clase y comunicados</td></tr>
+    <tr><td>💳 Cobros con tarjeta · Pago con Payphone</td><td>Los padres pagan con tarjeta desde su celular y el recibo sale solo</td></tr>
+    <tr><td>📒 Contabilidad con importador del SRI</td><td>Gastos, facturas recibidas del SRI y reportes en PDF y Excel para su contador</td></tr>
+    <tr><td>🛍 Tienda e inventario · 🎬 Videos</td><td>Uniformes y productos con stock · videos cortos de cada alumno para sus padres</td></tr>
+    <tr><td>🌐 Dominio propio · 📥 Subida desde Excel</td><td>Su página con su propia dirección · subir sedes, profesores, cursos y alumnos de una vez</td></tr>
+  </table>
+  <div class="nota"><b>Planes</b><b>Básico</b> = la base + portal de padres e inscripción en línea, carnets, niveles con certificado y avisos por Telegram. <b>Completo</b> = todos los módulos. A cualquier plan se le puede sumar o quitar un módulo. El valor se cotiza a la medida de su academia: escríbanos por WhatsApp.</div>
+</section>
+
+<section class="cap" id="c2">
+  <h1><span class="num">2</span> Entrar y el Resumen</h1>
+  <span class="plan base">Base</span>
+  <div class="tarea">
+    <div>
+      <ol class="pasos">
+        <li>Abra la dirección de su academia en el navegador del celular o de la computadora. Tukán le envía la dirección, su correo y su contraseña.</li>
+        <li>Escriba su <b>Correo</b> y su <b>Contraseña</b> y toque <b>Ingresar</b>.</li>
+        <li>Llega al <b>Resumen</b>: lo más importante de hoy.</li>
+      </ol>
+      <div class="consejo"><b>¿Olvidó su contraseña?</b>Toque <b>¿Olvidó su contraseña?</b> debajo del botón Ingresar. En <b>Mi cuenta</b> puede cambiarla y encender la <b>doble verificación</b> (un código de 6 números del celular).</div>
+      <div class="consejo"><b>Como app</b>En Chrome, menú ⋮ → «Agregar a la pantalla principal» (o «Instalar»). TuAcademia se abre con su ícono, a pantalla completa.</div>
+    </div>
+    <figure class="cel"><img src="capturas/01_entrar.png" alt=""><figcaption>Ingresar.</figcaption></figure>
+  </div>
+  <figure class="pc"><img src="capturas/02_resumen.png" alt=""><figcaption>El Resumen en la computadora: alumnos activos, asistencia, clases planificadas, lo cobrado y lo por cobrar, y los botones de cada parte del programa.</figcaption></figure>
+  <h2>En el celular</h2>
+  <p>Abajo quedan fijos los botones principales: <b>Resumen</b>, <b>Alumnos</b>, <b>Asistencia</b> y <b>Pagos</b>. Todo lo demás está en <b>Más</b> (☰), agrupado igual que en la computadora: <b>Alumnos</b>, <b>Dinero</b>, <b>Configuración</b> y <b>Mi cuenta</b>. El número rojo de un botón le dice cuántas cosas tiene pendientes (por ejemplo, comprobantes por revisar).</p>
+  <div class="dos-cel">
+    <figure class="cel"><img src="capturas/03_resumen_celular.png" alt=""><figcaption>Resumen en el celular.</figcaption></figure>
+    <figure class="cel"><img src="capturas/04_menu_celular.png" alt=""><figcaption>El menú «Más».</figcaption></figure>
+    <div>
+      <h3>Más abajo en el Resumen</h3>
+      <ul class="lista">
+        <li><b>Primeros pasos</b>: lo que falta para dejar lista su academia; cada línea lo lleva a esa pantalla.</li>
+        <li><b>Hoy tienen clase</b>, con los botones <b>Tomar asistencia</b> y <b>+ Planificar la clase de hoy</b>.</li>
+        <li><b>Cumpleaños esta semana</b>.</li>
+        <li><b>Pagos vencidos</b>, con el botón de WhatsApp de cada familia.</li>
+      </ul>
+      <div class="nota"><b>Botón ❓ Ayuda</b>Está abajo a la derecha en cada pantalla: abre la parte del manual de esa pantalla y le deja escribir a soporte o pedir una función nueva.</div>
+    </div>
+  </div>
+  <figure class="pc bajo"><img src="capturas/05_primeros_pasos.png" alt=""><figcaption>Primeros pasos, las clases de hoy y los pagos vencidos.</figcaption></figure>
+</section>
+
+<section class="cap" id="c3">
+  <h1><span class="num">3</span> Quién hace qué: usuarios y perfiles</h1>
+  <span class="plan base">Base · Configuración → Usuarios</span>
+  <p>Cree un usuario para cada persona que trabaja en la academia. Cada <b>perfil</b> ve solo sus menús, y la <b>Bitácora</b> guarda quién hizo cada cambio.</p>
+  <table class="t">
+    <tr><th>Perfil</th><th>Qué hace</th></tr>
+    <tr><td><b>Administrador</b> (el dueño)</td><td>Todo: alumnos, cursos, asistencia, pagos, profesores, parámetros y usuarios de la academia</td></tr>
+    <tr><td><b>Secretario</b></td><td>Alumnos, cursos, inscripciones, carnets, asistencia, evaluaciones y tienda (ve los pagos, pero no cobra)</td></tr>
+    <tr><td><b>Tesorero</b></td><td>Pagos: pensiones, cobros, comprobantes, recibos, gastos, profesores y tienda (ve a los alumnos)</td></tr>
+    <tr><td><b>Profesor</b></td><td>Toma asistencia, planifica sus clases y registra evaluaciones y niveles de sus cursos</td></tr>
+    <tr><td><b>Equipo de apoyo</b></td><td>Psicólogo, nutricionista, fisioterapeuta o médico: ve a los alumnos y registra evaluaciones y notas de su área</td></tr>
+    <tr><td><b>Asistente</b></td><td>Usted elige, sección por sección, qué ve y en qué puede hacer cambios (nunca usuarios)</td></tr>
+    <tr><td><b>Solo consulta</b></td><td>Ve todo, pero no puede cambiar nada</td></tr>
+  </table>
+  <p>A un profesor también se le da acceso desde <b>Profesores</b> → el profesor → <b>Acceso del profesor</b>. Los <b>padres no necesitan usuario</b>: entran al portal de padres con su cédula y una clave de 4 a 6 números (capítulo 11).</p>
+  <h2>Crear un usuario</h2>
+  <ol class="pasos">
+    <li>En <b>Nuevo usuario</b> escriba el <b>Nombre</b>, el <b>Correo (será su usuario)</b> y una contraseña de 8 caracteres o más.</li>
+    <li>Elija el <b>Perfil</b>, marque la autorización de datos y toque <b>Crear usuario</b>.</li>
+    <li>En la lista puede <b>Cambiar clave</b>, cambiar el perfil, <b>Desactivar</b> o <b>Eliminar</b> a cada persona.</li>
+  </ol>
+  <figure class="pc mb2"><img src="capturas/06_usuarios.png" alt=""><figcaption>Usuarios: los perfiles y quién entra al panel.</figcaption></figure>
+</section>
+
+<section class="cap" id="c4">
+  <h1><span class="num">4</span> Configurar la academia</h1>
+  <span class="plan base">Base · Configuración → Parámetros</span>
+  <p>Se hace una sola vez, mejor en la computadora. Cada parte de la pantalla tiene su propio botón <b>Guardar</b>.</p>
+  <h2>Datos de la academia</h2>
+  <p><b>Nombre</b>, <b>Ciudad / sector</b>, <b>Disciplina principal</b>, <b>Logo</b>, <b>Color principal</b> y <b>Color secundario</b>, <b>Contacto</b>, <b>Teléfono / WhatsApp</b>, <b>Correo</b> y los <b>Datos para pagar</b> (banco, cuenta y a nombre de quién): las familias los ven en su portal y en los recibos.</p>
+  <figure class="pc bajo"><img src="capturas/07_parametros.png" alt=""><figcaption>Datos de la academia.</figcaption></figure>
+  <h2>Pensiones</h2>
+  <ul class="lista">
+    <li><b>Pensión general</b>: la que se cobra si el curso o el alumno no tienen otro valor.</li>
+    <li><b>Matrícula</b>: se cobra al aprobar un alumno nuevo.</li>
+    <li><b>Día de vencimiento de la pensión</b> (ej. 5 = vence el 5 de cada mes).</li>
+    <li><b>Descuento por hermano (%)</b>: desde el 2.º hijo del mismo representante (misma cédula).</li>
+    <li><b>Descuento por segunda disciplina (%)</b>: cuando un alumno está también en otro grupo.</li>
+  </ul>
+  <figure class="pc bajo"><img src="capturas/08_pensiones.png" alt=""><figcaption>Pensiones y DeUna.</figcaption></figure>
+  <h2>DeUna, Payphone, inscripción en línea, sedes e idioma</h2>
+  <ul class="lista">
+    <li><b>DeUna y pago con tarjeta</b>: el <b>Celular de DeUna de la academia</b> y a nombre de quién. Las familias lo ven en su portal y en el mensaje de cobro. <b>Payphone</b> (opcional, módulo «Pago con tarjeta por Payphone»): el Token y el Store ID de su cuenta de Payphone.</li>
+    <li><b>Clases particulares</b> (módulo): marque si la clase se descuenta del paquete cuando el alumno falta sin avisar.</li>
+    <li><b>Inscripción en línea</b> (módulo «Portal de padres e inscripción en línea»): marque <b>Inscripción en línea abierta</b> y escriba el texto que ven los padres (requisitos, horarios, valores). Debajo sale el <b>enlace para compartir</b> por WhatsApp.</li>
+    <li><b>Sedes</b>: cada local con su nombre y dirección (<b>+ Agregar sede</b>).</li>
+    <li><b>Idioma de la página pública</b>: español, inglés, francés, portugués o italiano.</li>
+  </ul>
+</section>
+
+<section class="cap" id="c5">
+  <h1><span class="num">5</span> Cursos, horarios y profesores</h1>
+  <span class="plan base">Base · Alumnos → Cursos y horarios</span>
+  <p>Cada curso tiene su <b>disciplina</b>, las <b>edades</b> que recibe, su profesor, sus días, su horario y su lugar. En una academia deportiva la pantalla se llama <b>Grupos y horarios</b>.</p>
+  <figure class="pc bajo"><img src="capturas/09_cursos.png" alt=""><figcaption>Los cursos de la academia de ejemplo, con <b>Ver alumnos</b>, <b>Asistencia</b> y <b>Carnets</b>.</figcaption></figure>
+  <h2>Crear un curso</h2>
+  <div class="tarea doble">
+    <ol class="pasos">
+      <li>En <b>+ Nuevo curso</b> escriba el <b>Nombre</b> (ej. Ballet infantil, Piano nivel 1) y elija la <b>Disciplina</b>: define los niveles, los tests y los ejercicios del curso.</li>
+      <li>En <b>Edades</b> elija <b>Por año de nacimiento</b> (y los años) o <b>Todas las edades</b>.</li>
+      <li>Elija la <b>Sede</b>, el <b>Profesor</b>, los <b>Días de clase</b>, <b>Desde</b> y <b>Hasta</b>, el <b>Lugar</b> (salón, aula, piscina) y el <b>Cupo máximo</b> (0 = sin límite).</li>
+      <li>Si este curso paga distinto, llene <b>Pensión de este curso</b>; vacío = la de Parámetros. Toque <b>Guardar curso</b>.</li>
+    </ol>
+    <figure class="pc"><img src="capturas/10_curso_nuevo.png" alt=""><figcaption>+ Nuevo curso.</figcaption></figure>
+  </div>
+  <h2>Profesores <span class="mod">Módulo «Profesores y rol de pago»</span></h2>
+  <p>En <b>Dinero → Profesores</b> ve cada profesor con sus grupos, sus alumnos, cómo se le paga, las clases que dictó en el mes y lo que se le debe. En <b>+ Nuevo profesor</b>: nombre, cédula, celular, correo, especialidad, foto, <b>Cómo se le paga</b> (<b>Sueldo fijo al mes</b>, <b>Por clase dictada</b> o <b>Por alumno activo</b>), el valor, el cargo y el aporte personal al IESS. Las clases dictadas se cuentan solas cuando se marca <b>El profesor dio la clase</b> al tomar asistencia.</p>
+  <figure class="pc bajo"><img src="capturas/11_profesores.png" alt=""><figcaption>Profesores del mes.</figcaption></figure>
+</section>
+
+<section class="cap" id="c6">
+  <h1><span class="num">6</span> Alumnos e inscripciones</h1>
+  <span class="plan base">Base · Alumnos → Alumnos</span>
+  <p>La lista tiene las pestañas <b>Activos</b>, <b>Por aprobar</b> y <b>Retirados</b>, el filtro por grupo y el buscador. De cada alumno ve su edad, su grupo, su representante, su asistencia y el estado de sus pagos.</p>
+  <figure class="pc mb"><img src="capturas/12_alumnos.png" alt=""><figcaption>Alumnos activos.</figcaption></figure>
+  <h2>Inscribir a un alumno</h2>
+  <div class="tarea">
+    <div>
+      <ol class="pasos">
+        <li>Toque <b>+ Nuevo alumno</b>. Llene nombres, apellidos, cédula, <b>Fecha de nacimiento</b> y el <b>Grupo</b> (vacío = se asigna por la edad).</li>
+        <li>Según la disciplina: <b>Instrumento</b>, <b>Talla de vestuario</b> y <b>Nivel actual</b>. Agregue la foto.</li>
+        <li><b>Representante</b>: nombre, cédula, parentesco, <b>Celular (WhatsApp)</b> y correo. Con la misma cédula se agrupan los hermanos (descuento).</li>
+        <li><b>Ficha médica y emergencia</b>: tipo de sangre, alergias, enfermedades, medicamentos, seguro y contacto de emergencia.</li>
+        <li><b>Pagos del alumno</b>: <b>Beca (%)</b>, <b>Pensión especial</b>, día de vencimiento y fecha de ingreso.</li>
+        <li>Deje marcado <b>Cobrar matrícula</b> si corresponde, marque <b>Tengo la autorización del representante</b> y toque <b>Inscribir alumno</b>.</li>
+      </ol>
+    </div>
+    <figure class="cel"><img src="capturas/13_alumno_nuevo_celular.png" alt=""><figcaption>Nuevo alumno en el celular.</figcaption></figure>
+  </div>
+  <h2>La ficha del alumno</h2>
+  <p>Arriba: edad, curso, disciplina, nivel, asistencia de 90 días y estado de pagos, con los botones <b>Carnet</b>, <b>Subir video</b> e <b>Informe de desarrollo</b> (si tiene esos módulos). Pestañas: <b>Datos</b>, <b>Desarrollo</b>, <b>Salud y lesiones</b>, <b>Pagos</b>, <b>Asistencia y diario</b>, <b>Medidas</b>, <b>Tests</b>, <b>Técnica</b> e <b>Informe</b>. En <b>Datos</b> están el acceso al <b>Portal de la familia</b> y <b>Agregar otra disciplina o grupo</b>.</p>
+  <figure class="pc mb"><img src="capturas/14_ficha_alumno.png" alt=""><figcaption>Ficha de Emilia: portal de la familia y disciplinas.</figcaption></figure>
+  <h2>Inscripción en línea, retiros y Excel</h2>
+  <ul class="lista">
+    <li><b>Por aprobar</b> (módulo «Portal de padres e inscripción en línea»): las fichas que llenan los padres desde la página de la academia. Revise y toque <b>✓ Aprobar</b> o <b>✗ Rechazar</b>. Al aprobar se cobra la matrícula.</li>
+    <li><b>Retirar de la escuela</b> (en la ficha): el alumno pasa a Retirados y ya no se le generan pensiones. Se puede <b>Volver a activar</b>.</li>
+    <li><b>Carnets</b> (módulo «Carnets con QR»): botón <b>🪪 Carnets</b> en Alumnos o en cada curso para imprimirlos.</li>
+    <li><b>Subir datos desde Excel</b> (módulo): plantillas para subir de una vez sedes, profesores, grupos y alumnos.</li>
+  </ul>
+</section>
+
+<section class="cap" id="c7">
+  <h1><span class="num">7</span> Asistencia y clases</h1>
+  <span class="plan base">Base · Alumnos → Asistencia</span>
+  <div class="tarea">
+    <div>
+      <ol class="pasos">
+        <li>Elija el curso y la fecha (viene la de hoy). También se llega con <b>Tomar asistencia</b> en el Resumen.</li>
+        <li>Toque <b>Todos presentes</b> y corrija a los que no: <b>P</b> presente, <b>T</b> tarde, <b>J</b> justificó, <b>A</b> faltó. Con 📝 deja una nota para ese alumno (la ven sus padres).</li>
+        <li>Elija el profesor y deje marcado <b>El profesor dio la clase</b> (cuenta para su pago).</li>
+        <li>Si quiere, anote <b>Qué se practicó</b> (objetivo y ejercicios), la duración, la intensidad, observaciones y <b>Fotos de la clase</b>.</li>
+        <li>Toque <b>💾 Guardar asistencia</b>.</li>
+      </ol>
+      <div class="consejo"><b>Para los padres</b>Con <b>Mostrar esta clase a los padres en el diario de clases</b> y <b>Los padres pueden ver las fotos</b>, la familia ve la clase en su portal.</div>
+    </div>
+    <figure class="cel"><img src="capturas/15_asistencia_celular.png" alt=""><figcaption>Tomar lista en el celular.</figcaption></figure>
+  </div>
+  <figure class="pc mb"><img src="capturas/16_asistencia_historial.png" alt=""><figcaption>Debajo, el historial del mes de cada alumno con su porcentaje.</figcaption></figure>
+  <h2>Planificar clases <span class="mod">Módulo «Planificación de clases»</span></h2>
+  <p>En <b>Alumnos → Planificar clases</b> ve el calendario del mes de cada curso: clases según el horario, dictadas, planificadas y sin plan. Pestañas <b>Planificación</b>, <b>Biblioteca de ejercicios</b> y <b>Ciclos de trabajo</b>.</p>
+  <figure class="pc mb"><img src="capturas/17_planificacion.png" alt=""><figcaption>Planificación del mes.</figcaption></figure>
+  <h2>Clases particulares <span class="mod">Módulo «Clases particulares con paquetes»</span></h2>
+  <p>Pestañas <b>Clases del día</b>, <b>Por alumno</b> y <b>Paquetes</b>. Cada alumno tiene su horario 1 a 1 con su profesor y su paquete de clases (se cobra en Pagos). Al marcar <b>✅ Vino</b>, <b>❌ Faltó</b> o <b>📞 Avisó</b>, el saldo de clases baja solo. Con <b>+ Marcar una clase fuera del horario</b> registra una clase de otro día.</p>
+  <figure class="pc mb"><img src="capturas/18_particulares.png" alt=""><figcaption>Clases particulares del día con el saldo de cada alumno.</figcaption></figure>
+  <div class="nota"><b>Evaluaciones y videos</b>Con el módulo <b>Evaluaciones, desarrollo y libreta</b>: jornadas de evaluación desde el celular, tests del grupo, medidas, ranking, récords e informe trimestral. Con el módulo <b>Videos</b>: videos cortos de cada alumno que llegan al portal de sus padres y se borran solos a los 10 días.</div>
+</section>
+
+<section class="cap" id="c8">
+  <h1><span class="num">8</span> Pensiones, cobros y caja</h1>
+  <span class="plan base">Base · Dinero → Pagos</span>
+  <p>Las pensiones <b>se crean solas cada mes</b> para cada alumno activo, con la pensión de su curso, su beca y el descuento por hermano. La pantalla <b>Pagos</b> tiene cuatro pestañas: <b>Estado de pagos</b>, <b>📤 Comprobantes</b>, <b>+ Cargos a un grupo</b> y <b>Caja del mes</b>.</p>
+  <h2>Estado de pagos</h2>
+  <p>Arriba, cuántos alumnos están <b>Al día</b>, <b>Por vencer (5 días)</b> y <b>Vencidos</b> (toque cada cifra para filtrar). En la lista: lo que debe cada uno, cuándo vence, el botón <b>Cobrar</b> y el de WhatsApp. Al final, <b>Crear pensiones de ese mes</b> sirve solo para adelantar el mes siguiente.</p>
+  <figure class="pc bajo"><img src="capturas/19_pagos.png" alt=""><figcaption>Estado de pagos.</figcaption></figure>
+  <h2>Cobrar en la academia</h2>
+  <ol class="pasos">
+    <li>Toque <b>Cobrar</b> junto al alumno (o abra su ficha → <b>Pagos</b>).</li>
+    <li>En <b>Pendiente</b> marque lo que paga: pensión, matrícula, paquete de clases, vestuario…</li>
+    <li>Elija la forma de pago: <b>Efectivo</b>, <b>Transferencia</b>, <b>DeUna</b>, <b>Depósito</b>, tarjeta u <b>Otro</b>.</li>
+    <li>Toque <b>💵 Cobrar y emitir recibo</b>. Sale el recibo numerado para imprimir; en el <b>Historial</b> queda el botón <b>🖨 Recibo</b>.</li>
+  </ol>
+  <figure class="pc bajo"><img src="capturas/20_cobrar.png" alt=""><figcaption>Cobrar desde la ficha: el paquete de clases y la pensión vencida.</figcaption></figure>
+  <h2>Comprobantes de DeUna o transferencia</h2>
+  <p>Las familias suben la foto de su pago desde su portal. En <b>📤 Comprobantes</b> revise que el dinero llegó y toque <b>✓ Aprobar y emitir recibo</b> (o <b>Rechazar</b>). El número rojo del menú Dinero le avisa cuántos hay por revisar.</p>
+  <figure class="pc bajo"><img src="capturas/21_comprobantes.png" alt=""><figcaption>Un comprobante de DeUna por revisar.</figcaption></figure>
+  <h2>Cargos a un grupo y caja del mes</h2>
+  <ul class="lista">
+    <li><b>+ Cargos a un grupo</b>: un valor aparte de la pensión para todo un curso (uniforme, inscripción a un festival, viaje, seguro). Queda en la cuenta de cada alumno.</li>
+    <li><b>Caja del mes</b>: ingresos, egresos y resultado del mes, los ingresos por concepto y <b>+ Registrar gasto</b> (concepto, descripción, valor, fecha y forma).</li>
+  </ul>
+  <figure class="pc bajo"><img src="capturas/22_caja.png" alt=""><figcaption>Caja del mes.</figcaption></figure>
+  <div class="nota"><b>Con tarjeta</b>Con los módulos <b>Cobros con tarjeta</b> o <b>Pago con tarjeta por Payphone</b>, los padres pagan con tarjeta de crédito o débito desde su celular; el recibo sale solo y cada pago se ve en <b>💳 Cobros con tarjeta</b>.</div>
+</section>
+
+<section class="cap" id="c9">
+  <h1><span class="num">9</span> Mensajes de hoy y avisos</h1>
+  <span class="plan base">Base · Dinero → Mensajes de hoy</span>
+  <div class="tarea">
+    <div>
+      <p>Cada día salen las familias con pensiones o valores que <b>vencen en los próximos días o que ya vencieron</b>, con el mensaje ya escrito: el valor, la fecha, el DeUna, los datos de transferencia y el enlace al portal de padres. Si la familia tiene varios hijos, va todo en un solo mensaje.</p>
+      <ol class="pasos">
+        <li>Toque <b>Ver el mensaje</b> si quiere leerlo antes.</li>
+        <li>Toque <b>💬 WhatsApp</b>: se abre el chat con el mensaje escrito. Envíelo.</li>
+        <li>Vuelva y toque <b>✓ Marcar como enviado</b>. Si la familia paga ahí mismo, use <b>Cobrar</b>.</li>
+      </ol>
+      <p>El número rojo del menú le dice cuántos mensajes faltan por enviar hoy.</p>
+    </div>
+    <figure class="cel"><img src="capturas/23_mensajes_celular.png" style="max-height:88mm" alt=""><figcaption>Mensajes de hoy.</figcaption></figure>
+  </div>
+  <h2>Avisos por Telegram <span class="mod">Módulo «Avisos por Telegram a los padres»</span></h2>
+  <p>Los padres conectan su Telegram una sola vez desde su portal (botón <b>Conectar Telegram</b>) y desde ahí les llegan solos los avisos que usted elija en <b>Dinero → Avisos por Telegram</b>:</p>
+  <div class="tarea doble">
+    <div>
+      <ul class="lista">
+        <li><b>Pensión por vencer</b> (los días antes que usted elija) y <b>Pensión vencida</b>.</li>
+        <li><b>Pago recibido</b>, con el número de recibo.</li>
+        <li><b>Falta a clase</b>, cuando el profesor marca «Faltó».</li>
+        <li><b>Comunicados</b>: en <b>📣 Enviar un comunicado</b> elija <b>Para</b> (todas las familias o un curso), el título y el mensaje, y toque <b>Enviar por Telegram</b>.</li>
+      </ul>
+      <p>A las familias que no conectaron Telegram escríbales por WhatsApp desde <b>Mensajes de hoy</b>.</p>
+    </div>
+    <figure class="pc"><img src="capturas/24_avisos.png" alt="" style="max-height:80mm"><figcaption>Qué avisos se envían y familias con Telegram conectado.</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="c10">
+  <h1><span class="num">10</span> Niveles, exámenes y recitales</h1>
+  <span class="plan">Módulos «Niveles, exámenes y certificados» y «Recitales y presentaciones»</span>
+  <h2>Niveles y exámenes</h2>
+  <p>En <b>Alumnos → Niveles y exámenes</b> hay una pestaña por disciplina (Ballet, Salsa, Piano…) y tres vistas: <b>Exámenes</b>, <b>Nivel de cada alumno</b> (nivel actual, el próximo y qué necesita para subir) y <b>Lista de niveles</b> (vienen de fábrica para baile, música y natación, y se pueden cambiar).</p>
+  <ol class="pasos">
+    <li>En <b>+ Nuevo examen de nivel</b>: fecha, hora, lugar, examinador y, si cobra, el <b>Derecho a examen</b>. Toque <b>Crear examen</b>.</li>
+    <li>Con <b>+ Inscribir alumnos</b> marque a los que se presentan. Con un botón el derecho a examen se carga a cada inscrito en Pagos.</li>
+    <li>Registre el <b>Resultado</b> de cada uno. Imprima el <b>🖨 Acta del examen</b> y los <b>🏅 Certificados de los aprobados</b>, con un código QR que cualquiera puede verificar.</li>
+  </ol>
+  <h2>Recitales y presentaciones</h2>
+  <ol class="pasos">
+    <li>En <b>+ Nuevo evento</b> elija el tipo (<b>Recital</b>, <b>Presentación</b>, <b>Festival</b>, <b>Audición</b> o <b>Clase abierta / muestra</b>), nombre, fecha, hora, lugar, la <b>Inscripción por alumno</b>, el <b>Vestuario por coreografía</b> y la fecha límite de pago. Toque <b>Crear evento</b>.</li>
+    <li>Agregue cada coreografía u obra con <b>+ Nueva coreografía</b> y sus alumnos con <b>+ Agregar participantes</b>. Anote la <b>talla</b> y el <b>papel</b> de cada uno y toque <b>💾 Guardar tallas y papeles</b>.</li>
+    <li>Agregue los ensayos (<b>+ Agregar ensayo</b>) y toque <b>💵 Cargar los cobros que falten</b>: la inscripción y el vestuario llegan a la cuenta de cada alumno y al portal de sus padres.</li>
+    <li>Imprima el <b>Programa</b> y la lista de <b>Participantes y tallas</b>.</li>
+  </ol>
+  <div class="figs2">
+    <figure class="pc"><img src="capturas/25_niveles.png" alt=""><figcaption>Nivel de cada alumno de ballet.</figcaption></figure>
+    <figure class="pc"><img src="capturas/26_recital.png" alt=""><figcaption>El recital de fin de año: coreografías, participantes y cobros.</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap c11" id="c11">
+  <h1><span class="num">11</span> Portal de padres y página de la academia</h1>
+  <span class="plan">Página de la academia: base · Portal de padres e inscripción en línea: módulo</span>
+  <div class="dos-cel">
+    <figure class="cel"><img src="capturas/33_pagina_publica.png" alt=""><figcaption>La página de la academia.</figcaption></figure>
+    <figure class="cel"><img src="capturas/34_inscripcion.png" alt=""><figcaption>Inscripción en línea: llega a Alumnos → Por aprobar.</figcaption></figure>
+    <div>
+      <h3 style="margin-top:0">La página de la academia</h3>
+      <p>Su academia tiene su propia página para compartir en WhatsApp, Instagram o Facebook (la abre con <b>ver página pública</b>, arriba del panel). Muestra sus grupos y horarios por sede y el botón de WhatsApp; con el módulo, también <b>Inscribir a mi hijo/a</b> y <b>Portal de padres</b>.</p>
+      <p>Con el módulo «Dominio propio», la página tiene su propia dirección (www.suacademia.com).</p>
+    </div>
+  </div>
+  <h2>Cómo entra la familia</h2>
+  <ol class="pasos">
+    <li>En la ficha del alumno → <b>Datos</b> → <b>Portal de la familia</b>, toque <b>🔑 Generar acceso para el representante</b> y envíe el mensaje con <b>📲 Enviar por WhatsApp</b>.</li>
+    <li>El representante abre el enlace y crea su clave de <b>4 a 6 números</b>.</li>
+    <li>Después entra al <b>Portal de padres</b> con su <b>cédula</b> y esa clave. Un mismo acceso sirve para todos sus hijos.</li>
+  </ol>
+  <h2>Qué ve la familia</h2>
+  <div class="dos-cel">
+    <figure class="cel"><img src="capturas/31_portal_pagar.png" alt=""><figcaption>Pagar por DeUna o transferencia y subir el comprobante.</figcaption></figure>
+    <figure class="cel"><img src="capturas/30_portal_padres.png" alt=""><figcaption>Cada hijo: curso, nivel, asistencia, recitales y la última clase.</figcaption></figure>
+    <ul class="lista">
+      <li><b>💵 Pagar</b>: marca lo que va a pagar de todos sus hijos, sube la foto del comprobante y toca <b>📤 Enviar comprobante</b>. Con Payphone: <b>💳 Pagar con tarjeta</b>.</li>
+      <li>Por cada hijo: horario, nivel, asistencia y estado de pagos; <b>Clases</b> (diario y fotos), <b>Desarrollo</b>, <b>Informe</b> y <b>Carnet digital</b> según sus módulos.</li>
+      <li><b>Próximos recitales</b>: su coreografía, su talla y los ensayos.</li>
+      <li><b>Clases particulares</b>: horario y saldo del paquete.</li>
+      <li><b>Pagos</b> pendientes y <b>recibos</b>.</li>
+      <li><b>Conectar Telegram</b> para los avisos (módulo).</li>
+    </ul>
+  </div>
+  <div class="tarea">
+    <div class="nota"><b>Carnet con QR</b>Con el módulo «Carnets con QR del alumno», quien escanea el código del carnet ve si el alumno está activo, su foto, su tipo de sangre y el teléfono de emergencia, con la fecha y la hora del momento.</div>
+    <figure class="cel"><img src="capturas/32_carnet.png" alt=""><figcaption>Carnet escaneado.</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="c12">
+  <h1><span class="num">12</span> El profesor en su celular</h1>
+  <span class="plan">Perfil «Profesor» · «Mi rol de pago» es del módulo «Profesores y rol de pago»</span>
+  <p>El profesor entra con su correo y su contraseña. Ve el Resumen con <b>Hoy tienen clase</b>, toma lista de sus cursos, planifica sus clases y registra evaluaciones y niveles. <b>No ve los pagos de las familias</b> ni la caja.</p>
+  <div class="dos-cel">
+    <figure class="cel"><img src="capturas/35_profesora_celular.png" alt=""><figcaption>El Resumen de la profesora.</figcaption></figure>
+    <figure class="cel"><img src="capturas/36_mi_rol.png" alt=""><figcaption>Mi rol de pago.</figcaption></figure>
+    <div>
+      <h3>Mi rol de pago</h3>
+      <p>Las <b>clases dictadas</b> en el mes, los <b>alumnos en sus grupos</b>, lo que <b>le corresponde</b>, lo <b>por cobrar del mes</b>, lo <b>recibido</b> en el año y <b>cómo se le paga</b>. Elige el mes arriba.</p>
+      <div class="consejo"><b>Consejo</b>Cada profesor toma la lista en el salón, desde su celular, al empezar la clase. Así los padres ven la asistencia el mismo día y el pago del profesor se calcula solo.</div>
+    </div>
+  </div>
+</section>
+
+<section class="cap" id="c13">
+  <h1><span class="num">13</span> Reportes</h1>
+  <span class="plan">Indicadores, bitácora y descargar datos: base · Contabilidad: módulo</span>
+  <h2>Indicadores</h2>
+  <p>En <b>Configuración → Indicadores</b> ve cómo va su academia mes a mes, calculado solo con lo que registra: alumnos activos, ingresos del mes (y la diferencia con el anterior), ingreso promedio por alumno, pensiones del mes cobradas, deuda vencida, asistencia de 30 días y retiro. Con gráficos de ingresos, alumnos nuevos y retirados de los últimos 12 meses y la <b>ocupación de cada grupo</b> (cuáles tienen espacio).</p>
+  <figure class="pc bajo"><img src="capturas/27_indicadores.png" alt=""><figcaption>Indicadores.</figcaption></figure>
+  <h2>Contabilidad <span class="mod">Módulo «Contabilidad con importador del SRI»</span></h2>
+  <p>Pestañas <b>Resumen</b>, <b>Gastos</b>, <b>Facturas del SRI</b> (importa las facturas que usted recibe: XML, TXT o clave de acceso) y <b>Para el contador</b>. Elija las fechas (o los atajos este mes, mes pasado, este año) y baje el reporte en <b>⬇ Excel</b> o <b>🖨 PDF</b>.</p>
+  <figure class="pc bajo"><img src="capturas/28_contabilidad.png" alt=""><figcaption>Contabilidad: ingresos, gastos y resultado.</figcaption></figure>
+  <h2>Sus datos y la bitácora</h2>
+  <ul class="lista">
+    <li><b>Descargar mis datos</b>: todo en un Excel.</li>
+    <li><b>Bitácora</b>: quién hizo cada cambio y cuándo.</li>
+    <li><b>Protección de datos</b>: las autorizaciones y las solicitudes de las familias (LOPDP).</li>
+  </ul>
+</section>
+
+<section class="cap" id="c14">
+  <h1><span class="num">14</span> Mi plan y los módulos</h1>
+  <span class="plan base">Para el dueño · Configuración → Mi plan</span>
+  <p>En <b>Mi plan</b> ve su plan, su vencimiento, cuántos alumnos tiene y <b>🧩 Mis módulos</b>: los <b>encendidos</b> (los de su plan y los que agregó) y los que puede agregar, con lo que hace cada uno. Los precios no salen en pantalla: lo que no tiene es <b>por cotización</b>.</p>
+  <ul class="lista">
+    <li>Para agregar uno, toque <b>Solicitar este módulo</b>: le llega a Tukán, que le envía la cotización y lo enciende (normalmente el mismo día).</li>
+    <li>Para otra disciplina u otro plan, toque <b>Pedir cotización</b>: le respondemos en Ayuda y soporte y por WhatsApp.</li>
+    <li>Si un módulo no está en su plan, no aparece en su menú. Si alguien abre esa pantalla, el programa dice <b>«Su plan no incluye…»</b> y lo lleva a Mi plan.</li>
+    <li><b>Apagar un módulo nunca borra datos</b>: si se vuelve a encender, todo sigue como estaba.</li>
+    <li>En <b>Renovar o cambiar de plan</b> renueva su plan: paga por transferencia y sube el comprobante ahí mismo. Los otros planes son por cotización. Abajo queda el historial de <b>Mis pagos</b>.</li>
+  </ul>
+  <figure class="pc"><img src="capturas/29_mis_modulos.png" alt=""><figcaption>Mis módulos.</figcaption></figure>
+</section>
+
+<section class="cap" id="c16">
+  <h1><span class="num">15</span> Ayuda y Asistente IA</h1>
+  <span class="plan base">Ayuda: base, para todos · Asistente IA: módulo extra</span>
+  <h2>La Ayuda: pregunte y le respondemos al instante</h2>
+  <p>En el menú <b>Mi cuenta → ❓ Ayuda</b> (o en el botón verde <b>❓ Ayuda → Pregunte cómo se hace algo</b>) escriba su duda con sus palabras. La tienen todas las academias y todos los usuarios del panel.</p>
+  <ul class="lista">
+    <li>En <b>¿En qué le ayudamos?</b> escriba su pregunta, por ejemplo <b>«¿Cómo registro un pago?»</b>, y toque <b>Preguntar</b>. La respuesta sale de este manual, paso a paso.</li>
+    <li>Si no le sirvió, toque el WhatsApp <b>099 640 8397</b> que sale debajo y le ayudamos.</li>
+    <li>Las respuestas quedan guardadas como <b>preguntas frecuentes</b>: si otra persona pregunta lo mismo, la respuesta sale al momento. Tukán las revisa y la versión buena le sirve a todos. Hasta 10 preguntas por minuto.</li>
+  </ul>
+  <h2>El Asistente IA <span class="mod">Incluido en el plan Completo · extra en el Básico</span></h2>
+  <p>Viene <b>incluido en el plan Completo</b>. En el plan Básico es un módulo extra: se pide en <b>Mi plan → Mis módulos</b> (grupo <b>Extras</b>) con <b>Solicitar este módulo</b> y le enviamos la cotización. Con el módulo encendido aparece <b>Mi cuenta → ✨ Asistente IA</b> y dos botones en la ficha del alumno. <b>Usted revisa siempre</b> lo que propone antes de enviarlo.</p>
+  <ul class="lista">
+    <li><b>✨ Informe para los padres</b>: arma un mensaje cálido con la <b>asistencia</b> de los últimos 3 meses, el <b>nivel</b> y las <b>notas del profesor</b> de cada clase. Puede agregar una nota (por ejemplo «mencione que se presenta en el recital»). Revise el texto y toque <b>📲 Enviar por WhatsApp</b> al representante o <b>📋 Copiar</b>.</li>
+    <li><b>✨ Mensaje de cobro amable</b>: junta las pensiones pendientes del alumno y de sus hermanos (mismo representante) con el <b>total exacto</b>, en un tono cordial y listo para WhatsApp. Si no hay nada pendiente, se lo decimos.</li>
+    <li>Si en ese momento el asistente no puede, verá «En este momento no pudimos procesar el texto automáticamente; puede hacerlo a mano aquí» con el enlace a la ficha o a Pagos. No se pierde nada.</li>
+    <li>Apagar el módulo no borra nada, y la Ayuda sigue para todos.</li>
+  </ul>
+</section>
+
+<section class="cap" id="c15">
+  <h1><span class="num">16</span> Preguntas frecuentes</h1>
+  <div class="preg"><b class="q">¿Necesito instalar algo?</b>No. TuAcademia funciona en el navegador del celular, la tablet o la computadora. Si quiere, instálela como app desde Chrome (capítulo 2).</div>
+  <div class="preg"><b class="q">¿Cómo cobro distinto a cada curso o alumno?</b>La pensión general está en Parámetros. Cada curso puede tener su <b>Pensión de este curso</b> y cada alumno su <b>Pensión especial</b> o su <b>Beca (%)</b>.</div>
+  <div class="preg"><b class="q">¿Cómo funciona el descuento por hermanos?</b>Los hermanos se reconocen por la <b>misma cédula del representante</b>. Desde el 2.º hijo se aplica el descuento por hermano de Parámetros.</div>
+  <div class="preg"><b class="q">¿Un alumno puede estar en dos disciplinas?</b>Sí. En su ficha → Datos → <b>Agregar otra disciplina o grupo</b>. Cada mes se genera la pensión de ese grupo, con el descuento por segunda disciplina si lo puso.</div>
+  <div class="preg"><b class="q">¿Cuándo se crean las pensiones?</b>Solas, cada mes. En Pagos, <b>Crear pensiones de ese mes</b> solo sirve para adelantar el mes siguiente.</div>
+  <div class="preg"><b class="q">Una familia pagó por DeUna, ¿qué hago?</b>Si subió el comprobante, apruébelo en Pagos → <b>📤 Comprobantes</b>. Si le mandó la captura por WhatsApp, cobre desde su ficha eligiendo <b>DeUna</b>. En los dos casos sale el recibo.</div>
+  <div class="preg"><b class="q">¿Qué pasa si un alumno se retira?</b>En su ficha toque <b>Retirar de la escuela</b>: ya no se le generan pensiones y pasa a la pestaña Retirados. Sus datos y pagos quedan guardados.</div>
+  <div class="preg"><b class="q">¿Los padres necesitan usuario?</b>No. Entran al portal de padres con su cédula y una clave de 4 a 6 números que crean con el acceso que usted les envía (módulo «Portal de padres»).</div>
+  <div class="preg"><b class="q">¿Qué ve un profesor?</b>Sus cursos, la asistencia, la planificación, las evaluaciones y su rol de pago. No ve los pagos de las familias ni la caja.</div>
+  <div class="preg"><b class="q">Si apago un módulo, ¿pierdo la información?</b>No. Apagar un módulo solo esconde sus pantallas; al encenderlo de nuevo todo sigue como estaba.</div>
+  <div class="preg"><b class="q">¿Quién cambió algo?</b>En <b>Bitácora</b> queda quién hizo cada cambio y cuándo.</div>
+  <div class="preg"><b class="q">¿Puedo sacar toda mi información?</b>Sí: <b>Descargar mis datos</b> le da todo en un Excel.</div>
+  <div class="contacto"><b>¿Necesita ayuda o quiere agregar un módulo?</b><br>Escríbanos por <b>WhatsApp 099 640 8397</b> · info@tukansoftware.com · tukansoftware.com<br>Dentro del programa: botón <b>❓ Ayuda</b> → soporte.</div>
+</section>
+
+</body>
+</html>

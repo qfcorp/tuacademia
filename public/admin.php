@@ -23,6 +23,7 @@ $validas = ['login', 'salir', 'inicio', 'ligas', 'usuarios', 'clave', 'config', 
     'olimpiadas', // (v37)
     'google_play', // (v38)
     'mensajes', 'recitales', 'particulares', // (TuAcademia)
+    'ayuda', 'ayuda_faq', 'asistente', // (21 oct 2026) Ayuda con preguntas frecuentes y módulo «Asistente IA»
     'avisos_padres']; // (TuAcademia, 14-oct) avisos por Telegram a los padres
 if (!in_array($p, $validas, true)) {
     $p = 'inicio';
@@ -74,7 +75,7 @@ if (get('combo') !== '' && $u['rol'] === 'liga') {
 }
 // (v10) Liga de demostración: se puede mirar todo, pero no se guarda nada
 // (v15) Si se permite guardar en la demo (se borra cada madrugada), solo se bloquea la cuenta y los usuarios
-if (es_post() && !es_super() && es_usuario_demo($u) && (!demo_guardar() || in_array($p, ['seguridad', 'clave', 'usuarios', 'mi_plan', 'pasarela', 'pagos_linea', 'soporte', 'cargas', 'mis_datos'], true))) {
+if (es_post() && !es_super() && $p !== 'ayuda' && es_usuario_demo($u) && (!demo_guardar() || in_array($p, ['seguridad', 'clave', 'usuarios', 'mi_plan', 'pasarela', 'pagos_linea', 'soporte', 'cargas', 'mis_datos'], true))) {
     flash('Esta es la demostración: puede mirar todo, pero los cambios no se guardan. Solicite su demo para probarlo con sus datos.', 'error');
     ir($_SERVER['HTTP_REFERER'] ?? 'admin.php');
 }
@@ -100,7 +101,7 @@ if (es_post() && !in_array($p, ['seguridad', 'clave'], true) && !puede_pagina($p
     ir($_SERVER['HTTP_REFERER'] ?? 'admin.php');
 }
 // Suscripción vencida: el panel de la liga queda en solo lectura
-if (es_post() && !in_array($p, ['seguridad', 'mi_plan', 'soporte', 'novedades'], true) && !liga_puede_editar(liga_trabajo())) { // (v12) con la suscripción vencida igual puede pagar en Mi plan
+if (es_post() && !in_array($p, ['seguridad', 'mi_plan', 'soporte', 'novedades', 'ayuda'], true) && !liga_puede_editar(liga_trabajo())) { // (v12) con la suscripción vencida igual puede pagar en Mi plan
     flash(liga_suspendida(liga_trabajo()) ? texto_suspension(liga_trabajo()) : estado_suscripcion(liga_trabajo())['texto'] . ' Comuníquese con ' . ajuste('empresa') . ' para renovar.', 'error'); // (Tukán Central v2) suspendida
     ir($_SERVER['HTTP_REFERER'] ?? 'admin.php');
 }

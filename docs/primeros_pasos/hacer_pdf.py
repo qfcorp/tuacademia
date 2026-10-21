@@ -89,7 +89,7 @@ h.append(paso(9, 'Recordar los pagos por WhatsApp', 'Menú Dinero → Mensajes d
     'Toque <b>💬 WhatsApp</b>, envíe el mensaje y toque <b>✓ Marcar como enviado</b>. El número rojo del menú dice cuántos faltan.']))
 
 h.append(f'''<div class="fin"><b>¿Listo? Ya puede trabajar.</b> Para niveles y exámenes, recitales, clases particulares, evaluaciones, rol de pago de profesores y todo lo demás,
-vea el <b>Manual de academias</b>.<br><br>¿Dudas? Escríbanos por <b>WhatsApp 099 640 8397</b> · info@tukansoftware.com · tukansoftware.com</div>''')
+vea el <b>Manual de academias</b>.<br><br><b>¿Cómo se hace algo?</b> En <b>❓ Ayuda</b> escriba su pregunta y le respondemos al instante con el manual. El <b>✨ Asistente IA</b> (informe del avance del alumno para los padres y mensaje de cobro amable) viene incluido en el plan Completo; en el Básico se pide en Mi plan.<br><br>¿Dudas? Escríbanos por <b>WhatsApp 099 640 8397</b> · info@tukansoftware.com · tukansoftware.com</div>''')
 
 html = f'<!doctype html><html lang="es"><head><meta charset="utf-8"><style>{css}</style></head><body>{"".join(h)}</body></html>'
 open(f'{D}/primeros_pasos.html', 'w').write(html)

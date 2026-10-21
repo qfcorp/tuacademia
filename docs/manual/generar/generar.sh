@@ -28,5 +28,7 @@ echo "== 3. PDF del manual y de la guía"
 python3 "$AQUI/pdf.py" "$MANUAL/manual.html" "$RAIZ/docs/Manual_TuAcademia.pdf" "Manual de TuAcademia"
 # El mismo PDF se descarga desde la web del programa: /manual (app/publico/manual.php, modo academia)
 mkdir -p public/assets/manual && cp "$RAIZ/docs/Manual_TuAcademia.pdf" public/assets/manual/Manual-TuAcademia-Academias.pdf
+# La Ayuda del programa («¿En qué le ayudamos?») lee este mismo manual: el VPS solo recibe app/ y public/
+cp "$MANUAL/manual.html" "$RAIZ/app/manuales/academia.html"
 python3 docs/primeros_pasos/hacer_pdf.py
 pdfinfo "$RAIZ/docs/Manual_TuAcademia.pdf" 2>/dev/null | grep -E "Pages" || true

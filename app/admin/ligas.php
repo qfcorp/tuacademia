@@ -20,7 +20,21 @@ if (get('entrar') !== '') {
     ir('admin.php');
 }
 
-if (es_post()) {
+// (21 oct 2026) «Enviar por correo» en «Demo lista»: la contraseña viaja SELLADA en el POST (no se guarda); el resultado se muestra
+// aquí mismo (sin redirigir, para no perder el sello si hay que corregir el correo). No pasa por el resto de los formularios.
+$correo_post = null;
+if (es_post() && post('accion') === 'demo_correo') {
+    $correo_post = ['sello' => post('sello'), 'para' => post('para'), 'ok' => '', 'err' => '', 'caducado' => false];
+    try {
+        [$ok_c, $msg_c] = correo_demo_enviar(post('sello'), post('para'));
+        $correo_post[$ok_c ? 'ok' : 'err'] = $msg_c;
+    } catch (RuntimeException $ex) {
+        $correo_post['err'] = $ex->getMessage();
+        $correo_post['caducado'] = true;
+    }
+}
+
+if (es_post() && $correo_post === null) {
     $accion = post('accion', 'guardar');
     if ($accion === 'restaurar') { // (Anexo A) sacar una cuenta de la papelera (vuelve tal cual estaba)
         $l = fila('SELECT * FROM ligas WHERE id = ?', [(int)post('id')]) ?? throw new RuntimeException('Esa cuenta ya no existe (quizás ya se borró de verdad).');
@@ -202,8 +216,17 @@ if (get('creada') !== '' && ($lc = fila('SELECT * FROM ligas WHERE id = ?', [(in
       <a class="btn btn-sec" href="admin.php?p=ligas&amp;editar=<?= (int)$lc['id'] ?>">Editar</a>
     </div>
     <details style="margin-top:10px"><summary>Ver el mensaje con los accesos</summary><pre class="mensaje"><?= e($msg) ?></pre></details>
+    <?php if (($dc['clave'] ?? '') !== ''): // (21 oct 2026) Enviar por correo (la contraseña va sellada en el formulario, no se guarda)
+        echo html_correo_demo(correo_demo_sellar(['usuario' => (string)$dc['email'], 'clave' => (string)$dc['clave'], 'enlace' => rtrim(url_base(), '/') . '/admin.php',
+            'hasta' => estado_suscripcion($lc)['estado'] === 'prueba' ? (string)$lc['vence'] : '', 'contacto' => (string)($dc['admin'] ?? ''), 'negocio' => (string)$lc['nombre'], 'liga_id' => (int)$lc['id']]),
+            (string)($dc['email'] ?? ''));
+    endif; ?>
   </div>
 <?php endif;
+if ($correo_post !== null) {
+    echo $correo_post['caducado'] ? '<div class="aviso aviso-error" id="correo-demo">' . e($correo_post['err']) . '</div>'
+        : html_correo_demo($correo_post['sello'], $correo_post['para'], $correo_post['err'], $correo_post['ok']);
+}
 
 if ($nueva): ?>
   <p><a href="admin.php?p=ligas">← Volver a <?= es_academia() ? 'las academias' : 'ligas y escuelas' ?></a></p>

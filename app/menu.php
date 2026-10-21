@@ -137,6 +137,9 @@ function menu_panel(): array
     $cu = [];
     if ($liga && !es_super() && profesor_del_usuario($u)) $cu[] = $it('admin.php?p=mi_rol', 'Mi rol de pago', '💰', ['mi_rol'], 'Mis clases y mis pagos', 0, true);
     $cu[] = $it('admin.php?p=seguridad', 'Mi cuenta', '👤', ['seguridad', 'clave'], 'Contraseña y doble verificación');
+    // (21 oct 2026) Ayuda con preguntas frecuentes (todos) y el módulo extra «Asistente IA»
+    if ($liga && modulo_menu($liga, 'asistente_ia')) $cu[] = $it('admin.php?p=asistente', 'Asistente IA', '✨', ['asistente'], ia_modo($liga) === 'escuelas' || ia_modo($liga) === 'academia' ? 'Informe para los padres y cobro amable' : 'Crónica del partido y hoja de vocalía');
+    $cu[] = $it('admin.php?p=ayuda', 'Ayuda', '❓', ['ayuda', 'ayuda_faq'], 'Pregunte cómo se hace algo');
     // (v27) Ayuda, soporte y novedades
     if (!es_super() && $liga && in_array($u['rol'], ['liga'], true)) {
         $cu[] = $it('admin.php?p=soporte', 'Ayuda y soporte', '🎫', ['soporte'], 'Tickets y pedidos de funcionalidad', tickets_sin_leer_liga((int)$liga['id']));

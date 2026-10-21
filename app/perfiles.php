@@ -62,6 +62,7 @@ function area_pagina(string $p): string
 {
     return [
         'inicio' => '*', 'seguridad' => '*', 'clave' => '*', 'salir' => '*', 'login' => '*',
+        'ayuda' => '*', 'ayuda_faq' => 'super', 'asistente' => '*', // (21 oct 2026) cada función del asistente revisa su área
         'equipos' => 'equipos', 'equipo' => 'equipos', 'jugador' => 'equipos', 'carnets' => 'equipos', 'importar' => 'equipos',
         'inscripciones' => 'inscripciones',
         'torneos' => 'campeonatos', 'torneo' => 'campeonatos', 'carrera' => 'campeonatos', 'duelo' => 'campeonatos', 'bolos' => 'campeonatos', 'pruebas' => 'campeonatos', 'indiv' => 'campeonatos', 'programar' => 'campeonatos',

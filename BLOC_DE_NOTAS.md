@@ -1,6 +1,6 @@
 # Bloc de notas — TuAcademia (nombre provisional)
 
-Para Dimitry. Escrito en español sencillo. Última actualización: 20 de octubre de 2026 (ver **§15 Sin precios del software y sin «gratis»**).
+Para Dimitry. Escrito en español sencillo. Última actualización: 21 de octubre de 2026 (ver **§16 Ayuda, Asistente IA y «Enviar por correo»**).
 
 ---
 
@@ -474,3 +474,38 @@ ni «prueba gratis»: solo hay demos, y en textos de venta se dice «meses de re
   **374/374**, `prueba_modulos` **75/75** (academia) y **76/76** (ligas), `prueba38` **100/100** y `navegador38` **13/13** (modo ligas).
   - `prueba38` en esta computadora necesita `TA_SIM=8462` porque `pruebas/v38/cuenta_servicio.json` (no va a GitHub) quedó con ese puerto.
 - Servidor: solo `cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps/vps/vps_2_codigo.sh` (no hay tablas nuevas).
+
+
+## 16. Ayuda, Asistente IA y «Enviar por correo» (21 oct 2026)
+
+Guías del Panel: `tukan-central/compartido/LEEME_IA.md` y `LEEME_CORREO.md`. Las librerías están copiadas **sin cambios** en
+`app/tukan_ia.php` y `app/tukan_correo.php`; lo del programa está en `app/asistente_ia.php` (**el mismo archivo que en TuVocalía**).
+
+- **Ayuda para todos** (menú Mi cuenta → ❓ Ayuda y el botón verde ❓ Ayuda → «Pregunte cómo se hace algo»): «¿En qué le ayudamos?»
+  responde con una pregunta frecuente guardada (sin costo), con la IA y el manual de TuAcademia (`app/manuales/academia.html`, copia de
+  `docs/manual/manual.html` que deja `generar.sh`; una prueba revisa que sean iguales) o, si no se puede gastar, con el manual tal cual +
+  WhatsApp 099 640 8397. Hasta 10 preguntas por minuto.
+- **Preguntas frecuentes** (súper: `admin.php?p=ayuda_faq`): Por revisar, Aprobar, Editar, Borrar y Agregar. Con CSRF y bitácora.
+- **Asistente IA** (módulo `asistente_ia`, grupo Extras; **incluido en el plan más caro (Completo)**, en los demás planes es un extra **por cotización**; no entra en la demo):
+  **Informe del avance del alumno para los padres** (asistencia de 3 meses, nivel y notas del profesor) y **Mensaje de cobro amable**
+  (pensiones pendientes del alumno y sus hermanos, con el total exacto). Botones en la ficha del alumno. Siempre se revisa antes de
+  enviarlo por WhatsApp. Si no se puede: «En este momento no pudimos procesar el texto automáticamente; puede hacerlo a mano aquí: …».
+  En modo ligas (como TuVocalía) son la crónica del partido y la foto de la hoja de vocalía.
+- **Nunca** se le dice al cliente «límite», «cupo» ni «saldo».
+- **Gasto y tope**: tabla `tukan_ia_gasto` por academia y mes; tope `ligas.ia_tope_usd` (vacío = $0.50 sin el módulo y 30 respuestas nuevas
+  al mes, $4.00 con el módulo, venga en el plan o comprado aparte; -1 = sin tope propio). Las tablas y columnas se crean solas.
+  Migración que se puede repetir (`ia_plan_alto`, ajuste una sola vez): el plan activo más caro queda `*,asistente_ia`.
+- **Panel Tukán Central** (revisión 4, Anexo C): `ia_uso` y `ejecutar ia_tope` (botón «Tope de IA del mes» en la ficha de la academia).
+- **Enviar por correo** en «Demo lista» (súper → Ligas → Crear): «Su demo de TuAcademia está lista». La contraseña va sellada (no se guarda),
+  queda en la bitácora «Envió la demo por correo a …» sin la contraseña. Usa el correo de Tukán o, si no está, el correo propio del programa
+  (Ajustes). Sin ninguno: «Configure el correo de Tukán».
+- **En el VPS (Docker)**: el contenedor no ve `/etc`, así que la clave de la IA y el correo van en `data/tukan-ia.env` y `data/tukan-correo.env`:
+  `sudo bash /var/www/tuacademia/vps/configurar_ia_correo.sh` (ver `vps/vps/INSTRUCCIONES.txt`). También sirven las variables de entorno o
+  `app/config.php` (`'tukan_ia_env'`, `'tukan_correo_env'` o las claves `TUKAN_IA_CLAVE`, `TUKAN_SMTP_HOST`… como valores).
+- **Manual**: capítulo 15 «Ayuda y Asistente IA» (preguntas frecuentes pasa a 16) y PDF regenerado. Textos nuevos en los 5 idiomas.
+- **Pruebas** (21 oct 2026, todas con base nueva; `TA_SIM=8462`):
+  modo academia: prueba_academia 259/259, navegador_academia 19/19 (sobre la misma base), recorrido 1500 páginas sin error,
+  arreglos 105/105, central 125/125, central v2 380/380, módulos 76/76, usuarios 43/43, **prueba_ia 88/88**;
+  modo ligas: prueba38 100/100, navegador38 13/13, central 121/121, central v2 374/374, módulos 77/77, usuarios 43/43, **prueba_ia 104/104**.
+  `pruebas/ia/prueba_ia.py` usa los servidores de mentira del Panel (`tukan-central/tests/anthropic_falso.py` y `smtp_falso.py`).
+

@@ -69,7 +69,7 @@ function modulos_sistema_base(): array
         'pago_payphone' => ['💳', 'Pago con tarjeta por Payphone', 'escuela', 'Los padres pagan la pensión con tarjeta desde su portal con Payphone; el pago se confirma solo y sale el recibo.'],
         'videos' => ['🎬', 'Videos del jugador y del alumno', 'ambos', 'Suba videos cortos (hasta 2 minutos) de cada jugador o alumno: su gol, una jugada, su técnica. Le llegan a su portal para verlos y descargarlos; se borran solos a los 10 días.'],
         'carga_masiva' => ['📥', 'Subida masiva desde Excel', 'ambos', 'Plantillas de Excel para subir de una sola vez equipos, jugadores, árbitros, canchas y competidores (ligas) o sedes, profesores, grupos y alumnos (escuelas).'],
-        // (21 oct 2026) Incluido en el plan más caro; en los demás, extra por cotización; no entra en la demo (app/asistente_ia.php)
+        // (21 oct 2026) Incluido en el plan más caro; en los demás, extra (TuAcademia: $5, fuera de los 3 a elegir; ligas: por cotización); no entra en la demo (app/asistente_ia.php)
         'asistente_ia' => ['✨', 'Asistente IA', 'ambos', 'Lee fotos de documentos y llena los datos por usted, y responde las dudas al instante.'],
         'contabilidad' => ['📒', 'Contabilidad con importador del SRI', 'ambos', 'Gastos con o sin factura, facturas recibidas importadas del SRI (XML, TXT o clave de acceso) que usted elige incluir, resumen de ingresos y gastos por mes y por campeonato, y reportes en PDF y Excel para su contador.'],
     ];

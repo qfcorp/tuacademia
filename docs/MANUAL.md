@@ -1,6 +1,6 @@
 # Manual de TuAcademia (para el cliente)
 
-**PDF:** [docs/Manual_TuAcademia.pdf](Manual_TuAcademia.pdf) (A4, 26 páginas, diseño de marca Tukán, igual que el manual de TuSpa).
+**PDF:** [docs/Manual_TuAcademia.pdf](Manual_TuAcademia.pdf) (A4, 27 páginas, diseño de marca Tukán, igual que el manual de TuSpa).
 Es para el dueño de la academia, los profesores y la secretaría. Todo lo que dice está revisado contra el programa en
 modo academia (menú, pantallas y botones reales) y las capturas son de la «Academia Demo».
 

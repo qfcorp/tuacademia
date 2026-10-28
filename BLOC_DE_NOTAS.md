@@ -1,6 +1,6 @@
 # Bloc de notas — TuAcademia (nombre provisional)
 
-Para Dimitry. Escrito en español sencillo. Última actualización: 21 de octubre de 2026 (ver **§16 Ayuda, Asistente IA y «Enviar por correo»**).
+Para Dimitry. Escrito en español sencillo. Última actualización: 28 de octubre de 2026 (ver **§17 Planes de $20 y $45**).
 
 ---
 
@@ -508,4 +508,44 @@ Guías del Panel: `tukan-central/compartido/LEEME_IA.md` y `LEEME_CORREO.md`. La
   arreglos 105/105, central 125/125, central v2 380/380, módulos 76/76, usuarios 43/43, **prueba_ia 88/88**;
   modo ligas: prueba38 100/100, navegador38 13/13, central 121/121, central v2 374/374, módulos 77/77, usuarios 43/43, **prueba_ia 104/104**.
   `pruebas/ia/prueba_ia.py` usa los servidores de mentira del Panel (`tukan-central/tests/anthropic_falso.py` y `smtp_falso.py`).
+
+## 17. Planes de $20 y $45 (28 oct 2026)
+
+Decisión de Dimitry, igual en toda la familia Tukán menos TuVocalía (que tendrá otros precios; ese repositorio no se tocó).
+
+- **Solo dos planes.** **Básico $20 al mes** ($100 por 6 meses, $200 por 1 año) = la base + **3 módulos que elige el cliente**;
+  cada módulo más **$5 al mes**. **Completo $45** ($225 / $450) = todos los módulos, con el **Asistente IA incluido** (con su tope de $4 al mes).
+- **Asistente IA en el Básico: $5 al mes** (antes $0 «por cotización») y **no cuenta** entre los 3 elegidos.
+- **Disciplinas adicionales** (`ligas.deportes`): siguen igual (el plan trae 1; cada una más con su precio y descuento) y **fuera** de los 3 elegidos.
+- **Cómo se calcula** (`modulos_cliente()` y `precio_extras_plan()` en `app/modulos_catalogo.php`, el mismo cálculo que el Panel Tukán Central):
+  los primeros `planes.modulos_elegir` módulos extra del cliente (en el orden del catálogo, sin el Asistente IA) van incluidos; los demás cuestan
+  `planes.precio_modulo_extra` (vacío = su precio del catálogo). `planes.modulos = '-'` quiere decir «el plan no trae módulos» (vacío sigue siendo «todos»).
+- **`ligas.modulos_elegidos` no cambió**: sigue siendo la marca «el súper eligió los módulos de la demo». Lo que elige el cliente son sus
+  `modulos_extra` (los primeros 3 no se cobran).
+- **Cambio en la base UNA sola vez** (`planes_20_45()`, marca `planes_20_45` en ajustes; solo en modo academia): precios y módulos de los dos planes,
+  Asistente IA a $5, otros planes de academias ocultos. Quien ya pagaba el Básico conserva sus módulos (carnets, portal de padres, avisos y niveles,
+  menos los que se le habían quitado) pasándolos a sus extras: cuentan entre los 3, y **si eran 4, el cuarto cuesta $5 (pasa de $19 a $25)**.
+  Una cuenta en otro plan pasa al Completo (o al Básico con sus módulos si su plan era más barato que el Básico). Las demos con todo encendido no cambian.
+  Si después Dimitry cambia precios o planes en **Ventas → Planes**, no se pisan.
+- **Pantallas**: Mi plan dice «Su plan trae 3 módulos a su elección: le quedan X por elegir»; los elegidos dicen «Elegido · Incluido»; los que puede
+  elegir dicen «Puede elegirlo en su plan» (botón «Elegir este módulo») y **nunca muestran precio** (lo que no tiene sigue «por cotización»).
+  De lo que sí tiene ve lo que paga. Planes y precios (súper) tiene «Módulos que elige el cliente» y «Cada módulo más». Ligas → Editar dice
+  cuáles son los elegidos. La portada, el folleto y la tabla comparativa dicen «3 módulos a su elección» (sin precios).
+- **Panel Tukán Central** (conector v2): `planes` y `modulos` traen `modulos_elegir` y `precio_modulo_extra` en cada plan, y `modulos` trae
+  `fuera_del_cupo: ["asistente_ia"]` (el Panel calcula el total en vivo). `cliente.modulos` trae `plan`, `modulos_elegir`, `elegidos_plan`,
+  `por_elegir`, `precio_por_extra` y `precio_modulo_extra` («elegidos» sigue siendo sí/no, como antes). `guardar_modulos` acepta
+  `modulos_elegir` (0 a 50) y `precio_modulo_extra` (o null) por plan. `finanzas.por_modulo` cuenta $0 por los elegidos.
+- **Google Play** (apagado): precio web ÷ 0,85 redondeado a ,99. Básico $20/$100/$200 → **$23,99 / $117,99 / $235,99**; Completo $45/$225/$450 →
+  **$52,99 / $264,99 / $529,99** (tabla en súper → Google Play). Solo se venden los dos planes; lo demás lo enciende y cobra Tukán. En modo ligas sigue el factor de siempre.
+- Los precios **nunca se publican al cliente**. Manual (capítulos 1, 14 y 15) y guía «Primeros pasos» actualizados, PDF de 27 páginas.
+- **Pruebas**: `prueba_modulos.py` sección 9 (migración, $20/$25/$30/$45, Asistente IA, disciplinas, Mi plan, súper, portada) y
+  `prueba_central_v2.py` sección 9d (conector). `prueba_academia.py` revisa los precios nuevos ($45 / $450, y que la portada no los muestre).
+  `prueba_central.py`: la prueba del token «vencido hace 25 s» tomaba la hora antes de 17 pedidos y fallaba con la máquina cargada (también
+  sin estos cambios); ahora toma la hora justo antes.
+- **Resultados (28 oct 2026, base nueva en cada una, puertos 8365/8366)** — antes → después:
+  modo academia: prueba_academia 259/259 → **259/259**, navegador_academia **19/19**, arreglos 105/105 → **105/105**,
+  central 124/125 (falla de hora de la prueba) → **125/125**, central v2 380/380 → **394/394**, módulos 76/76 → **108/108**,
+  usuarios 43/43 → **43/43**, IA 92/92 → **92/92**, recorrido **6.065 páginas, 0 con error de PHP**;
+  modo ligas: módulos 77/77 → **79/79**, central v2 374/374 → **378/378**, central 120/121 → **121/121**, prueba38 100/100 → **100/100**,
+  IA 108/108 → **108/108**.
 

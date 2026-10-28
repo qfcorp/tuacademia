@@ -1281,6 +1281,7 @@ function tc2_planes(): array
             $lim['Equipos por torneo'] = (int)($pl['max_equipos_torneo'] ?? 0) ? (string)(int)$pl['max_equipos_torneo'] : 'Ilimitados';
             $lim['Equipos en la liga'] = (int)$pl['max_equipos'] ? (string)(int)$pl['max_equipos'] : 'Ilimitados';
         }
+        if (modulos_elegir_plan($pl) > 0) $lim['Módulos a elegir'] = (string)modulos_elegir_plan($pl); // (28 oct 2026)
         $planes[] = [
             'codigo' => (string)$pl['id'], 'nombre' => (string)$pl['nombre'], 'activo' => (int)$pl['activo'] === 1,
             'para' => match ($para) { 'liga' => 'Ligas', 'escuela' => $acad ? 'Academias' : 'Escuelas', default => $acad ? 'Academias' : 'Ligas y escuelas' },
@@ -1289,6 +1290,8 @@ function tc2_planes(): array
             'limites' => (object)$lim,
             'detalle' => array_map('tc2_txt', textos_limites_plan($pl, $para === 'ambos' ? '' : $para)),
             'clientes' => (int)($cuentas[$pl['id']] ?? 0),
+            // (28 oct 2026) planes de $20 y $45: módulos que elige el cliente (incluidos) y precio de cada módulo más (null = el del catálogo)
+            'modulos_elegir' => modulos_elegir_plan($pl), 'precio_modulo_extra' => precio_modulo_extra_plan($pl),
         ];
     }
     return [
@@ -1882,10 +1885,11 @@ function tc2_finanzas(array $d): array
         $lm = $lig_mod[(int)$c['id']];
         $cat_m = catalogo_modulos(tipo_modulos($lm));
         $mc = modulos_cliente($lm);
+        $px = (array)$mc['precio_por_extra']; // (28 oct 2026) los elegidos del Básico valen 0
         foreach ($mc['extra'] as $k) {
             $por_modulo[$k] ??= ['modulo' => $k, 'nombre' => $cat_m[$k]['nombre'], 'clientes' => 0, 'mensual' => 0.0, 'quitado_por' => 0, 'descuentos' => 0.0];
             $por_modulo[$k]['clientes']++;
-            $por_modulo[$k]['mensual'] += $cat_m[$k]['precio_mensual'];
+            $por_modulo[$k]['mensual'] += $px[$k] ?? $cat_m[$k]['precio_mensual'];
         }
         foreach ((array)$mc['descuentos'] as $k => $v) {
             if (!isset($cat_m[$k])) continue;
@@ -2446,14 +2450,18 @@ function tc2_modulos(): array
         $cat_p = catalogo_modulos($para === 'ambos' ? ($acad ? 'escuela' : '') : $para);
         $planes[] = ['codigo' => (string)$pl['id'], 'nombre' => (string)$pl['nombre'], 'activo' => (int)$pl['activo'] === 1, 'para' => $para,
                      'precio_mensual' => precio_mensual_plan($pl), 'modulos' => array_values(array_intersect(array_keys($cat_p), modulos_plan($pl))),
-                     'todos' => trim((string)$pl['modulos']) === '' || in_array('*', array_map('trim', explode(',', (string)$pl['modulos'])), true)];
+                     'todos' => trim((string)$pl['modulos']) === '' || in_array('*', array_map('trim', explode(',', (string)$pl['modulos'])), true),
+                     'modulos_elegir' => modulos_elegir_plan($pl), 'precio_modulo_extra' => precio_modulo_extra_plan($pl)]; // (28 oct 2026)
     }
     $base = [];
     foreach ($tipos as $t) $base[$t] = funciones_base($t);
     return [
         'base' => funciones_base($acad ? 'escuela' : 'liga'), 'base_por_tipo' => (object)$base,
         'grupos' => tc2_opciones(grupos_modulos()), 'modulos' => $mods, 'planes' => $planes, 'editable' => true,
+        // (28 oct 2026) módulos que no cuentan entre los que elige el cliente: siempre a su precio del catálogo (el Panel calcula el total en vivo)
+        'fuera_del_cupo' => array_values(array_intersect(modulos_fuera_del_cupo(), array_keys($cat))),
         'reglas' => ['activos' => '(módulos del plan − quitados) + extra, respetando dependencias', 'mensual' => 'plan + extra + deportes − descuentos, o el precio acordado',
+                     'elegir' => 'los primeros «modulos_elegir» extra del plan (en el orden del catálogo, sin los de «fuera_del_cupo») van incluidos; cada uno más cuesta «precio_modulo_extra» (null = su precio del catálogo); los de «fuera_del_cupo», su precio del catálogo',
                      'demo' => 'en la demo tiene todos los módulos, salvo que se elijan al crear la demo o con cambiar_modulos', 'apagar' => 'apagar nunca borra datos'],
     ];
 }
@@ -2464,7 +2472,12 @@ function tc2_modulos_cliente(array $l, ?array $pl = null): array
     $m = modulos_cliente($l, $pl);
     return ['del_plan' => $m['del_plan'], 'extra' => $m['extra'], 'quitados' => $m['quitados'], 'activos' => $m['activos'], 'descuentos' => $m['descuentos'],
             'precio_plan' => $m['precio_plan'], 'precio_extra' => $m['precio_extra'], 'precio_deportes' => $m['precio_deportes'], 'descuento' => $m['descuento'],
-            'precio_acordado' => $m['precio_acordado'], 'mensual' => $m['mensual'], 'todos_en_demo' => $m['todos_en_demo'], 'elegidos' => (int)($l['modulos_elegidos'] ?? 0) === 1];
+            'precio_acordado' => $m['precio_acordado'], 'mensual' => $m['mensual'], 'todos_en_demo' => $m['todos_en_demo'], 'elegidos' => (int)($l['modulos_elegidos'] ?? 0) === 1,
+            // (28 oct 2026) planes de $20 y $45. «elegidos» sigue siendo «el súper eligió los módulos» (sí/no); la lista de los
+            // módulos que entran en los que elige el cliente va en «elegidos_plan»
+            'plan' => ($pl ??= plan_de_liga($l)) ? ['codigo' => (string)$pl['id'], 'nombre' => (string)$pl['nombre']] : null,
+            'modulos_elegir' => $m['modulos_elegir'], 'elegidos_plan' => $m['elegidos'], 'por_elegir' => $m['por_elegir'],
+            'precio_por_extra' => $m['precio_por_extra'], 'precio_modulo_extra' => $m['precio_modulo_extra']];
 }
 
 /** Botón «Módulos» de la ficha: un sí/no por módulo + precio acordado + motivo. */
@@ -2475,7 +2488,10 @@ function tc2_boton_modulos(array $l): array
     $campos = [];
     foreach ($cat as $k => $x) {
         $en_plan = in_array($k, $m['del_plan'], true);
-        $campos[] = tc2_campo('mod_' . $k, $x['icono'] . ' ' . $x['nombre'] . ($en_plan ? ' (en su plan)' : ' (+' . dinero($x['precio_mensual']) . ' al mes)'), 'si_no', false,
+        $px = ((array)$m['precio_por_extra'])[$k] ?? (in_array($k, modulos_fuera_del_cupo(), true) || $m['precio_modulo_extra'] === null ? $x['precio_mensual'] : $m['precio_modulo_extra']);
+        $et = $en_plan ? ' (en su plan)' : (in_array($k, $m['elegidos'], true) ? ' (elegido, incluido)'
+            : (!in_array($k, $m['extra'], true) && $m['por_elegir'] > 0 && !in_array($k, modulos_fuera_del_cupo(), true) ? ' (entra en los ' . $m['modulos_elegir'] . ' a elegir)' : ' (+' . dinero($px) . ' al mes)'));
+        $campos[] = tc2_campo('mod_' . $k, $x['icono'] . ' ' . $x['nombre'] . $et, 'si_no', false,
             ['valor' => in_array($k, $m['activos'], true), 'ayuda' => $x['depende_de'] ? 'Necesita: ' . nombres_modulos($x['depende_de'], $cat) : null]);
     }
     $campos[] = tc2_campo('precio_acordado', 'Precio acordado ($ al mes, opcional)', 'dinero', false, ['valor' => $m['precio_acordado'], 'min' => 0, 'ayuda' => 'Vacío = plan + módulos (hoy ' . dinero($m['mensual']) . ' al mes).']);
@@ -2565,7 +2581,10 @@ function tc2_op_cambiar_modulos(array $d, array $ctx): array
             'bitacora' => ($x['sin_cambios'] ? 'Cambiar módulos (ya estaban así)' : 'Cambió los módulos: ' . $x['texto']) . ($pedido ? ' · pedido #' . $pedido['id'] : '')];
 }
 
-/** guardar_modulos: datos.modulos [{id, precio_mensual?, descripcion?, orden?, grupo?, depende_de?}] y datos.planes [{codigo, modulos: [ids] | "*", precio_mensual?}]. */
+/**
+ * guardar_modulos: datos.modulos [{id, precio_mensual?, descripcion?, orden?, grupo?, depende_de?}] y
+ * datos.planes [{codigo, modulos?: [ids] | "*", precio_mensual?, modulos_elegir?: 0..50, precio_modulo_extra?: $ | null}] (28 oct 2026).
+ */
 function tc2_op_guardar_modulos(array $d, array $ctx): array
 {
     $acad = tc_producto()[2];
@@ -2583,6 +2602,8 @@ function tc2_op_guardar_modulos(array $d, array $ctx): array
         $pl = is_array($p) && (is_string($p['codigo'] ?? null) || is_int($p['codigo'] ?? null)) && ctype_digit((string)$p['codigo']) ? fila('SELECT * FROM planes WHERE id = ?', [(int)$p['codigo']]) : null;
         if (!$pl || ($acad && ($pl['tipo_cuenta'] ?? '') === 'liga')) throw tc2_mal('datos.planes.' . $i . '.codigo', 'Ese plan no existe en ' . tc_producto()[1] . '.');
         if ($acad && is_array($p['modulos'] ?? null) && array_diff($p['modulos'], array_keys($cat))) throw tc2_mal('datos.planes.' . $i . '.modulos', 'Hay módulos que no existen en ' . tc_producto()[1] . '.');
+        if (array_key_exists('modulos_elegir', $p) && $p['modulos_elegir'] !== null && (!is_int($p['modulos_elegir']) || $p['modulos_elegir'] < 0 || $p['modulos_elegir'] > 50)) throw tc2_mal('datos.planes.' . $i . '.modulos_elegir', 'Los módulos que elige el cliente van de 0 a 50.');
+        if (array_key_exists('precio_modulo_extra', $p) && $p['precio_modulo_extra'] !== null && (!is_int($p['precio_modulo_extra']) && !is_float($p['precio_modulo_extra']) || $p['precio_modulo_extra'] < 0 || $p['precio_modulo_extra'] > 10000)) throw tc2_mal('datos.planes.' . $i . '.precio_modulo_extra', 'El precio de cada módulo más va de 0 a 10000 (o null = el del catálogo).');
     }
     $n = guardar_catalogo_modulos($mods, $planes, $ctx['por']);
     return ['mensaje' => $n ? 'Catálogo de módulos guardado (' . $n . ' cambio' . ($n === 1 ? '' : 's') . '). Los precios nuevos se usan desde ya.' : 'El catálogo ya estaba así.', 'sin_cambios' => $n === 0,

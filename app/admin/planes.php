@@ -18,7 +18,10 @@ if (es_post()) {
             'precio_semestral' => $dinero_post('precio_semestral'), 'precio_anual' => $dinero_post('precio_anual'),
             'max_campeonatos' => entero(post('max_campeonatos'), 0, 999), 'max_equipos_torneo' => entero(post('max_equipos_torneo'), 0, 9999),
             'max_equipos' => entero(post('max_equipos'), 0, 9999), 'max_alumnos' => entero(post('max_alumnos'), 0, 99999),
-            'modulos' => !array_diff($mods_plan, $mods) ? '*' . implode('', array_map(fn($k) => ',' . $k, array_values(array_intersect(modulos_fuera_de_planes(), $mods)))) : implode(',', $mods),
+            'modulos' => !array_diff($mods_plan, $mods) ? '*' . implode('', array_map(fn($k) => ',' . $k, array_values(array_intersect(modulos_fuera_de_planes(), $mods)))) : (implode(',', $mods) ?: '-'), // (28 oct 2026) '-' = ninguno
+            // (28 oct 2026) planes de $20 y $45: módulos que elige el cliente (incluidos) y precio de cada módulo más (vacío = el del catálogo)
+            'modulos_elegir' => entero(post('modulos_elegir'), 0, 50),
+            'precio_modulo_extra' => trim(post('precio_modulo_extra')) === '' ? null : $dinero_post('precio_modulo_extra'),
             'tipo_cuenta' => in_array(post('tipo_cuenta'), ['ambos', 'liga', 'escuela'], true) ? post('tipo_cuenta') : 'ambos',
             'descripcion' => mb_substr(post('descripcion'), 0, 2000),
             'destacado' => post('destacado') === '1' ? 1 : 0, 'dominio_anual' => post('dominio_anual') === '1' ? 1 : 0, 'activo' => post('activo') === '1' ? 1 : 0, 'orden' => entero(post('orden'), 0, 99),
@@ -42,7 +45,7 @@ if (es_post()) {
 $planes = filas('SELECT p.*, (SELECT COUNT(*) FROM ligas l WHERE l.plan_id = p.id) AS n_ligas FROM planes p ORDER BY orden, precio_mensual');
 $editar = get('editar') !== '' ? fila('SELECT * FROM planes WHERE id = ?', [(int)get('editar')]) : null;
 $v = $editar ?? ['id' => 0, 'nombre' => '', 'slug' => '', 'eslogan' => '', 'precio_mensual' => 0, 'precio_trimestral' => 0, 'precio_semestral' => 0, 'precio_anual' => 0,
-    'max_equipos' => 0, 'max_campeonatos' => 0, 'max_equipos_torneo' => 0, 'max_alumnos' => 0, 'modulos' => '*', 'tipo_cuenta' => 'ambos',
+    'max_equipos' => 0, 'max_campeonatos' => 0, 'max_equipos_torneo' => 0, 'max_alumnos' => 0, 'modulos' => '*', 'tipo_cuenta' => 'ambos', 'modulos_elegir' => 0, 'precio_modulo_extra' => null,
     'descripcion' => '', 'destacado' => 0, 'dominio_anual' => 0, 'activo' => 1, 'orden' => count($planes) + 1];
 $mods_v = modulos_plan($v);
 $para = ['ambos' => 'Ligas y escuelas', 'liga' => 'Solo ligas', 'escuela' => 'Solo escuelas'];
@@ -57,7 +60,7 @@ cabecera_admin('Planes');
     <tr><td><b><?= e($pl['nombre']) ?></b><?= $pl['destacado'] ? ' <span class="etiqueta verde">recomendado</span>' : '' ?><br><small class="suave"><?= e($para[$pl['tipo_cuenta']] ?? '') ?></small></td>
       <?php foreach (['mensual', 'trimestral', 'semestral', 'anual'] as $k): ?><td class="num"><?= isset($o[$k]) ? dinero($o[$k]['precio']) . ($o[$k]['gratis'] ? '<br><small class="suave">' . texto_ahorro($o[$k]['gratis']) . '</small>' : '') : '—' ?></td><?php endforeach; ?>
       <td style="white-space:normal;font-size:.85rem"><?= e(implode(' · ', textos_limites_plan($pl))) ?></td>
-      <td class="num"><?= count(modulos_plan($pl)) ?>/<?= count(modulos_sistema()) ?></td><td class="num"><?= (int)$pl['n_ligas'] ?></td>
+      <td class="num"><?= count(modulos_plan($pl)) ?>/<?= count(modulos_sistema()) ?><?= modulos_elegir_plan($pl) ? '<br><small class="suave">+ ' . modulos_elegir_plan($pl) . ' a elegir · cada uno más ' . (precio_modulo_extra_plan($pl) === null ? 'precio del catálogo' : dinero(precio_modulo_extra_plan($pl))) . '</small>' : '' ?></td><td class="num"><?= (int)$pl['n_ligas'] ?></td>
       <td><?= $pl['activo'] ? 'Visible' : '<span class="etiqueta gris">Oculto</span>' ?></td>
       <td class="acciones"><a class="btn btn-sec btn-chico" href="admin.php?p=planes&amp;editar=<?= (int)$pl['id'] ?>#form">Editar</a>
         <a class="btn btn-sec btn-chico" target="_blank" href="<?= e(url_plan($pl)) ?>">Folleto</a>
@@ -99,6 +102,12 @@ cabecera_admin('Planes');
       <?php endforeach; ?>
     </div>
     <p><a href="#" onclick="document.querySelectorAll('input[name=\'modulos[]\']').forEach(function(c){c.checked=true});return false">Marcar todos</a> · <a href="#" onclick="document.querySelectorAll('input[name=\'modulos[]\']').forEach(function(c){c.checked=false});return false">Quitar todos</a></p>
+    <h3>🎯 Módulos a elección del cliente</h3>
+    <p class="ayuda">Plan Básico: la base + los módulos que elige cada cliente (vienen incluidos en el precio); cada uno más cuesta lo de «Cada módulo más». <?= e(nombres_modulos(modulos_fuera_del_cupo())) ?> no cuenta entre los elegidos: se cobra con su precio del catálogo (Ventas → Planes → catálogo de módulos). Los deportes o disciplinas adicionales se cobran aparte, como siempre.</p>
+    <div class="campos">
+      <div><label>Módulos que elige el cliente</label><input type="number" name="modulos_elegir" min="0" max="50" value="<?= (int)($v['modulos_elegir'] ?? 0) ?>"><div class="ayuda">0 = el cliente no elige (el plan trae los marcados arriba).</div></div>
+      <div><label>Cada módulo más ($ al mes)</label><input type="number" name="precio_modulo_extra" min="0" step="0.01" value="<?= ($v['precio_modulo_extra'] ?? null) === null || $v['precio_modulo_extra'] === '' ? '' : e((string)$v['precio_modulo_extra']) ?>" placeholder="vacío = precio del catálogo"></div>
+    </div>
     <div class="campos">
       <div class="campo-ancho"><label>Puntos extra para la página de venta (uno por línea, opcional)</label><textarea name="descripcion" rows="4" placeholder="Soporte prioritario por WhatsApp&#10;Capacitación por videollamada"><?= e($v['descripcion']) ?></textarea></div>
       <div><label>Orden</label><input type="number" name="orden" min="0" max="99" value="<?= (int)$v['orden'] ?>"></div>

@@ -103,10 +103,15 @@ function play_url(): string
     return 'https://play.google.com/store/apps/details?id=' . rawurlencode(play_paquete());
 }
 
-/** Precio de la web → precio de Google Play: + factor %, redondeado hacia ARRIBA a 0,50 ($10 → $12, $15 → $18, $7 → $8,50). */
+/**
+ * Precio de la web → precio de Google Play: + factor %, redondeado hacia ARRIBA a 0,50 ($10 → $12, $15 → $18, $7 → $8,50).
+ * (28 oct 2026) En TuAcademia, como en toda la familia Tukán: precio web ÷ 0,85 (Google se queda el 15 %), redondeado hacia arriba
+ * a ,99 ($20 → $23,99, $100 → $117,99, $45 → $52,99). En modo ligas (TuVocalía) sigue el factor de siempre.
+ */
 function precio_play(float $web): float
 {
     if ($web <= 0) return 0.0;
+    if ((defined('PRODUCTO') ? PRODUCTO : 'academia') === 'academia') return round(ceil(round($web / 0.85 + 0.01, 6)) - 0.01, 2);
     $p = $web * (1 + play_factor() / 100);
     return ceil(round($p * 2, 6)) / 2;
 }

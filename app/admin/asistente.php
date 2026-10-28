@@ -1,6 +1,6 @@
 <?php
 /*
- * (21 oct 2026) MÓDULO EXTRA «ASISTENTE IA» (asistente_ia, por cotización). Lo que propone la IA SIEMPRE se revisa antes de usarlo.
+ * (21 oct 2026) MÓDULO EXTRA «ASISTENTE IA» (asistente_ia; en TuAcademia, desde el 28 oct 2026: $5 al mes en el Básico, incluido en el Completo). Lo que propone la IA SIEMPRE se revisa antes de usarlo.
  *  Ligas y federaciones:  ?f=cronica&partido=ID  Crónica del partido para redes (resultado, goleadores y tarjetas guardadas)
  *                         ?f=hoja&partido=ID     Leer la foto de la hoja de vocalía en papel (propone goles y tarjetas para revisar)
  *  Escuelas y academias:  ?f=informe&alumno=ID   Informe del avance del alumno para los padres (asistencia, nivel, notas del profesor)

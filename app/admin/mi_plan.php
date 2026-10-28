@@ -121,7 +121,7 @@ elseif ($combo): $pl_c = plan_de_liga($combo); ?>
       <?php if ($plan && (int)$plan['id'] === (int)$pl['id']): ?><span class="plan-cinta">Su plan</span><?php endif; ?>
       <h3><?= e($pl['nombre']) ?></h3>
       <p class="suave" style="margin:0 0 6px"><?= e($pl['eslogan']) ?></p>
-      <ul><?php foreach (textos_limites_plan($pl, $tipo) as $t): ?><li><?= e($t) ?></li><?php endforeach; ?><li><?= count(array_intersect(modulos_plan($pl), array_keys(modulos_sistema($tipo)))) ?> de <?= count(modulos_sistema($tipo)) ?> módulos · <a target="_blank" href="<?= e(url_plan($pl)) ?>">ver detalle</a></li></ul>
+      <ul><?php foreach (textos_limites_plan($pl, $tipo) as $t): ?><li><?= e($t) ?></li><?php endforeach; ?><li><?= texto_modulos_plan($pl, $tipo) ?> · <a target="_blank" href="<?= e(url_plan($pl)) ?>">ver detalle</a></li></ul>
       <?php if (!$ver_precios && !$es_propio): // (20 oct 2026) un plan que no tiene: por cotización ?>
         <p><b>Por cotización</b></p><p><?= html_boton_cotizacion('plan:' . (int)$pl['id']) ?></p>
       <?php elseif (pasarela_activa()): ?>

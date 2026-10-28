@@ -325,6 +325,7 @@ for nombre, t in malos.items():
     chk(r.status_code == 401 and j.get('ok') is False and isinstance(j.get('error'), str) and j['error'] and j.get('codigo') in ('firma', 'inst', 'tipo', 'version', 'vencido', 'futuro', 'nonce', 'invalido'),
         'estado rechaza: ' + nombre + ' (' + str(r.status_code) + ' ' + str(j.get('codigo')) + ' ' + str(j.get('error')) + ')')
 chk(pedir('estado', token(tipo='sso')).status_code == 401, 'estado rechaza tipo «sso»')
+ahora = int(time.time())  # (28 oct 2026) la hora de nuevo: los pedidos de arriba pueden tardar más de 5 s con la máquina cargada
 r = pedir('estado', token(iat=ahora - 80, exp=ahora - 25))
 chk(r.status_code == 200, 'estado acepta un token vencido hace 25 s (30 s de tolerancia)')
 r = pedir('estado', token(iat=ahora + 25, exp=ahora + 70))
@@ -345,6 +346,7 @@ chk(php("echo (int)valor(\"SELECT COUNT(*) FROM bitacora WHERE tabla = 'tukan_no
 r = pedir('sso', token('sso', secreto=secrets.token_hex(32)))
 chk(r.status_code == 401 and 'text/html' in r.headers.get('Content-Type', '') and URL_CENTRAL in r.text and 'Panel Tukán' in r.text and 'Firma' in r.text,
     'sso con firma mala: 401, página en español con enlace al panel central')
+ahora = int(time.time())
 for nombre, t in [('vencido', token('sso', iat=ahora - 200, exp=ahora - 140)), ('otra instancia', token('sso', inst='zz')), ('tipo estado', token('estado')),
                   ('correo inválido', token('sso', email='x@')), ('del futuro', token('sso', iat=ahora + 100, exp=ahora + 150))]:
     r = pedir('sso', t)

@@ -1030,6 +1030,9 @@ chk(cl9.get('contadores') == {'total': e9['negocios']['total'], 'prueba': e9['ne
 FIXB = r"""
 $acad = tc_producto()[2];
 $T = $acad ? 'escuela' : 'liga';
+// (28 oct 2026) esta sección usa el Básico como antes de los planes de $20 y $45 (con sus módulos, sin módulos a elegir);
+// los planes de $20 y $45 se prueban en la sección 9d
+if ($acad) q("UPDATE planes SET modulos = 'carnets,esc_familias,avisos,acad_niveles', modulos_elegir = 0, precio_modulo_extra = NULL WHERE slug = 'academia-basico'");
 $pl = (int)valor("SELECT id FROM planes WHERE activo = 1 AND tipo_cuenta IN ('ambos', ?) AND precio_mensual > 0 AND modulos <> '*' ORDER BY precio_mensual, id LIMIT 1", [$T]);
 $r = [];
 foreach (['MA' => 'Modulos Activa', 'MB' => 'Modulos Otra'] as $k => $n) {
@@ -1158,6 +1161,51 @@ r, d = ejecutar('crear_demo', {'nombre': 'Demo Mala', 'contacto_nombre': 'Eva De
 chk(es_error(r, 'invalido', 422), 'crear_demo con un módulo que no existe → 422')
 # apagar nunca borra datos: el módulo apagado sigue con sus filas
 chk(int(php("echo (int)valor('SELECT COUNT(*) FROM modulos_pedidos WHERE liga_id = " + MB + "');")) == 1, 'apagar / no aprobar no borra datos')
+
+# ---------- 9d) Planes de $20 y $45 (28 oct 2026): módulos a elegir, precio de cada uno más y fuera_del_cupo ----------
+if ACADEMIA:
+    php("q(\"UPDATE planes SET modulos = '-', modulos_elegir = 3, precio_modulo_extra = 5, precio_mensual = 20 WHERE slug = 'academia-basico'\");")
+PB = php("echo (int)valor(\"SELECT id FROM planes WHERE slug = 'academia-basico'\");") if ACADEMIA else ''
+PC = php("echo (int)valor(\"SELECT id FROM planes WHERE slug = 'academia-completo'\");") if ACADEMIA else ''
+m = pedir('modulos')
+chk(m.get('fuera_del_cupo') == ['asistente_ia'], 'modulos: fuera_del_cupo = [asistente_ia] (no cuenta entre los elegidos; el Panel calcula el total en vivo) ' + str(m.get('fuera_del_cupo')))
+chk(all(isinstance(p_.get('modulos_elegir'), int) and 'precio_modulo_extra' in p_ for p_ in m.get('planes', [])), 'modulos: cada plan dice modulos_elegir y precio_modulo_extra')
+chk('elegir' in m.get('reglas', {}), 'modulos: las reglas explican los módulos a elegir')
+pls = {p_['codigo']: p_ for p_ in pedir('planes').get('planes', [])}
+chk(all(isinstance(p_.get('modulos_elegir'), int) and 'precio_modulo_extra' in p_ for p_ in pls.values()), 'planes: cada plan dice modulos_elegir y precio_modulo_extra')
+if ACADEMIA:
+    mp_ = {p_['codigo']: p_ for p_ in m.get('planes', [])}
+    chk(mp_[PB]['modulos'] == [] and mp_[PB]['modulos_elegir'] == 3 and mp_[PB]['precio_modulo_extra'] == 5 and mp_[PB]['precio_mensual'] == 20 and mp_[PB]['todos'] is False,
+        'modulos: Básico $20 = la base + 3 a elegir, $5 cada uno más ' + str(mp_.get(PB)))
+    chk(mp_[PC]['todos'] is True and 'asistente_ia' in mp_[PC]['modulos'] and mp_[PC]['modulos_elegir'] == 0 and mp_[PC]['precio_modulo_extra'] is None and mp_[PC]['precio_mensual'] == 45,
+        'modulos: Completo $45 con todo y el Asistente IA')
+    chk(pls[PB]['limites'].get('Módulos a elegir') == '3' and [x['precio'] for x in pls[PB]['precios']] == [20, 100, 200] and [x['precio'] for x in pls[PC]['precios']] == [45, 225, 450],
+        'planes: Básico $20/$100/$200 y Completo $45/$225/$450, con «Módulos a elegir» ' + str([pls[PB]['precios'], pls[PC]['precios']]))
+    php("q(\"UPDATE ligas SET plan_id = " + PB + ", modulos_extra = '', modulos_quitados = '', precio_acordado = NULL WHERE id = " + MA + "\");")
+    cm = pedir('cliente', {'id': MA}).get('cliente', {}).get('modulos', {})
+    chk(cm.get('modulos_elegir') == 3 and cm.get('por_elegir') == 3 and cm.get('elegidos_plan') == [] and cm.get('mensual') == 20 and (cm.get('plan') or {}).get('codigo') == PB,
+        'cliente.modulos: Básico sin módulos → $20 y 3 por elegir ' + str({k: cm.get(k) for k in ('modulos_elegir', 'por_elegir', 'elegidos_plan', 'mensual', 'plan')}))
+    libres = [x['id'] for x in m['modulos'] if not x['depende_de'] and x['id'] != 'asistente_ia'][:4]
+    r, d = ejecutar('cambiar_modulos', {'encender': libres + ['asistente_ia']}, MA)
+    dm = d.get('modulos', {})
+    chk(r.status_code == 200 and len(dm.get('elegidos_plan', [])) == 3 and dm.get('por_elegir') == 0 and dm.get('mensual') == 30 and dm.get('precio_por_extra', {}).get('asistente_ia') == 5
+        and sorted(dm.get('precio_por_extra', {}).values()) == [0, 0, 0, 5, 5], 'cambiar_modulos: 4 módulos + Asistente IA en el Básico = $20 + $5 + $5 = $30 ' + str({k: dm.get(k) for k in ('elegidos_plan', 'precio_por_extra', 'mensual')}))
+    f = pedir('finanzas', {})
+    pm = {x['modulo']: x for x in f.get('por_modulo', [])}
+    chk(pm.get('asistente_ia', {}).get('mensual', 0) >= 5 and pm.get(dm['elegidos_plan'][0], {}).get('clientes', 0) >= 1, 'finanzas: por_modulo cuenta 0 por los elegidos y $5 por el Asistente IA')
+    r, d = ejecutar('guardar_modulos', {'planes': [{'codigo': PB, 'modulos_elegir': 4, 'precio_modulo_extra': 4}]})
+    cm = pedir('cliente', {'id': MA}).get('cliente', {}).get('modulos', {})
+    chk(r.status_code == 200 and cm.get('modulos_elegir') == 4 and cm.get('mensual') == 25, 'guardar_modulos: 4 a elegir y $4 cada uno más → $20 + $5 (IA) = $25 ' + str(cm.get('mensual')))
+    r, d = ejecutar('guardar_modulos', {'planes': [{'codigo': PB, 'precio_modulo_extra': None, 'modulos_elegir': 3}]})
+    cm = pedir('cliente', {'id': MA}).get('cliente', {}).get('modulos', {})
+    chk(r.status_code == 200 and cm.get('precio_modulo_extra') is None and cm.get('mensual') == round(25 + {x['id']: x['precio_mensual'] for x in m['modulos']}[libres[3]], 2),
+        'guardar_modulos: precio_modulo_extra null → cada uno más a su precio del catálogo ' + str(cm.get('mensual')))
+    r, d = ejecutar('guardar_modulos', {'planes': [{'codigo': PB, 'modulos_elegir': 99}]})
+    chk(es_error(r, 'invalido', 422), 'guardar_modulos: modulos_elegir 99 → 422')
+    r, d = ejecutar('guardar_modulos', {'planes': [{'codigo': PB, 'precio_modulo_extra': -2}]})
+    chk(es_error(r, 'invalido', 422), 'guardar_modulos: precio_modulo_extra negativo → 422')
+    ejecutar('guardar_modulos', {'planes': [{'codigo': PB, 'modulos_elegir': 3, 'precio_modulo_extra': 5}]})
+    ejecutar('cambiar_modulos', {'apagar': libres + ['asistente_ia']}, MA)
 
 # ---------- 10) Pantallas del programa con las mismas reglas (Ventas, Embudo) ----------
 s, rr = entrar('super@prueba.com')

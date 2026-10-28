@@ -10,7 +10,8 @@
  * - Preguntas frecuentes del súper (admin.php?p=ayuda_faq): aprobar, editar, borrar, agregar (con CSRF y en la bitácora).
  *   Tabla tukan_ia_faq (+ columna «modo»: '' = sirve para todos).
  * - Módulo «Asistente IA» (asistente_ia): viene INCLUIDO en el plan más alto (el de mayor precio, de ligas y de escuelas: plan
- *   «*,asistente_ia»); en los demás planes es un extra por cotización. En la demo no viene (salvo que el súper lo encienda):
+ *   «*,asistente_ia»); en los demás planes es un extra por cotización. (28 oct 2026) En TuAcademia: incluido en el Completo ($45) y
+ *   $5 al mes en el Básico, sin contar entre los 3 módulos a elegir (modulos_fuera_del_cupo()). En la demo no viene (salvo que el súper lo encienda):
  *     ligas y federaciones: «Crónica del partido para redes» y «Leer la foto de la hoja de vocalía en papel»;
  *     escuelas y academias: «Informe del avance del alumno para los padres» y «Mensaje de cobro amable».
  *   Siempre se revisa antes de usar. Si no se puede gastar: el mensaje neutro con el enlace para hacerlo a mano.

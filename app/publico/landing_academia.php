@@ -90,6 +90,7 @@ $funciones = [
       <?php if ((int)($pl['dominio_anual'] ?? 0)): ?><p class="suave plan-equiv"><b class="plan-dominio">🌐 + dominio propio incluido*</b></p><?php endif; ?>
       <ul class="plan-limites"><?php foreach (textos_limites_plan($pl, 'escuela') as $t): ?><li><?= e($t) ?></li><?php endforeach; ?></ul>
       <ul class="plan-modulos">
+        <?php if (modulos_elegir_plan($pl) > 0): // (28 oct 2026) ?><li class="si">✓ <b><?= modulos_elegir_plan($pl) ?> módulos a su elección</b></li><?php endif; ?>
         <?php foreach ($mods_vista as $k => [$ico, $nom]): $si = in_array($k, $mp, true); ?><li class="<?= $si ? 'si' : 'no' ?>"><?= $si ? '✓' : '✕' ?> <?= e($nom) ?></li><?php endforeach; ?>
         <?php foreach (array_filter(array_map('trim', explode("\n", $pl['descripcion']))) as $li): ?><li class="si">✓ <?= e($li) ?></li><?php endforeach; ?>
       </ul>

@@ -80,8 +80,13 @@ cabecera_admin('Google Play');
   <form method="post" class="tarjeta"><?= csrf_campo() ?><input type="hidden" name="accion" value="ajustes">
     <h2 style="margin-top:0">⚙️ Ajustes</h2>
     <label class="check"><input type="checkbox" name="play_activo" value="1" <?= play_activo() ? 'checked' : '' ?>> <b>Cobrar dentro de la app de Google Play</b> (márquelo cuando los productos ya estén creados y activos)</label>
+    <?php if (es_academia()): // (28 oct 2026) regla de la familia Tukán ?>
+    <input type="hidden" name="play_factor" value="<?= e((string)play_factor()) ?>">
+    <p class="suave" style="margin:.2rem 0 .6rem">Precio en Google Play = <b>precio web ÷ 0,85</b> (Google cobra el 15 % de las suscripciones), redondeado hacia arriba a <b>,99</b>: $20 → $23,99 y $45 → $52,99.</p>
+    <?php else: ?>
     <label>Aumento sobre el precio de la web (%)</label><input name="play_factor" value="<?= e((string)play_factor()) ?>" inputmode="decimal">
     <p class="suave" style="margin:.2rem 0 .6rem">Se redondea hacia arriba a 0,50. Con 20 %: $10 → $12 y $15 → $18. Google cobra hoy el 15 % de las suscripciones en Ecuador.</p>
+    <?php endif; ?>
     <label>Paquete de la app en Google Play</label><input name="play_paquete" value="<?= e(play_paquete()) ?>">
     <label>Idioma de los productos en Google Play</label><input name="play_idioma" value="<?= e(play_idioma()) ?>">
     <p class="suave" style="margin:.2rem 0 .6rem">Debe ser el idioma principal de la ficha de la app (Español Latinoamérica = <b>es-419</b>).</p>
@@ -118,6 +123,21 @@ cabecera_admin('Google Play');
 <div class="tabla-scroll"><table><tr><th>ID del producto</th><th>Qué es</th><th>Cada</th><th class="num">Web</th><th class="num">Google Play</th></tr>
 <?php foreach ($productos as $p): ?><tr><td><code><?= e($p['id']) ?></code></td><td><?= e($p['titulo']) ?></td><td><?= e(['P1M' => '1 mes', 'P3M' => '3 meses', 'P6M' => '6 meses', 'P1Y' => '1 año'][$p['periodo']] ?? $p['periodo']) ?></td><td class="num"><?= dinero($p['precio_web']) ?></td><td class="num"><b><?= dinero($p['precio']) ?></b></td></tr><?php endforeach; ?>
 </table></div>
+
+<?php if (es_academia()): // (28 oct 2026) planes de $20 y $45 ?>
+<div class="tarjeta" id="planes-20-45">
+  <h3 style="margin-top:0">Planes del 28 oct 2026 (los que se venden en Google Play)</h3>
+  <p class="suave" style="margin-top:0">Solo dos planes. <b>Básico</b> = la base + 3 módulos que elige el cliente (cada uno más: $5 al mes). <b>Completo</b> = todos los módulos, con el Asistente IA.
+    En Google Play solo se venden los dos planes: los módulos que el cliente elige en el Básico (y los que pase de 3, el Asistente IA o las disciplinas adicionales) los enciende y cobra Tukán desde el panel.
+    Estos precios son solo para Tukán: <b>nunca se publican al cliente</b> (en la web todo es «por cotización»).</p>
+  <div class="tabla-scroll"><table><tr><th>Plan</th><th>Período</th><th class="num">Web</th><th class="num">Google Play (web ÷ 0,85, a ,99)</th></tr>
+    <?php foreach ([['Básico', '1 mes', 20], ['Básico', '6 meses', 100], ['Básico', '1 año', 200], ['Completo', '1 mes', 45], ['Completo', '6 meses', 225], ['Completo', '1 año', 450]] as [$pn, $pp, $pw]): ?>
+      <tr><td><?= e($pn) ?></td><td><?= e($pp) ?></td><td class="num"><?= dinero($pw) ?></td><td class="num"><b><?= dinero(precio_play((float)$pw)) ?></b></td></tr>
+    <?php endforeach; ?>
+  </table></div>
+  <p class="suave" style="margin-bottom:0">El ID de cada producto es el de la tabla de arriba (plan_<i>número del plan</i>_<i>meses</i>m). Si Dimitry cambia los precios en Ventas → Planes, la tabla de arriba se recalcula sola.</p>
+</div>
+<?php endif; ?>
 
 <h2 id="compras">💳 Compras en Google Play</h2>
 <form method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="revisar"><button class="btn btn-sec btn-chico" <?= $cuenta ? '' : 'disabled' ?>>🔄 Revisar todas ahora en Google</button> <span class="suave">(se revisan solas cada 6 horas)</span></form>

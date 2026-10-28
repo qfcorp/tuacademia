@@ -13,6 +13,14 @@
  *   (1 = el súper eligió los módulos: se respetan también durante la demo; 0 = en la demo tiene todo).
  *   Activos = (módulos del plan − quitados) + extra, sin los que les falta una dependencia.
  * - Precio mensual = plan + Σ extra + deportes adicionales − Σ descuentos (o el precio acordado).
+ * - (28 oct 2026, decisión de Dimitry) Planes de $20 y $45 (solo en modo academia; planes_20_45(), una sola vez con el ajuste
+ *   «planes_20_45»): Básico $20 = la base + planes.modulos_elegir (3) módulos que elige el cliente, cada uno más
+ *   planes.precio_modulo_extra ($5; NULL = su precio del catálogo); Completo $45 = todos, con el Asistente IA. Los primeros
+ *   «modulos_elegir» extra (en el orden del catálogo) van incluidos (precio 0); los de modulos_fuera_del_cupo() (Asistente IA,
+ *   $5) siempre se cobran a su precio del catálogo y no cuentan entre los elegidos. Los deportes o disciplinas adicionales
+ *   (ligas.deportes, app/modulos_deporte.php) siguen igual y fuera de los elegidos. ligas.modulos_elegidos NO es esto: es la
+ *   marca de «el súper eligió los módulos de la demo».
+ * - planes.modulos = '-' → el plan no trae ningún módulo (vacío sigue siendo «todos», como siempre).
  * - Apagar NUNCA borra datos: solo se esconden menús, páginas, portales, PDF, tareas y avisos del módulo.
  * - Pedidos desde «Mi plan» (tabla modulos_pedidos) → solicitud «cambio_modulos» del Panel Tukán Central.
  * - Mapa de páginas y portales: modulo_de_pagina() (app/v12.php), paginas_base() y modulo_de_portal() de aquí. La prueba
@@ -77,6 +85,102 @@ function esquema_modulos(PDO $pdo): void
         )");
         $pdo->exec('CREATE INDEX IF NOT EXISTS idx_modulos_pedidos_liga ON modulos_pedidos (liga_id, estado)');
     }
+    // (28 oct 2026) planes de $20 y $45: módulos a elección del cliente y precio de cada módulo más
+    $cp = array_column($pdo->query('PRAGMA table_info(planes)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+    if ($cp) {
+        foreach (['modulos_elegir' => 'INTEGER NOT NULL DEFAULT 0', 'precio_modulo_extra' => 'REAL'] as $c => $def) {
+            if (in_array($c, $cp, true)) continue;
+            try {
+                $pdo->exec("ALTER TABLE planes ADD COLUMN $c $def");
+            } catch (PDOException $e) {
+                if (!str_contains($e->getMessage(), 'duplicate column')) throw $e;
+            }
+        }
+        planes_20_45($pdo);
+    }
+}
+
+/** Precios de los planes de $20 y $45 por período (semestral: paga 5 y recibe 6; anual: paga 10 y recibe 12). */
+function planes_20_45_precios(): array
+{
+    return ['academia-basico' => ['mensual' => 20, 'semestral' => 100, 'anual' => 200, 'modulos' => '-', 'elegir' => 3, 'extra' => 5.0],
+            'academia-completo' => ['mensual' => 45, 'semestral' => 225, 'anual' => 450, 'modulos' => '*,asistente_ia', 'elegir' => 0, 'extra' => null]];
+}
+
+/**
+ * (28 oct 2026, decisión de Dimitry) Solo dos planes en TuAcademia: Básico $20 (la base + 3 módulos a elegir, $5 cada uno más)
+ * y Completo $45 (todo, con el Asistente IA). UNA sola vez (ajuste «planes_20_45»): si después Dimitry cambia precios o planes
+ * desde el panel, no se pisan. En modo ligas (como TuVocalía) no hace nada: TuVocalía tiene otros precios.
+ *  - Quien ya pagaba el Básico conserva sus módulos: los del plan (menos los que se le quitaron) pasan a sus extras (cuentan
+ *    entre los 3 elegidos; si eran más de 3, cada uno más a $5).
+ *  - Las cuentas de academia en otro plan (uno intermedio u otro que ya no se vende) pasan al Completo; las de un plan más
+ *    barato que el Básico de antes pasan al Básico con sus módulos como extras. Las demos con todo encendido no cambian.
+ *  - Cualquier otro plan de academias que estuviera visible se oculta. El Asistente IA pasa de $0 (por cotización) a $5.
+ */
+function planes_20_45(PDO $pdo): void
+{
+    if ((defined('PRODUCTO') ? PRODUCTO : 'academia') !== 'academia') return;
+    $hay = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('planes', 'ajustes', 'ligas')")->fetchAll(PDO::FETCH_COLUMN);
+    if (count($hay) < 3) return;
+    $st = $pdo->prepare("SELECT valor FROM ajustes WHERE clave = 'planes_20_45'");
+    $st->execute();
+    if ((string)$st->fetchColumn() !== '') return;
+    $cl = array_column($pdo->query('PRAGMA table_info(ligas)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+    if (!in_array('modulos_extra', $cl, true)) return;
+    $plan = fn(string $slug) => ($s = $pdo->prepare('SELECT * FROM planes WHERE slug = ?')) && $s->execute([$slug]) ? $s->fetch(PDO::FETCH_ASSOC) : null;
+    $basico = $plan('academia-basico');
+    $completo = $plan('academia-completo');
+    if (!$basico || !$completo) return; // base sin los planes de academia (no debería pasar): no se marca, se intenta la próxima vez
+    $pdo->beginTransaction();
+    try {
+        $precio_basico_viejo = (float)$basico['precio_mensual'];
+        // OJO: esto corre en la primera conexión, a veces antes de cargar app/academia.php: solo funciones que no la necesitan
+        $base_mods = modulos_sistema_base();
+        $regulares = array_values(array_filter(array_keys($base_mods), fn($k) => $base_mods[$k][2] !== 'liga' && $k !== 'asistente_ia'));
+        $mods_de = function (array $pl) use ($regulares): array {
+            $m = trim((string)$pl['modulos']);
+            $lista = $m === '' ? ['*'] : array_map('trim', explode(',', $m));
+            return in_array('*', $lista, true) ? $regulares : array_values(array_intersect($regulares, $lista));
+        };
+        $orden = array_flip(array_keys($base_mods));
+        $upd = $pdo->prepare('UPDATE ligas SET plan_id = ?, modulos_extra = ?, modulos_quitados = ? WHERE id = ?');
+        $q = $pdo->prepare("SELECT l.*, p.modulos AS plan_modulos, p.precio_mensual AS plan_precio, p.slug AS plan_slug FROM ligas l JOIN planes p ON p.id = l.plan_id
+                            WHERE COALESCE(l.es_demo, 0) = 0 AND COALESCE(l.tipo, 'liga') = 'escuela' AND p.slug <> 'academia-completo'");
+        $q->execute();
+        foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $l) {
+            $todo = !empty($l['es_prueba']) && (int)($l['modulos_elegidos'] ?? 0) !== 1; // demo con todo encendido: no cambia nada
+            $al_completo = $l['plan_slug'] !== 'academia-basico' && ($mods_de(['modulos' => $l['plan_modulos']]) === $regulares || (float)$l['plan_precio'] > $precio_basico_viejo);
+            if ($al_completo) {
+                $upd->execute([$completo['id'], (string)$l['modulos_extra'], (string)$l['modulos_quitados'], $l['id']]);
+                continue;
+            }
+            $extra = array_values(array_filter(array_map('trim', explode(',', (string)$l['modulos_extra']))));
+            $quit = json_decode((string)$l['modulos_quitados'], true);
+            $quit = is_array($quit) ? $quit : [];
+            if (!$todo) {
+                foreach ($mods_de(['modulos' => $l['plan_modulos']]) as $k) if (!array_key_exists($k, $quit) && !in_array($k, $extra, true)) $extra[] = $k;
+            }
+            usort($extra, fn($a, $b) => ($orden[$a] ?? 999) <=> ($orden[$b] ?? 999));
+            // el Básico nuevo no trae módulos: los descuentos de los quitados ya no aplican (esos módulos no se pagan)
+            $upd->execute([$basico['id'], implode(',', $extra), '', $l['id']]);
+        }
+        $pp = $pdo->prepare('UPDATE planes SET precio_mensual = ?, precio_trimestral = 0, precio_semestral = ?, precio_anual = ?, modulos = ?, modulos_elegir = ?, precio_modulo_extra = ?, activo = 1 WHERE id = ?');
+        foreach (planes_20_45_precios() as $slug => $x) {
+            $pp->execute([$x['mensual'], $x['semestral'], $x['anual'], $x['modulos'], $x['elegir'], $x['extra'], $slug === 'academia-basico' ? $basico['id'] : $completo['id']]);
+        }
+        $pdo->prepare("UPDATE planes SET eslogan = ? WHERE id = ? AND eslogan = 'Alumnos, cursos, asistencia, pensiones y portal de padres'")
+            ->execute(['Alumnos, cursos, asistencia, pensiones y portal de padres, más 3 módulos a su elección', $basico['id']]);
+        // un solo par de planes para academias: los demás se ocultan (las cuentas ya se pasaron arriba)
+        $pdo->prepare("UPDATE planes SET activo = 0, destacado = 0 WHERE id NOT IN (?, ?) AND COALESCE(NULLIF(tipo_cuenta, ''), 'ambos') IN ('escuela', 'ambos')")->execute([$basico['id'], $completo['id']]);
+        // Asistente IA: de «por cotización» ($0) a $5 al mes (si el súper ya le había puesto otro precio, se respeta)
+        $t = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'modulos_catalogo'")->fetchColumn();
+        if ($t) $pdo->exec("UPDATE modulos_catalogo SET precio_mensual = NULL WHERE clave = 'asistente_ia' AND precio_mensual = 0");
+        $pdo->prepare("INSERT INTO ajustes (clave, valor) VALUES ('planes_20_45', ?) ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor")->execute([date('Y-m-d H:i:s')]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
 }
 
 /* ============================================================
@@ -103,7 +207,9 @@ function modulos_de_fabrica(): array
         'redes' => [3, [], 'difusion', 50], 'publico' => [3, [], 'difusion', 52], 'avisos' => [3, [], 'difusion', 54], 'videos' => [3, [], 'difusion', 56], 'dominio' => [2, [], 'difusion', 58],
         'esc_profesores' => [4, [], 'equipo', 60],
         'carga_masiva' => [2, [], 'herramientas', 70],
-        'asistente_ia' => [0, [], 'extras', 90], // (21 oct 2026) por cotización: precio 0 en el catálogo (el valor va como precio acordado); fuera de los planes y de la demo
+        // (21 oct 2026) fuera de los planes («*» no lo trae) y de la demo. (28 oct 2026) En TuAcademia: $5 al mes en el Básico, sin contar entre los
+        // 3 módulos a elegir; incluido en el Completo. En modo ligas sigue por cotización (precio 0: el valor va como precio acordado).
+        'asistente_ia' => [(defined('PRODUCTO') ? PRODUCTO : 'academia') === 'academia' ? 5 : 0, [], 'extras', 90],
     ];
 }
 
@@ -239,10 +345,49 @@ function cuenta_con_todo(?array $l): bool
     return empty($l['plan_id']) || estado_suscripcion($l)['estado'] === 'prueba';
 }
 
+/** (28 oct 2026) Módulos que NO cuentan entre los que elige el cliente en el Básico: siempre a su precio del catálogo. */
+function modulos_fuera_del_cupo(): array
+{
+    return modulos_fuera_de_planes(); // el Asistente IA ($5 al mes en el Básico, incluido en el Completo)
+}
+
+/** Módulos que el cliente elige con su plan (incluidos en el precio): planes.modulos_elegir. */
+function modulos_elegir_plan(?array $pl): int
+{
+    return $pl ? max(0, min(50, (int)($pl['modulos_elegir'] ?? 0))) : 0;
+}
+
+/** Precio de cada módulo más después de los elegidos (planes.precio_modulo_extra), o null = el precio del catálogo. */
+function precio_modulo_extra_plan(?array $pl): ?float
+{
+    $v = $pl['precio_modulo_extra'] ?? null;
+    return $v === null || $v === '' ? null : round((float)$v, 2);
+}
+
+/**
+ * Lo que cuesta al mes cada módulo extra con un plan (mismo cálculo que el Panel Tukán Central, Modulos::precioExtras):
+ * los primeros planes.modulos_elegir (en el orden del catálogo, sin los de modulos_fuera_del_cupo()) van incluidos (0);
+ * los demás cuestan planes.precio_modulo_extra (o su precio del catálogo); los de fuera del cupo, su precio del catálogo.
+ * Devuelve [elegidos, precio_por_extra (id => $)].
+ */
+function precio_extras_plan(?array $pl, array $extra, array $cat): array
+{
+    $orden = array_values(array_filter(array_keys($cat), fn($k) => in_array($k, $extra, true)));
+    $fuera = modulos_fuera_del_cupo();
+    $elegidos = array_slice(array_values(array_diff($orden, $fuera)), 0, modulos_elegir_plan($pl));
+    $fijo = precio_modulo_extra_plan($pl);
+    $r = [];
+    foreach ($orden as $k) {
+        $r[$k] = in_array($k, $elegidos, true) ? 0.0 : (in_array($k, $fuera, true) || $fijo === null ? round((float)$cat[$k]['precio_mensual'], 2) : $fijo);
+    }
+    return [$elegidos, $r];
+}
+
 /**
  * Módulos de un cliente (Anexo B.2, igual en el conector y en Mi plan):
- * {del_plan, extra, quitados, activos, precio_plan, precio_extra, precio_deportes, descuento, precio_acordado, mensual, todos_en_demo}.
- * Con $pl: cómo quedaría con ese plan (para cotizar otro plan).
+ * {del_plan, extra, quitados, activos, precio_plan, precio_extra, precio_deportes, descuento, precio_acordado, mensual, todos_en_demo,
+ *  modulos_elegir, elegidos, por_elegir, precio_por_extra}. Con $pl: cómo quedaría con ese plan (para cotizar otro plan).
+ * (28 oct 2026) elegidos = los extra que entran en los módulos a elegir del plan (no se cobran); por_elegir = los que le quedan.
  */
 function modulos_cliente(array $l, ?array $pl = null): array
 {
@@ -254,15 +399,19 @@ function modulos_cliente(array $l, ?array $pl = null): array
     $todo = cuenta_con_todo($l);
     $activos = $todo ? array_values(array_diff(array_keys($cat), array_diff(modulos_fuera_de_planes(), $extra))) : calcular_activos($del_plan, $extra, $quit, $cat);
     $p_plan = precio_mensual_plan($pl);
-    $p_extra = round(array_sum(array_map(fn($k) => $cat[$k]['precio_mensual'], $extra)), 2);
+    [$elegidos, $por_extra] = precio_extras_plan($pl, $extra, $cat);
+    $p_extra = round(array_sum($por_extra), 2);
     $p_dep = empty($l['es_demo']) && function_exists('precio_modulos') ? (float)precio_modulos(deportes_cobrados($l))['extra'] : 0.0;
     $desc = round(array_sum($quit), 2);
     $acordado = precio_acordado_cuenta($l);
+    $elegir = modulos_elegir_plan($pl);
     return [
         'del_plan' => $del_plan, 'extra' => $extra, 'quitados' => array_keys($quit), 'descuentos' => (object)$quit, 'activos' => $activos,
         'precio_plan' => $p_plan, 'precio_extra' => $p_extra, 'precio_deportes' => round($p_dep, 2), 'descuento' => $desc,
         'precio_acordado' => $acordado, 'mensual' => $acordado ?? round(max(0, $p_plan + $p_extra + $p_dep - $desc), 2),
         'todos_en_demo' => $todo && empty($l['es_demo']),
+        'modulos_elegir' => $elegir, 'elegidos' => $elegidos, 'por_elegir' => max(0, $elegir - count($elegidos)),
+        'precio_por_extra' => (object)$por_extra, 'precio_modulo_extra' => precio_modulo_extra_plan($pl),
     ];
 }
 
@@ -280,12 +429,18 @@ function modulos_personalizados(array $l): bool
 function modulos_ajuste_mes(?array $l, ?array $pl): float
 {
     if (!$l || !empty($l['es_demo']) || empty($l['id'])) return 0.0;
-    $cat = catalogo_modulos(tipo_modulos($l));
-    $del = modulos_del_plan_cuenta($l, $pl, $cat);
-    $s = 0.0;
-    foreach (modulos_extra_cuenta($l) as $k) if (isset($cat[$k]) && !in_array($k, $del, true)) $s += $cat[$k]['precio_mensual'];
-    foreach (modulos_quitados_cuenta($l) as $k => $d) if (in_array($k, $del, true)) $s -= $d;
-    return round($s, 2);
+    $m = modulos_cliente($l, $pl); // (28 oct 2026) con los módulos a elegir de ese plan (incluidos) y el precio de cada uno más
+    return round($m['precio_extra'] - $m['descuento'], 2);
+}
+
+/** (28 oct 2026) Qué módulos trae un plan, en corto: «20 de 21 módulos» o «La base + 3 módulos a su elección». */
+function texto_modulos_plan(?array $pl, string $tipo = ''): string
+{
+    $total = count(catalogo_modulos($tipo));
+    $n = count(array_intersect(modulos_plan($pl), array_keys(catalogo_modulos($tipo))));
+    $el = modulos_elegir_plan($pl);
+    if ($el > 0) return ($n ? $n . ' módulo' . ($n === 1 ? '' : 's') . ' + ' : 'La base + ') . $el . ' módulo' . ($el === 1 ? '' : 's') . ' a su elección';
+    return $n . ' de ' . $total . ' módulos';
 }
 
 /** Nombres de una lista de módulos: «📱 Vocalía en vivo, 🪪 Carnets». */
@@ -432,8 +587,28 @@ function guardar_catalogo_modulos(array $mods, array $planes, string $por): int
         if ($ms === '*') $txt = '*';
         elseif (is_array($ms) && !array_diff($ms, array_keys($cat2))) $txt = !array_diff($regulares, $ms)
             ? '*' . implode('', array_map(fn($k) => ',' . $k, array_values(array_intersect(modulos_fuera_de_planes(), $ms))))
-            : implode(',', array_values(array_filter(array_keys($cat2), fn($k) => in_array($k, $ms, true))));
+            : (implode(',', array_values(array_filter(array_keys($cat2), fn($k) => in_array($k, $ms, true)))) ?: '-'); // (28 oct 2026) '-' = ninguno (vacío sería «todos»)
+        elseif ($ms === null && !array_key_exists('modulos', $p)) $txt = (string)$pl['modulos']; // (28 oct 2026) solo cambia el precio o los módulos a elegir
         else throw new RuntimeException('Módulos no válidos en el plan ' . $pl['nombre'] . '.');
+        // (28 oct 2026) módulos que elige el cliente (incluidos) y precio de cada módulo más (null = el del catálogo)
+        if (array_key_exists('modulos_elegir', $p)) {
+            $v = $p['modulos_elegir'];
+            if ($v === null || $v === '') $v = 0;
+            if (!is_numeric($v) || (int)$v != $v || (int)$v < 0 || (int)$v > 50) throw new RuntimeException('Los módulos que elige el cliente deben ser de 0 a 50 en el plan ' . $pl['nombre'] . '.');
+            if ((int)$v !== (int)($pl['modulos_elegir'] ?? 0)) {
+                q('UPDATE planes SET modulos_elegir = ? WHERE id = ?', [(int)$v, $pl['id']]);
+                $n++;
+            }
+        }
+        if (array_key_exists('precio_modulo_extra', $p)) {
+            $v = $p['precio_modulo_extra'];
+            if ($v !== null && $v !== '' && (!is_numeric($v) || (float)$v < 0 || (float)$v > 10000)) throw new RuntimeException('El precio de cada módulo más no es válido en el plan ' . $pl['nombre'] . ' (0 a 10000, o vacío = el del catálogo).');
+            $v = $v === null || $v === '' ? null : round((float)$v, 2);
+            if ($v !== precio_modulo_extra_plan($pl)) {
+                q('UPDATE planes SET precio_modulo_extra = ? WHERE id = ?', [$v, $pl['id']]);
+                $n++;
+            }
+        }
         if (array_key_exists('precio_mensual', $p)) {
             if (!is_numeric($p['precio_mensual']) || (float)$p['precio_mensual'] < 0 || (float)$p['precio_mensual'] > 100000) throw new RuntimeException('Precio no válido en el plan ' . $pl['nombre'] . '.');
             if (round((float)$p['precio_mensual'], 2) !== round((float)$pl['precio_mensual'], 2)) {
@@ -471,11 +646,15 @@ function crear_pedido_modulos(array $l, string $quien, array $encender, array $a
     q('INSERT INTO modulos_pedidos (liga_id, encender, apagar, mensaje, pedido_por, creado) VALUES (?, ?, ?, ?, ?, ?)',
         [$l['id'], implode(',', $encender), implode(',', $apagar), mb_substr(trim(strip_tags($mensaje)), 0, 500), mb_substr($quien, 0, 160), date('Y-m-d H:i:s')]);
     $id = (int)db()->lastInsertId();
-    $precio = round(array_sum(array_map(fn($k) => $cat[$k]['precio_mensual'], array_diff($encender, $act))), 2);
+    // (28 oct 2026) cuánto sube el mensual (los que entran en los módulos a elegir del plan no suben nada)
+    $antes = modulos_cliente($l);
+    $l2 = $l;
+    $l2['modulos_extra'] = implode(',', array_merge($antes['extra'], array_values(array_diff($encender, $act, $antes['del_plan']))));
+    $precio = round(modulos_cliente($l2)['precio_extra'] - $antes['precio_extra'], 2);
     bitacora_evento('ventas', 'Pidió módulos desde Mi plan: ' . nombres_modulos($encender ?: $apagar, $cat) . ($apagar && $encender ? ' (y quitar ' . nombres_modulos($apagar, $cat) . ')' : ($apagar ? ' (quitar)' : '')), (int)$l['id'], $id);
     if (function_exists('aviso_super')) {
         aviso_super('🧩 <b>Pedido de módulos</b>' . "\n" . e($l['nombre']) . ': ' . e(nombres_modulos($encender, $cat)) . ($apagar ? "\nQuitar: " . e(nombres_modulos($apagar, $cat)) : '')
-            . ($precio > 0 ? "\n+" . dinero($precio) . ' al mes' : '') . "\nRevíselo en el Panel Tukán Central o en Ligas → Editar.", 'modped:' . $id);
+            . ($precio > 0 ? "\n+" . dinero($precio) . ' al mes' : ($antes['por_elegir'] > 0 ? "\nEntra en los módulos a elegir de su plan" : '')) . "\nRevíselo en el Panel Tukán Central o en Ligas → Editar.", 'modped:' . $id);
     }
     return $id;
 }
@@ -673,18 +852,24 @@ function html_interruptores_modulos(array $l): string
     $plan = array_flip($m['del_plan']);
     $desc = (array)$m['descuentos'];
     $pl = plan_de_liga($l);
+    $por_extra = (array)$m['precio_por_extra'];
+    $fijo = $m['precio_modulo_extra'];
+    // (28 oct 2026) lo que costaría un módulo que no tiene: entra en los que elige (si le quedan) o cuesta «cada módulo más»
+    $costaria = fn(string $k) => in_array($k, modulos_fuera_del_cupo(), true) || $fijo === null ? (float)$cat[$k]['precio_mensual'] : $fijo;
     ob_start();
     ?>
     <div class="tarjeta" id="modulos-cuenta" style="margin-top:14px">
       <h2 style="margin-top:0">🧩 Módulos de <?= e($l['nombre']) ?></h2>
-      <p class="suave" style="margin-top:0">Plan: <b><?= $pl ? e($pl['nombre']) . ' (' . dinero($m['precio_plan']) . ' al mes)' : 'sin plan' ?></b>. Apagar un módulo <b>no borra nada</b>: solo se esconde; si lo vuelve a encender, todo sigue como estaba.
+      <p class="suave" style="margin-top:0">Plan: <b><?= $pl ? e($pl['nombre']) . ' (' . dinero($m['precio_plan']) . ' al mes)' : 'sin plan' ?></b>.<?= $m['modulos_elegir'] > 0 ? ' Trae <b>' . (int)$m['modulos_elegir'] . ' módulos a elección del cliente</b> (elegidos: ' . count($m['elegidos']) . '; le quedan ' . (int)$m['por_elegir'] . '); cada uno más: ' . ($fijo === null ? 'su precio del catálogo' : dinero($fijo) . ' al mes') . '. ' . e(nombres_modulos(modulos_fuera_del_cupo(), $cat)) . ' no cuenta entre los elegidos.' : '' ?> Apagar un módulo <b>no borra nada</b>: solo se esconde; si lo vuelve a encender, todo sigue como estaba.
         <?= $m['todos_en_demo'] ? '<br>Ahora está en <b>demo con todos los módulos</b>. Si guarda aquí, desde ya ve solo los que deje encendidos.' : '' ?></p>
       <form method="post" action="admin.php?p=ligas" onsubmit="return confirm('¿Guardar los módulos de <?= e(addslashes($l['nombre'])) ?>?')">
         <?= csrf_campo() ?><input type="hidden" name="accion" value="modulos_cuenta"><input type="hidden" name="id" value="<?= (int)$l['id'] ?>">
         <?php $grupo = null; foreach ($cat as $k => $x): if ($x['grupo'] !== $grupo): $grupo = $x['grupo']; ?><h3 class="mod-grupo"><?= e($x['grupo_nombre']) ?></h3><?php endif; $en_plan = isset($plan[$k]); ?>
           <div class="mod-fila<?= isset($act[$k]) ? ' mod-on' : '' ?>">
             <label class="interruptor"><input type="checkbox" name="mod[<?= e($k) ?>]" value="1" <?= isset($act[$k]) ? 'checked' : '' ?>><span></span></label>
-            <div class="mod-texto"><b><?= $x['icono'] ?> <?= e($x['nombre']) ?></b> <?= $en_plan ? '<span class="etiqueta verde">en su plan</span>' : '<span class="etiqueta">+' . dinero($x['precio_mensual']) . ' al mes</span>' ?>
+            <div class="mod-texto"><b><?= $x['icono'] ?> <?= e($x['nombre']) ?></b> <?= $en_plan ? '<span class="etiqueta verde">en su plan</span>' : (in_array($k, $m['elegidos'], true) ? '<span class="etiqueta verde">elegido · incluido</span>'
+                : (isset($por_extra[$k]) ? '<span class="etiqueta">+' . dinero($por_extra[$k]) . ' al mes</span>'
+                : ($m['por_elegir'] > 0 && !in_array($k, modulos_fuera_del_cupo(), true) ? '<span class="etiqueta">entra en los ' . (int)$m['modulos_elegir'] . ' a elegir</span>' : '<span class="etiqueta">+' . dinero($costaria($k)) . ' al mes</span>'))) ?>
               <?= $x['depende_de'] ? '<small class="suave">· necesita ' . e(nombres_modulos($x['depende_de'], $cat)) . '</small>' : '' ?></div>
             <?php if ($en_plan): ?><div class="mod-desc"><label class="suave" style="font-size:.8rem">Descuento si se apaga ($)</label><input type="number" name="desc[<?= e($k) ?>]" min="0" step="0.01" value="<?= e((string)($desc[$k] ?? 0)) ?>" style="width:90px"></div><?php endif; ?>
           </div>
@@ -693,7 +878,7 @@ function html_interruptores_modulos(array $l): string
           <div><label>Precio acordado ($ al mes)</label><input type="number" name="precio_acordado" min="0" step="0.01" value="<?= $m['precio_acordado'] === null ? '' : e((string)$m['precio_acordado']) ?>" placeholder="vacío = el calculado"><div class="ayuda">Si lo llena, se cobra ese valor fijo en vez del calculado.</div></div>
           <div><label>Motivo (queda en la bitácora)</label><input type="text" name="motivo" maxlength="200"></div>
         </div>
-        <p class="mod-total">Plan <?= dinero($m['precio_plan']) ?> + extra <?= dinero($m['precio_extra']) ?><?= $m['precio_deportes'] > 0 ? ' + deportes ' . dinero($m['precio_deportes']) : '' ?> − descuentos <?= dinero($m['descuento']) ?> = <b><?= dinero($m['mensual']) ?> al mes</b><?= $m['precio_acordado'] !== null ? ' (precio acordado)' : '' ?></p>
+        <p class="mod-total">Plan <?= dinero($m['precio_plan']) ?> + extra <?= dinero($m['precio_extra']) ?><?= $m['elegidos'] ? ' (' . count($m['elegidos']) . ' elegido' . (count($m['elegidos']) === 1 ? '' : 's') . ' incluido' . (count($m['elegidos']) === 1 ? '' : 's') . ')' : '' ?><?= $m['precio_deportes'] > 0 ? ' + deportes ' . dinero($m['precio_deportes']) : '' ?> − descuentos <?= dinero($m['descuento']) ?> = <b><?= dinero($m['mensual']) ?> al mes</b><?= $m['precio_acordado'] !== null ? ' (precio acordado)' : '' ?></p>
         <button class="btn">Guardar módulos</button>
       </form>
     </div>
@@ -727,44 +912,62 @@ function html_pedidos_modulos(array $l): string
     return (string)ob_get_clean();
 }
 
-/** Mi plan: módulos encendidos y los que puede agregar. El cliente no ve precios: «Pedir cotización» / «Solicitar este módulo». */
+/**
+ * Mi plan: módulos encendidos y los que puede agregar. Regla de Tukán: al cliente NUNCA se le muestra el precio de lo que no tiene
+ * («Pedir cotización» / «Solicitar este módulo»); de lo que sí tiene ve lo que paga. (28 oct 2026) Con un plan de módulos a elegir:
+ * «Su plan trae 3 módulos a su elección: le quedan X por elegir», los elegidos dicen «Incluido» y los que puede elegir no dicen precio.
+ */
 function html_mi_plan_modulos(array $l, bool $puede_pedir): string
 {
-    $ver = ver_precios_software(); // (20 oct 2026) solo el súper ve el precio de cada módulo
+    $ver = ver_precios_software(); // (20 oct 2026) solo el súper ve el precio de cada módulo que el cliente no tiene
     $cat = catalogo_modulos(tipo_modulos($l));
     $m = modulos_cliente($l);
     $act = array_flip($m['activos']);
+    $por_extra = (array)$m['precio_por_extra'];
+    $elegir = !$m['todos_en_demo'] && $m['modulos_elegir'] > 0;
     $pend = [];
     foreach (filas("SELECT encender FROM modulos_pedidos WHERE liga_id = ? AND estado = 'pendiente'", [$l['id']]) as $p) foreach (array_filter(explode(',', (string)$p['encender'])) as $k) $pend[$k] = true;
+    $paga = !$m['todos_en_demo'] && empty($l['es_prueba']);
     ob_start();
     ?>
     <div class="tarjeta" id="modulos" style="margin-top:14px">
       <h2 style="margin-top:0">🧩 Mis módulos</h2>
       <?php if ($m['todos_en_demo']): ?><p class="aviso aviso-info">Está en <b>demo</b>: tiene todos los módulos encendidos para que vea todo. Al contratar queda con los de su plan y los que pida aquí.</p><?php endif; ?>
+      <?php if ($elegir): ?><p class="aviso aviso-info" data-por-elegir="<?= (int)$m['por_elegir'] ?>">Su plan trae <b><?= (int)$m['modulos_elegir'] ?> módulos a su elección</b><?= $m['por_elegir'] > 0
+          ? ': le ' . ($m['por_elegir'] === 1 ? 'queda 1 por elegir' : 'quedan ' . (int)$m['por_elegir'] . ' por elegir') . '. Elíjalo abajo con «Elegir este módulo».' : ' y ya los eligió.' ?></p><?php endif; ?>
       <p class="suave" style="margin-top:0">Su plan trae lo básico siempre. Cada módulo es una función que se enciende o se apaga; si apaga uno, <b>sus datos no se borran</b>.</p>
       <?php foreach ([true, false] as $encendidos):
           $lista = array_filter($cat, fn($x) => isset($act[$x['id']]) === $encendidos);
           if (!$lista) continue; ?>
         <h3><?= $encendidos ? '✅ Encendidos' : '➕ Puede agregar' ?></h3>
         <div class="rejilla-mods">
-          <?php foreach ($lista as $k => $x): ?>
+          <?php foreach ($lista as $k => $x):
+              $puede_elegir = !$encendidos && $elegir && $m['por_elegir'] > 0 && !in_array($k, modulos_fuera_del_cupo(), true); ?>
             <div class="mod-tarjeta<?= $encendidos ? ' mod-on' : '' ?>">
               <div class="mod-cab"><span class="mod-ico"><?= $x['icono'] ?></span> <b><?= e($x['nombre']) ?></b></div>
               <p><?= e($x['descripcion']) ?></p>
               <?php if ($x['depende_de']): ?><p class="suave" style="font-size:.82rem">Necesita: <?= e(nombres_modulos($x['depende_de'], $cat)) ?></p><?php endif; ?>
               <div class="mod-pie">
-                <?php if ($encendidos): ?><span class="etiqueta verde"><?= in_array($k, $m['del_plan'], true) ? 'En su plan' : 'Extra' . ($ver ? ' · ' . dinero($x['precio_mensual']) . ' al mes' : '') ?></span>
-                <?php else: ?><b><?= $ver ? dinero($x['precio_mensual']) . ' al mes' : 'Pedir cotización' ?></b>
+                <?php if ($encendidos): ?><span class="etiqueta verde"><?= in_array($k, $m['del_plan'], true) ? 'En su plan' : (in_array($k, $m['elegidos'], true) ? 'Elegido · Incluido'
+                      : 'Extra' . (($ver || $paga) && isset($por_extra[$k]) ? ' · ' . dinero($por_extra[$k]) . ' al mes' : '')) ?></span>
+                <?php else: ?><b><?= $puede_elegir ? 'Puede elegirlo en su plan' : ($ver ? dinero($x['precio_mensual']) . ' al mes' : 'Pedir cotización') ?></b>
                   <?php if (isset($pend[$k])): ?><span class="etiqueta amarilla">Pedido, por revisar</span>
-                  <?php elseif ($puede_pedir): ?><form method="post" class="inline"><?= csrf_campo() ?><input type="hidden" name="accion" value="pedir_modulo"><input type="hidden" name="modulo" value="<?= e($k) ?>"><button class="btn btn-chico">Solicitar este módulo</button></form><?php endif; ?>
+                  <?php elseif ($puede_pedir): ?><form method="post" class="inline"><?= csrf_campo() ?><input type="hidden" name="accion" value="pedir_modulo"><input type="hidden" name="modulo" value="<?= e($k) ?>"><button class="btn btn-chico"><?= $puede_elegir ? 'Elegir este módulo' : 'Solicitar este módulo' ?></button></form><?php endif; ?>
                 <?php endif; ?>
               </div>
             </div>
           <?php endforeach; ?>
         </div>
       <?php endforeach; ?>
-      <?php if ($ver): ?><p class="mod-total">Su mensual: plan <?= dinero($m['precio_plan']) ?><?= $m['precio_extra'] > 0 ? ' + módulos extra ' . dinero($m['precio_extra']) : '' ?><?= $m['precio_deportes'] > 0 ? ' + deportes ' . dinero($m['precio_deportes']) : '' ?><?= $m['descuento'] > 0 ? ' − descuentos ' . dinero($m['descuento']) : '' ?> = <b><?= dinero($m['mensual']) ?> al mes</b><?= $m['precio_acordado'] !== null ? ' (precio acordado con ' . e(ajuste('empresa', 'QF Producciones')) . ')' : '' ?></p>
-      <?php elseif (empty($l['es_prueba']) && !$m['todos_en_demo']): ?><p class="mod-total">Lo que paga hoy por su plan: <b><?= dinero($m['mensual']) ?> al mes</b>. Lo que agregue se lo cotizamos y le confirmamos el nuevo valor.</p>
+      <?php
+      // lo que paga hoy: solo lo que tiene (plan, elegidos incluidos, módulos más, deportes, descuentos)
+      $mas = array_filter($por_extra, fn($v) => $v > 0);
+      $partes = 'plan ' . dinero($m['precio_plan']) . ($m['elegidos'] ? ' (con ' . count($m['elegidos']) . ' módulo' . (count($m['elegidos']) === 1 ? '' : 's') . ' elegido' . (count($m['elegidos']) === 1 ? '' : 's') . ')' : '')
+          . ($mas ? ' + ' . count($mas) . ' módulo' . (count($mas) === 1 ? '' : 's') . ' más (' . e(nombres_modulos(array_keys($mas), $cat)) . ') ' . dinero(array_sum($mas)) : '')
+          . ($m['precio_deportes'] > 0 ? ' + ' . (function_exists('es_academia') && es_academia() ? 'disciplinas' : 'deportes') . ' ' . dinero($m['precio_deportes']) : '')
+          . ($m['descuento'] > 0 ? ' − descuentos ' . dinero($m['descuento']) : ''); ?>
+      <?php if ($ver): ?><p class="mod-total">Su mensual: <?= $partes ?> = <b data-total-mensual><?= dinero($m['mensual']) ?> al mes</b><?= $m['precio_acordado'] !== null ? ' (precio acordado con ' . e(ajuste('empresa', 'QF Producciones')) . ')' : '' ?></p>
+      <?php elseif ($paga): ?><p class="mod-total">Lo que paga hoy por su plan: <?= $m['precio_acordado'] === null ? $partes . ' = ' : '' ?><b data-total-mensual><?= dinero($m['mensual']) ?> al mes</b>. Lo que agregue fuera de su plan se lo cotizamos y le confirmamos el nuevo valor.</p>
       <?php else: ?><p class="mod-total">El valor de su plan se lo cotizamos a su medida, con los módulos que elija.</p><?php endif; ?>
     </div>
     <?php

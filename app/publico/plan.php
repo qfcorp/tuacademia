@@ -38,6 +38,7 @@ $contenido = function (bool $pdf) use ($pl, $ops, $incluye, $no, $extras, $tipo,
     <h2>✅ Incluido siempre</h2>
     <ul class="dos-columnas"><?php foreach (funciones_base($tipo) as $t): ?><li><?= e($t) ?></li><?php endforeach; ?></ul>
     <h2>🧩 Módulos incluidos (<?= count($incluye) ?>)</h2>
+    <?php if (modulos_elegir_plan($pl) > 0): // (28 oct 2026) ?><p><b>Usted elige <?= modulos_elegir_plan($pl) ?> módulos</b> de la lista de abajo y vienen incluidos en su plan.</p><?php endif; ?>
     <?php foreach ($incluye as [$ico, $nom, $para, $desc]): ?>
       <div class="folleto-mod"><b><?= $ico ?> <?= e($nom) ?></b><?= $para !== 'ambos' ? ' <small class="suave">(' . ($para === 'liga' ? 'ligas' : 'escuelas') . ')</small>' : '' ?><br><?= e($desc) ?></div>
     <?php endforeach; ?>
@@ -47,7 +48,7 @@ $contenido = function (bool $pdf) use ($pl, $ops, $incluye, $no, $extras, $tipo,
       <p>Sus <?= $tipo === 'escuela' ? 'familias' : 'equipos' ?> pagan con tarjeta de crédito o débito; el recibo sale solo y usted recibe la transferencia en su cuenta. Costo por transacción: <?= e(texto_tasas_publico()) ?>. Usted elige si la comisión la asume su organización o el que paga.</p>
     <?php endif; ?>
     <?php if ($no): ?>
-      <h2>No incluye</h2>
+      <h2><?= modulos_elegir_plan($pl) > 0 ? 'Módulos para elegir' : 'No incluye' ?></h2>
       <p class="suave"><?= e(implode(' · ', array_map(fn($m) => $m[1], $no))) ?>.<?= $siguiente ? ' Los tiene en el plan ' . e($siguiente['nombre']) . '.' : '' ?></p>
     <?php endif; ?>
     <?php if (combo_descuento() > 0): ?><h2>🤝 Combo liga + escuela</h2><p>Si también tiene una <?= $tipo === 'escuela' ? 'liga o campeonato' : 'escuela deportiva' ?>, contrate las dos con el mismo usuario y tiene un descuento en las dos (se lo incluimos en su cotización).</p><?php endif; ?>

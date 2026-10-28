@@ -26,6 +26,7 @@ cabecera_publica('Comparar planes · ' . marca());
   <tr class="comp-grupo"><td colspan="<?= count($planes) + 1 ?>">✅ Incluido en todos</td></tr>
   <?php foreach (funciones_base($tipo) as $f): ?><tr><td><?= e($f) ?></td><?php foreach ($planes as $pl): ?><td class="num"><?= $celda(true) ?></td><?php endforeach; ?></tr><?php endforeach; ?>
   <tr class="comp-grupo"><td colspan="<?= count($planes) + 1 ?>">🧩 Módulos</td></tr>
+  <?php if (array_filter($planes, fn($p) => modulos_elegir_plan($p) > 0)): // (28 oct 2026) ?><tr><td><b>Módulos a su elección</b></td><?php foreach ($planes as $pl): ?><td class="num"><?= modulos_elegir_plan($pl) ?: ($pl['modulos'] !== '-' && modulos_plan($pl) ? 'Todos' : '—') ?></td><?php endforeach; ?></tr><?php endif; ?>
   <?php foreach ($mods as $k => [$ico, $nom, $para, $desc]): ?><tr><td title="<?= e($desc) ?>"><?= $ico ?> <?= e($nom) ?></td><?php foreach ($planes as $pl): ?><td class="num"><?= $celda(in_array($k, modulos_plan($pl), true)) ?></td><?php endforeach; ?></tr><?php endforeach; ?>
   <tr><td></td><?php foreach ($planes as $pl): ?><td class="num"><a class="btn btn-chico<?= $pl['destacado'] ? '' : ' btn-sec' ?>" href="<?= e(url_plan($pl)) ?>">Ver detalle</a><br><a class="btn btn-chico" style="margin-top:4px" href="<?= e(url_empezar('', (int)$pl['id'])) ?>"><?= e(texto_empezar(true)) ?></a></td><?php endforeach; ?></tr>
 </table></div>

@@ -35,6 +35,24 @@ if (es_post() && post('accion') === 'comprobante') { // (v33) contratar / renova
     flash('¡Recibimos su comprobante! Lo revisamos y le avisamos por correo y Telegram apenas quede activa su cuenta (normalmente el mismo día).');
     ir('admin.php?p=mi_plan#contratar');
 }
+// (5 nov 2026) Tarjeta por el Panel Tukán Central (Tukán Pagos + Plux) si está encendido; si no, el Plux propio como antes.
+// Dentro de la app de Google Play sigue siendo solo Google Play.
+$central = !$play && pc_activo($liga);
+if (es_post() && post('accion') === 'cancelar_tarjeta') {
+    if (!puede('config', true)) throw new RuntimeException('Solo el administrador puede cancelar la suscripción.');
+    pc_cancelar($liga, (int)post('id'));
+    flash('Suscripción con tarjeta cancelada. Conserva lo que ya pagó.');
+    ir('admin.php?p=mi_plan#pagos-tarjeta');
+}
+if (es_post() && post('accion') === 'pagar' && $central) {
+    if (!puede('config', true)) throw new RuntimeException('Solo el administrador puede contratar o renovar el plan.');
+    $pl = fila("SELECT * FROM planes WHERE id = ? AND activo = 1 AND tipo_cuenta IN ('ambos', ?)", [(int)post('plan_id'), $tipo]) ?? throw new RuntimeException('Elija un plan.');
+    $op = null;
+    foreach (opciones_precio($pl, $liga) as $o) if ($o['meses'] === (int)post('meses')) $op = $o;
+    if (!$op) throw new RuntimeException('Elija por cuánto tiempo va a pagar.');
+    $c = pc_crear($liga, $yo, $pl, $op, post('auto') === '1');
+    ir($c['url_pago']);
+}
 if (es_post() && post('accion') === 'pagar') {
     if (!pasarela_activa()) throw new RuntimeException('El pago con tarjeta todavía no está disponible. Use la transferencia y envíe el comprobante por WhatsApp.');
     $pl = fila("SELECT * FROM planes WHERE id = ? AND activo = 1 AND tipo_cuenta IN ('ambos', ?)", [(int)post('plan_id'), $tipo]) ?? throw new RuntimeException('Elija un plan.');
@@ -107,11 +125,14 @@ elseif ($combo): $pl_c = plan_de_liga($combo); ?>
 <?php endif; ?>
 <?php if (nota_dominio() !== '' && array_filter($planes, fn($p) => (int)($p['dominio_anual'] ?? 0))): ?><p class="suave" style="font-size:.85rem">* <?= e(nota_dominio()) ?></p><?php endif; ?>
 
+<?= $play ? '' : html_pagos_central($liga, puede('config', true)) ?>
 <h2>Renovar o cambiar de plan</h2>
 <?php if ($play): // (v38) app de Google Play ?>
 <?= html_mi_plan_play($liga, $planes) ?>
 <?php else: ?>
-<?php if (!pasarela_activa()): ?>
+<?php $tarjeta = $central || pasarela_activa(); ?>
+<?php if ($central): ?><p class="suave">Con tarjeta se suma el IVA (<?= e((string)(float)(pc_estado($liga)['iva'] ?? 15)) ?> %) y le llega la factura electrónica al correo.</p><?php endif; ?>
+<?php if (!$tarjeta): ?>
   <div class="aviso aviso-info"><?= $ver_precios ? 'Elija su plan, pague por transferencia y <a href="#contratar"><b>suba el comprobante aquí mismo</b></a>: lo activamos el mismo día.' : ($plan_propio ? 'Para renovar su plan, pague por transferencia y <a href="#contratar"><b>suba el comprobante aquí mismo</b></a>: lo activamos el mismo día. Otro plan se cotiza a su medida.' : 'Su plan se cotiza a su medida: <a href="#contratar"><b>pida su cotización</b></a> y le respondemos el mismo día.') ?><?= $wa ? ' ¿Dudas? <a target="_blank" href="https://wa.me/' . e($wa) . '?text=' . rawurlencode('Hola, soy de ' . $liga['nombre'] . '. Tengo una consulta sobre mi plan de ' . marca() . '.') . '">Escríbanos por WhatsApp</a>.' : '' ?></div>
 <?php endif; ?>
 <div class="planes">
@@ -124,9 +145,10 @@ elseif ($combo): $pl_c = plan_de_liga($combo); ?>
       <ul><?php foreach (textos_limites_plan($pl, $tipo) as $t): ?><li><?= e($t) ?></li><?php endforeach; ?><li><?= texto_modulos_plan($pl, $tipo) ?> · <a target="_blank" href="<?= e(url_plan($pl)) ?>">ver detalle</a></li></ul>
       <?php if (!$ver_precios && !$es_propio): // (20 oct 2026) un plan que no tiene: por cotización ?>
         <p><b>Por cotización</b></p><p><?= html_boton_cotizacion('plan:' . (int)$pl['id']) ?></p>
-      <?php elseif (pasarela_activa()): ?>
+      <?php elseif ($tarjeta): ?>
         <form method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="pagar"><input type="hidden" name="plan_id" value="<?= (int)$pl['id'] ?>">
-          <select name="meses" style="width:100%;margin-bottom:8px"><?php foreach ($ops as $o): ?><option value="<?= $o['meses'] ?>"><?= e($o['nombre']) ?>: <?= dinero($o['precio']) ?><?= $o['combo'] ? ' (antes ' . dinero($o['precio_normal']) . ')' : '' ?><?= $o['gratis'] ? ' (' . texto_ahorro($o['gratis']) . ')' : '' ?><?= $o['dominio'] ? ' + dominio incluido*' : '' ?></option><?php endforeach; ?></select>
+          <select name="meses" style="width:100%;margin-bottom:8px"><?php foreach ($ops as $o): ?><option value="<?= $o['meses'] ?>"><?= e($o['nombre']) ?>: <?= dinero($o['precio']) ?><?= $central ? ' + IVA' : '' ?><?= $o['combo'] ? ' (antes ' . dinero($o['precio_normal']) . ')' : '' ?><?= $o['gratis'] ? ' (' . texto_ahorro($o['gratis']) . ')' : '' ?><?= $o['dominio'] ? ' + dominio incluido*' : '' ?></option><?php endforeach; ?></select>
+          <?php if ($central && !pc_suscripcion($liga)): ?><label style="display:block;margin-bottom:8px"><input type="checkbox" name="auto" value="1"> Cobrar solo cada período a mi tarjeta (suscripción; la cancela cuando quiera)</label><?php endif; ?>
           <button class="btn btn-grande">💳 Pagar con tarjeta</button></form>
       <?php else: ?>
         <p><?php foreach ($ops as $o): ?><?= $o['combo'] ? '<s class="suave">' . dinero($o['precio_normal']) . '</s> ' : '' ?><b><?= dinero($o['precio']) ?></b> <?= e($o['texto']) ?><?= $o['gratis'] ? ' <small class="suave">(' . texto_ahorro($o['gratis']) . ')</small>' : '' ?><?= $o['dominio'] ? ' <small><b>+ dominio incluido*</b></small>' : '' ?><br><?php endforeach; ?></p>

@@ -1,6 +1,6 @@
 # Bloc de notas — TuAcademia (nombre provisional)
 
-Para Dimitry. Escrito en español sencillo. Última actualización: 28 de octubre de 2026 (ver **§17 Planes de $20 y $45**).
+Para Dimitry. Escrito en español sencillo. Última actualización: 5 de noviembre de 2026 (ver **§18 Mi plan con tarjeta por el panel**).
 
 ---
 
@@ -548,4 +548,17 @@ Decisión de Dimitry, igual en toda la familia Tukán menos TuVocalía (que tend
   usuarios 43/43 → **43/43**, IA 92/92 → **92/92**, recorrido **6.065 páginas, 0 con error de PHP**;
   modo ligas: módulos 77/77 → **79/79**, central v2 374/374 → **378/378**, central 120/121 → **121/121**, prueba38 100/100 → **100/100**,
   IA 108/108 → **108/108**.
+
+## 18. Mi plan con tarjeta por el panel Tukán (5 nov 2026)
+
+Pedido de Dimitry: «TuVocalía y TuAcademia deben unirse… con sus diferentes precios y formas».
+- Archivo nuevo **`app/pagos_central.php`**: «Mi plan» le pide el cobro al panel (`plux_api.php`, token firmado con el secreto de
+  `data/tukan_central.env`). El panel lo crea en Tukán Pagos (Plux), y al pagar registra el pago aquí (protocolo v2) y emite la factura.
+- El precio sale igual que antes (mensual, trimestral, semestral, anual, meses de regalo, combo, módulos). Dice **+ IVA**: con tarjeta
+  se suma el IVA. Casilla «Cobrar solo cada período» = suscripción. Bloque **💳 Pagos con tarjeta** con «Pagar ahora» y «Cancelar».
+- Si el panel no tiene prendido TuAcademia en Configurar pagos con Plux, Mi plan queda como antes (transferencia / Plux propio).
+  En la app de Google Play no se muestra (Play cobra aparte).
+- Los cobros de la academia a sus familias NO pasan por aquí (siguen con su Plux propio).
+- Manuales: academia.html (cap. 14), escuelas.html (s17) y ligas.html (s19) en español.
+- Pendiente: el código de planes todavía usa los de TuVocalía; los de $20 / $45 (§17) se aplican al definir la lista en el panel.
 

@@ -115,6 +115,7 @@ require APP_DIR . '/idioma.php'; // (v28) idiomas: inglés, francés, portugués
 require APP_DIR . '/cuentas_super.php'; // (Tukán Central v2) funciones de las cuentas que usan el súper panel y el conector
 require APP_DIR . '/papelera.php'; // (Tukán Central v2, Anexo A) pausar y borrar cuentas (papelera de 30 días)
 require APP_DIR . '/tukan_central.php'; // (Tukán Central) conector con el Panel Tukán Central
+require APP_DIR . '/pagos_central.php'; // (5 nov 2026) «Mi plan» con tarjeta por el Panel (Tukán Pagos + Plux)
 cabeceras_seguridad(); // (v33)
 acad_cortar_portales_liga(); // (TuAcademia) vocal, árbitro, delegado, jugador y entradas: solo en el producto de ligas
 vigilar_vista_previa();

@@ -88,13 +88,23 @@ function pc_crear(array $liga, array $yo, array $pl, array $op, bool $auto): arr
     return $c;
 }
 
-/** Cancela la suscripción con tarjeta (conserva lo ya pagado). */
+/**
+ * Cancela la suscripción con tarjeta (conserva lo ya pagado). (6 nov 2026) Se puede cancelar el mes hasta 2 días antes del
+ * vencimiento; después, el cobro de esa fecha sigue y se cancela sola luego: devuelve ['programada' => true].
+ */
 function pc_cancelar(array $liga, int $id): array
 {
     [$http, $j] = pc_llamar('cancelar', ['cliente_id' => (string)$liga['id'], 'id' => $id], 20);
     if ($http === 0 || $j === null) throw new RuntimeException('No se pudo conectar con el sistema de pagos. Intente en unos minutos.');
     if (empty($j['ok'])) throw new RuntimeException((string)($j['error'] ?? 'No se pudo cancelar.'));
-    return $j['cobro'] ?? [];
+    return ($j['cobro'] ?? []) + ['programada' => !empty($j['programada'])];
+}
+
+/** dd/mm/aaaa de una fecha aaaa-mm-dd (o '' si no hay). */
+function pc_fecha(?string $f): string
+{
+    $t = $f ? strtotime(substr($f, 0, 10)) : false;
+    return $t ? date('d/m/Y', $t) : '';
 }
 
 /** Bloque de «Mi plan»: suscripción con tarjeta, pagos esperando y el regreso de la página de pago. */
@@ -114,11 +124,20 @@ function html_pagos_central(array $liga, bool $puede): string
         $h .= '<li><b>' . e((string)$c['descripcion']) . '</b> — ' . e((string)$c['estado_texto']) . ' · ' . dinero((float)$c['total']) . ' con IVA';
         if (($c['tipo'] ?? '') === 'suscripcion') {
             $h .= $c['cobra_sola'] ? ' · <small>se cobra sola a su tarjeta</small>' : '';
-            if (!empty($c['pagado_hasta'])) $h .= ' · <small>pagada hasta el ' . e(substr((string)$c['pagado_hasta'], 0, 10)) . '</small>';
+            if (!empty($c['pagado_hasta'])) $h .= ' · <small>pagada hasta el ' . e(pc_fecha($c['pagado_hasta'])) . '</small>';
+            if (!empty($c['cancelacion_programada']) && $c['estado'] !== 'cancelada') {
+                $h .= '<br><small>🗓️ <b>Cancelación programada:</b> pidió cancelar después de la fecha límite, así que el cobro del ' . e(pc_fecha($c['cancelacion_programada']))
+                    . ' sigue y después se cancela sola.</small>';
+            } elseif (!empty($c['cancelar_hasta']) && in_array($c['estado'], ['activa', 'en_gracia'], true)) {
+                $h .= '<br><small>Para que no se cobre el siguiente período, cancele hasta el <b>' . e(pc_fecha($c['cancelar_hasta'])) . '</b> (2 días antes del cobro).</small>';
+            }
         }
         if (!empty($c['url_pago'])) $h .= ' <a class="btn btn-chico" href="' . e((string)$c['url_pago']) . '">Pagar ahora</a>';
-        if ($puede && ($c['tipo'] ?? '') === 'suscripcion' && in_array($c['estado'], ['pendiente', 'rechazado', 'activa', 'en_gracia'], true)) {
-            $h .= ' <form method="post" style="display:inline" onsubmit="return confirm(\'¿Cancelar la suscripción con tarjeta? Conserva lo que ya pagó.\')">' . csrf_campo()
+        if ($puede && ($c['tipo'] ?? '') === 'suscripcion' && in_array($c['estado'], ['pendiente', 'rechazado', 'activa', 'en_gracia'], true) && empty($c['cancelacion_programada'])) {
+            $tarde = !empty($c['cancelar_hasta']) && date('Y-m-d') > $c['cancelar_hasta'];
+            $msg = $tarde ? '¿Cancelar la suscripción con tarjeta? Ya pasó la fecha límite (' . pc_fecha($c['cancelar_hasta']) . '): el cobro del ' . pc_fecha($c['pagado_hasta'] ?? '') . ' sigue y después se cancela.'
+                : '¿Cancelar la suscripción con tarjeta? Conserva lo que ya pagó.';
+            $h .= ' <form method="post" style="display:inline" onsubmit="return confirm(' . e(json_encode($msg, JSON_UNESCAPED_UNICODE)) . ')">' . csrf_campo()
                 . '<input type="hidden" name="accion" value="cancelar_tarjeta"><input type="hidden" name="id" value="' . (int)$c['id'] . '"><button class="btn btn-sec btn-chico">Cancelar suscripción</button></form>';
         }
         $h .= '</li>';

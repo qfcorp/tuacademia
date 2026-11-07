@@ -9079,7 +9079,7 @@ return [
     'revisar las preguntas frecuentes' => 'revoir les questions fréquentes',
     'Recibimos muchas preguntas seguidas. Espere un minuto y vuelva a preguntar, por favor.' => 'Nous avons reçu beaucoup de questions à la suite. Attendez une minute et posez-la à nouveau, s’il vous plaît.',
     'Esto dice el manual de {s}:' => 'Voici ce que dit le manuel de {s} :',
-    'No encontramos eso en el manual de {s}. Por favor, escríbanos por WhatsApp 099 640 8397 y le ayudamos.' => 'Nous n’avons pas trouvé cela dans le manuel de {s}. Écrivez-nous sur WhatsApp au 099 640 8397 et nous vous aiderons.',
+    'No encontramos eso en el manual de {s}. Por favor, escríbanos por WhatsApp 098 366 2181 y le ayudamos.' => 'Nous n’avons pas trouvé cela dans le manuel de {s}. Écrivez-nous sur WhatsApp au 098 366 2181 et nous vous aiderons.',
     'Si necesita más ayuda, escríbanos por WhatsApp {n} {n} {n}.' => 'Si vous avez besoin de plus d’aide, écrivez-nous sur WhatsApp au {n} {n} {n}.',
     'Escriba su pregunta con un poco más de detalle, por ejemplo: «¿Cómo registro un pago?».' => 'Écrivez votre question avec un peu plus de détails, par exemple : « Comment enregistrer un paiement ? ».',
     'Escriba su pregunta.' => 'Écrivez votre question.',

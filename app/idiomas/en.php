@@ -9004,7 +9004,7 @@ return [
     'revisar las preguntas frecuentes' => 'review the frequent questions',
     'Recibimos muchas preguntas seguidas. Espere un minuto y vuelva a preguntar, por favor.' => 'We received many questions in a row. Please wait a minute and ask again.',
     'Esto dice el manual de {s}:' => 'This is what the {s} manual says:',
-    'No encontramos eso en el manual de {s}. Por favor, escríbanos por WhatsApp 099 640 8397 y le ayudamos.' => 'We could not find that in the {s} manual. Please message us on WhatsApp 099 640 8397 and we will help you.',
+    'No encontramos eso en el manual de {s}. Por favor, escríbanos por WhatsApp 098 366 2181 y le ayudamos.' => 'We could not find that in the {s} manual. Please message us on WhatsApp 098 366 2181 and we will help you.',
     'Si necesita más ayuda, escríbanos por WhatsApp {n} {n} {n}.' => 'If you need more help, message us on WhatsApp {n} {n} {n}.',
     'Escriba su pregunta con un poco más de detalle, por ejemplo: «¿Cómo registro un pago?».' => 'Write your question with a bit more detail, for example: “How do I record a payment?”.',
     'Escriba su pregunta.' => 'Type your question.',

@@ -20,7 +20,7 @@ if (es_post()) {
         if (($resp['fuente'] ?? '') === 'ia') bitacora_evento('ayuda', 'Preguntó en la Ayuda: ' . mb_substr($pregunta, 0, 200), $liga ? (int)$liga['id'] : null);
     }
 }
-$wa = '593996408397';
+$wa = '593983662181';
 cabecera_admin('Ayuda');
 ?>
 <h1>❓ ¿En qué le ayudamos?</h1>
@@ -37,7 +37,7 @@ cabecera_admin('Ayuda');
 <div class="tarjeta" id="respuesta" style="max-width:760px">
   <h2 style="margin-top:0"><?= e($pregunta) ?></h2>
   <div class="ayuda-respuesta" style="line-height:1.55"><?= ia_html((string)$resp['respuesta']) ?></div>
-  <p class="suave" style="margin-bottom:0">¿Le sirvió? Si no, escríbanos por WhatsApp <a target="_blank" rel="noopener" href="https://wa.me/<?= $wa ?>?text=<?= rawurlencode('Hola, tengo una duda con ' . marca() . ': ' . $pregunta) ?>">099 640 8397</a>.</p>
+  <p class="suave" style="margin-bottom:0">¿Le sirvió? Si no, escríbanos por WhatsApp <a target="_blank" rel="noopener" href="https://wa.me/<?= $wa ?>?text=<?= rawurlencode('Hola, tengo una duda con ' . marca() . ': ' . $pregunta) ?>">098 366 2181</a>.</p>
 </div>
 <?php endif; ?>
 <p class="suave">También puede leer los <a href="manual" target="_blank">manuales</a> o abrir un <a href="admin.php?p=soporte">ticket de soporte</a>.</p>

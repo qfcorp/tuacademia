@@ -484,7 +484,7 @@ Guías del Panel: `tukan-central/compartido/LEEME_IA.md` y `LEEME_CORREO.md`. La
 - **Ayuda para todos** (menú Mi cuenta → ❓ Ayuda y el botón verde ❓ Ayuda → «Pregunte cómo se hace algo»): «¿En qué le ayudamos?»
   responde con una pregunta frecuente guardada (sin costo), con la IA y el manual de TuAcademia (`app/manuales/academia.html`, copia de
   `docs/manual/manual.html` que deja `generar.sh`; una prueba revisa que sean iguales) o, si no se puede gastar, con el manual tal cual +
-  WhatsApp 099 640 8397. Hasta 10 preguntas por minuto.
+  WhatsApp 098 366 2181. Hasta 10 preguntas por minuto.
 - **Preguntas frecuentes** (súper: `admin.php?p=ayuda_faq`): Por revisar, Aprobar, Editar, Borrar y Agregar. Con CSRF y bitácora.
 - **Asistente IA** (módulo `asistente_ia`, grupo Extras; **incluido en el plan más caro (Completo)**, en los demás planes es un extra **por cotización**; no entra en la demo):
   **Informe del avance del alumno para los padres** (asistencia de 3 meses, nivel y notas del profesor) y **Mensaje de cobro amable**

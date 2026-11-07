@@ -178,7 +178,7 @@ try:
     PREG = '¿Cómo registro un pago?' if ACADEMIA else '¿Cómo creo un campeonato nuevo?'
     r = enviar(a, 'admin.php?p=ayuda', {'pregunta': PREG})
     t = respuesta(r)
-    chk('Esto dice el manual de ' + NOMBRE in t and '099 640 8397' in t and llamadas() == n0, 'sin clave: el manual tal cual + WhatsApp, sin llamar a la IA', t[:300])
+    chk('Esto dice el manual de ' + NOMBRE in t and '098 366 2181' in t and llamadas() == n0, 'sin clave: el manual tal cual + WhatsApp, sin llamar a la IA', t[:300])
     chk('¿Le sirvió? Si no, escríbanos por WhatsApp' in r.text, 'debajo: «¿Le sirvió?…» con el WhatsApp')
     chk(gasto(PRIN_ID, 'ahorradas') >= 1 and gasto(PRIN_ID) == 0, 'se anota como ahorrada (sin costo)')
     pantallas += [r.text, t]
@@ -232,7 +232,7 @@ try:
     chk(llamadas() == n1 and 'Esto dice el manual de' in tpr, 'el programa en su tope (TUKAN_IA_TOPE_PROGRAMA_' + PROG.upper() + '): manual', tpr[:200])
     ia_env()
     tz = respuesta(enviar(a, 'admin.php?p=ayuda', {'pregunta': 'xyzzy plugh'}))
-    chk('No encontramos eso en el manual de ' + NOMBRE in tz and '099 640 8397' in tz, 'lo que no está en el manual: «No encontramos eso…» + WhatsApp', tz)
+    chk('No encontramos eso en el manual de ' + NOMBRE in tz and '098 366 2181' in tz, 'lo que no está en el manual: «No encontramos eso…» + WhatsApp', tz)
     pantallas += [tp, tt, t30, tpr, tz]
 
     print('\n== Ayuda: 10 preguntas por minuto')

@@ -3,6 +3,15 @@
 $liga = requiere_liga();
 $lid = (int)$liga['id'];
 $yo = usuario();
+// (7 nov 2026) Aviso de arriba (app/layout.php): el administrador acepta los términos y la privacidad de Tukán (app/TukanLegal.php)
+if (es_post() && post('accion') === 'aceptar_terminos_tukan') {
+    require_once dirname(__DIR__) . '/TukanLegal.php';
+    if (puede('config', true)) {
+        $okTl = TukanLegal::procesar(db(), (string)$lid, ($yo['nombre'] ?? '') . ' <' . ($yo['email'] ?? '') . '>');
+        flash($okTl ? 'Gracias: aceptó los términos y la política de privacidad.' : 'Para seguir, marque «Leí y acepto los términos y la política de privacidad».', $okTl ? 'ok' : 'error');
+    }
+    ir('admin.php');
+}
 $tipo = ($liga['tipo'] ?? 'liga') === 'escuela' ? 'escuela' : 'liga';
 // (Anexo B) Pedir un módulo: crea un pedido «cambio_modulos» que revisa Tukán (Panel Tukán Central o Ligas → Editar)
 if (es_post() && post('accion') === 'pedir_modulo') {
@@ -38,6 +47,24 @@ if (es_post() && post('accion') === 'comprobante') { // (v33) contratar / renova
 // (5 nov 2026) Tarjeta por el Panel Tukán Central (Tukán Pagos + Plux) si está encendido; si no, el Plux propio como antes.
 // Dentro de la app de Google Play sigue siendo solo Google Play.
 $central = !$play && pc_activo($liga);
+// (7 nov 2026) «Cancelar mi plan» (módulo común app/TukanCancelarPlan.php): no renueva, cancela la tarjeta en el Panel y avisa a Tukán
+require_once dirname(__DIR__) . '/TukanCancelarPlan.php';
+if (function_exists('tc_config')) { $cTc = tc_config(); TukanCancelarPlan::$config = ['id' => (string)($cTc['id'] ?? ''), 'secreto' => (string)($cTc['secreto'] ?? ''), 'url' => (string)($cTc['url'] ?? '')]; }
+if (es_post() && in_array(post('accion'), ['cancelar_plan', 'seguir_plan'], true)) {
+    if (!puede('config', true)) throw new RuntimeException('Solo el administrador puede cancelar el plan.');
+    if ($play) throw new RuntimeException('En la app cancele en Google Play → Pagos y suscripciones.');
+    if (post('accion') === 'seguir_plan') {
+        TukanCancelarPlan::seguir(db(), (string)$lid, (string)$liga['nombre'], (string)($yo['email'] ?? ''));
+        flash('¡Qué bueno! Su plan sigue como siempre.');
+    } elseif (!post('confirmo')) {
+        flash('Para cancelar, marque «Sí, quiero cancelar mi plan».', 'error');
+    } else {
+        $rTc = TukanCancelarPlan::pedir(db(), (string)$lid, (string)$liga['nombre'], $liga['vence'] ?? null, (string)post('motivo'), ($yo['nombre'] ?? '') . ' <' . ($yo['email'] ?? '') . '>', (string)($yo['email'] ?? ''));
+        flash('Listo: su plan no se renovará.' . ($rTc['hasta'] ? ' Sigue usando todo hasta el ' . date('d/m/Y', strtotime($rTc['hasta'])) . '.' : '') . ' Sus datos no se borran. Si cambia de idea, toque «Seguir con mi plan».');
+    }
+    ir('admin.php?p=mi_plan#cancelar-plan');
+}
+if (!es_post()) TukanCancelarPlan::reintentar(db(), (string)$lid, (string)($yo['email'] ?? ''));
 if (es_post() && post('accion') === 'cancelar_tarjeta') {
     if (!puede('config', true)) throw new RuntimeException('Solo el administrador puede cancelar la suscripción.');
     $cx = pc_cancelar($liga, (int)post('id'));
@@ -167,4 +194,5 @@ elseif ($combo): $pl_c = plan_de_liga($combo); ?>
   <?php foreach ($pagos as $x): ?><tr><td><?= e($x['fecha']) ?></td><td><?= e($x['plan'] ?? '—') ?></td><td class="num"><?= (int)$x['meses'] ?></td><td><?= e($x['desde'] . ' → ' . $x['hasta']) ?></td><td class="num"><?= dinero($x['monto']) ?></td><td><?= e(nombre_forma_pago($x['forma_pago'])) ?></td></tr><?php endforeach; ?>
 </table></div>
 <?php endif;
+if (puede('config', true) && empty($liga['es_demo'])) echo TukanCancelarPlan::html(TukanCancelarPlan::estado(db(), (string)$lid), csrf_campo(), 'admin.php?p=mi_plan', $liga['vence'] ?? null, $play, true); // (7 nov 2026) Cancelar mi plan
 pie_admin();

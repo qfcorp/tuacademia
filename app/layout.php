@@ -64,6 +64,11 @@ function cabecera_admin(string $titulo): void
 <?php foreach (tomar_flash() as [$tipo, $msg]): ?>
   <div class="aviso aviso-<?= e($tipo) ?>"><?= e($msg) ?></div>
 <?php endforeach; ?>
+<?php // (7 nov 2026) El administrador acepta los términos y la privacidad de Tukán (app/TukanLegal.php); se acepta en Mi plan
+if ($liga && $u && !es_super() && empty($liga['es_demo']) && get('p') !== 'login' && puede('config', true)) {
+    require_once __DIR__ . '/TukanLegal.php';
+    if (!TukanLegal::aceptado(db(), (string)$liga['id'])) echo TukanLegal::aviso(csrf_campo(), 'admin.php?p=mi_plan', 'index.php?v=privacidad', true);
+} ?>
 <?php // (v37) campeonato que es disciplina de un evento de olimpiadas: enlace de vuelta al evento
 if ($liga && $u && in_array($p, ['torneo', 'carrera', 'duelo', 'bolos', 'pruebas', 'partido'], true) && function_exists('olimp_evento_de_torneo')):
     $tid_o = $p === 'partido' ? (int)valor('SELECT torneo_id FROM partidos WHERE id = ?', [(int)get('id')]) : (int)get('id');
@@ -100,7 +105,7 @@ function pie_admin(): void
 {
     ?>
 </main>
-<footer class="pie"><?= e(marca()) ?> · <?= e(ajuste('empresa', 'Tukán Software')) ?> · <a href="manual" target="_blank">Manuales</a></footer>
+<footer class="pie"><?= e(marca()) ?> · <?= e(ajuste('empresa', 'Tukán Software')) ?> · <a href="manual" target="_blank">Manuales</a> · <a href="https://tukansoftware.com/terminos.html" target="_blank" rel="noopener">Términos</a> · <a href="index.php?v=privacidad" target="_blank">Privacidad</a></footer>
 <?= usuario() ? html_barra_abajo() . script_menu_panel() . html_boton_ayuda() : '' ?>
 </body>
 </html>

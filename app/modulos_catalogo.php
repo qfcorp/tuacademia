@@ -210,6 +210,7 @@ function modulos_de_fabrica(): array
         // (21 oct 2026) fuera de los planes («*» no lo trae) y de la demo. (28 oct 2026) En TuAcademia: $5 al mes en el Básico, sin contar entre los
         // 3 módulos a elegir; incluido en el Completo. En modo ligas sigue por cotización (precio 0: el valor va como precio acordado).
         'asistente_ia' => [(defined('PRODUCTO') ? PRODUCTO : 'academia') === 'academia' ? 5 : 0, [], 'extras', 90],
+        'facturacion' => [0, [], 'extras', 92], // (9 nov 2026) TuFactura se paga aparte; fuera de los planes y de la demo
     ];
 }
 
@@ -701,6 +702,7 @@ function paginas_base(): array
     return [
         // entrar y cuenta
         'login', 'salir', 'inicio', 'clave', 'seguridad', 'mis_datos', 'usuarios', 'bitacora', 'config', 'mi_plan', 'soporte', 'novedades', 'datos', 'referidos', 'indicadores',
+        'tufactura', // (9 nov 2026) Factura electrónica: apagada muestra qué es TuFactura y cómo pedirla
         'ayuda', // (21 oct 2026) Ayuda con preguntas frecuentes: para todos los planes
         // liga: equipos, jugadores, campeonatos (base)
         'equipos', 'equipo', 'jugador', 'torneos', 'torneo', 'partido', 'planilla', 'programar', 'acumuladas', 'competencias', 'carrera', 'duelo', 'bolos', 'pruebas', 'indiv',

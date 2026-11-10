@@ -64,6 +64,7 @@ function menu_panel(): array
         if (puede('cobros')) $di[] = $it('admin.php?p=mensajes', 'Mensajes de hoy', '📲', ['mensajes'], 'Recordatorios de pensiones por WhatsApp', acad_mensajes_pendientes($liga), true); // (TuAcademia)
         if (puede('cobros') && es_academia() && modulo_menu($liga, 'avisos')) $di[] = $it('admin.php?p=avisos_padres', 'Avisos por Telegram', '🔔', ['avisos_padres'], 'Avisos automáticos y comunicados a los padres'); // (TuAcademia, 14-oct)
         if (puede('cobros') && modulo_menu($liga, 'contabilidad')) $di[] = $it('admin.php?p=contabilidad', 'Contabilidad', '📒', ['contabilidad'], 'Ingresos, gastos y facturas del SRI');
+        if (puede('cobros')) $di[] = $it('admin.php?p=tufactura', 'Factura electrónica', '🧾', ['tufactura'], 'Facturas del SRI con TuFactura'); // (9 nov 2026)
         if (puede('profesores') && modulo_menu($liga, 'esc_profesores')) $di[] = $it('admin.php?p=profesores', 'Profesores', '🧑‍🏫', ['profesores'], 'Entrenadores y su rol de pago');
         if (puede('tienda') && modulo_menu($liga, 'esc_tienda')) $di[] = $it('admin.php?p=tienda', 'Tienda', '🛒', ['tienda'], 'Uniformes y productos');
         if ($di) $g['dinero'] = ['titulo' => 'Dinero', 'ico' => '💵', 'items' => $di];
@@ -86,6 +87,7 @@ function menu_panel(): array
         $di = [];
         if (puede('finanzas') && modulo_menu($liga, 'finanzas')) $di[] = $it('admin.php?p=finanzas', 'Finanzas', '💵', ['finanzas', 'recibo', 'liquidacion'], 'Cobros, recibos y estados de cuenta', comprobantes_pendientes($lid), true);
         if (puede('finanzas') && modulo_menu($liga, 'contabilidad')) $di[] = $it('admin.php?p=contabilidad', 'Contabilidad', '📒', ['contabilidad'], 'Ingresos, gastos y facturas del SRI');
+        if (puede('finanzas')) $di[] = $it('admin.php?p=tufactura', 'Factura electrónica', '🧾', ['tufactura'], 'Facturas del SRI con TuFactura'); // (9 nov 2026)
         if (puede('finanzas') && entradas_activas($liga)) $di[] = $it('admin.php?p=entradas', 'Entradas', '🎟', ['entradas'], 'Venta de entradas con QR y lector de la puerta', (int)valor("SELECT COUNT(*) FROM bol_ordenes WHERE liga_id = ? AND estado = 'por_verificar'", [$lid])); // (v28)
         if (puede('reservas') && modulo_menu($liga, 'reservas') && (int)valor('SELECT COUNT(*) FROM canchas WHERE liga_id = ?', [$lid]) > 0) {
             $di[] = $it('admin.php?p=reservas', 'Reservas', '🏟', ['reservas'], 'Alquiler de canchas', (int)valor("SELECT COUNT(*) FROM reservas WHERE liga_id = ? AND estado = 'pendiente' AND fecha >= ?", [$lid, date('Y-m-d')]));

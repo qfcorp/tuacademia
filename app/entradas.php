@@ -126,6 +126,7 @@ function crear_orden_entradas(array $liga, array $v, array $items, float $total,
     }
     $o = fila('SELECT * FROM bol_ordenes WHERE id = ?', [$oid]);
     if ($estado === 'pagada') emitir_entradas($o);
+    if ($estado === 'pagada' && $canal !== 'cortesia') FacturaTukan::alCobrar((int)$liga['id'], 'b' . $oid); // (9 nov 2026) TuFactura
     return fila('SELECT * FROM bol_ordenes WHERE id = ?', [$oid]);
 }
 
@@ -148,6 +149,7 @@ function pagar_orden_entradas(array $o, string $por): void
     if ($o['estado'] === 'pagada') return;
     q("UPDATE bol_ordenes SET estado = 'pagada', pagada_en = ?, revisado_por = ? WHERE id = ?", [date('Y-m-d H:i:s'), mb_substr($por, 0, 80), $o['id']]);
     emitir_entradas(fila('SELECT * FROM bol_ordenes WHERE id = ?', [$o['id']]));
+    FacturaTukan::alCobrar((int)$o['liga_id'], 'b' . (int)$o['id']); // (9 nov 2026) TuFactura: factura sola si se eligió «automático»
 }
 
 /** Enlace del comprador a sus entradas (con los QR). */

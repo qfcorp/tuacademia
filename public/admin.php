@@ -23,7 +23,7 @@ $validas = ['login', 'salir', 'inicio', 'ligas', 'usuarios', 'clave', 'config', 
     'olimpiadas', // (v37)
     'google_play', // (v38)
     'mensajes', 'recitales', 'particulares', // (TuAcademia)
-    'ayuda', 'ayuda_faq', 'asistente', // (21 oct 2026) Ayuda con preguntas frecuentes y módulo «Asistente IA»
+    'ayuda', 'ayuda_faq', 'asistente', 'tufactura', // (9 nov 2026) Factura electrónica con TuFactura · (21 oct 2026) Ayuda con preguntas frecuentes y módulo «Asistente IA»
     'avisos_padres']; // (TuAcademia, 14-oct) avisos por Telegram a los padres
 if (!in_array($p, $validas, true)) {
     $p = 'inicio';

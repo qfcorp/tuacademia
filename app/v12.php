@@ -72,6 +72,8 @@ function modulos_sistema_base(): array
         // (21 oct 2026) Incluido en el plan más caro; en los demás, extra (TuAcademia: $5, fuera de los 3 a elegir; ligas: por cotización); no entra en la demo (app/asistente_ia.php)
         'asistente_ia' => ['✨', 'Asistente IA', 'ambos', 'Lee fotos de documentos y llena los datos por usted, y responde las dudas al instante.'],
         'contabilidad' => ['📒', 'Contabilidad con importador del SRI', 'ambos', 'Gastos con o sin factura, facturas recibidas importadas del SRI (XML, TXT o clave de acceso) que usted elige incluir, resumen de ingresos y gastos por mes y por campeonato, y reportes en PDF y Excel para su contador.'],
+        // (9 nov 2026) Apagado de fábrica, fuera de los planes y a $0 aquí: TuFactura se contrata aparte con Tukán Software ($30 + IVA al año)
+        'facturacion' => ['🧾', 'Factura electrónica con TuFactura', 'ambos', 'Cada pago, recibo o compra de entradas sale como factura electrónica autorizada por el SRI (a la cédula del representante o del comprador), con un toque o sola al cobrar, y le llega por correo. Se conecta con la cuenta de TuFactura de su organización (TuFactura se contrata aparte con Tukán Software).'],
     ];
 }
 

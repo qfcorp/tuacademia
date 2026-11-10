@@ -46,6 +46,7 @@ if (es_post()) {
             $lid, mb_substr('Reserva ' . $r['cancha'] . ' ' . $r['fecha'] . ' ' . $r['hora_inicio'] . ' · ' . $r['cliente_nombre'], 0, 200), $monto, date('Y-m-d'),
             array_key_exists(post('forma_pago'), formas_pago()) ? post('forma_pago') : 'efectivo', $num, 'res:' . $r['id'] . ':' . time(), $por,
         ]);
+        FacturaTukan::alCobrar($lid, 'm' . (int)db()->lastInsertId()); // (9 nov 2026) TuFactura: factura sola si se eligió «automático»
         $pagado = round((float)$r['pagado'] + $monto, 2);
         q('UPDATE reservas SET pagado = ?, estado = CASE WHEN ? >= precio THEN \'pagada\' ELSE CASE WHEN estado = \'pendiente\' THEN \'confirmada\' ELSE estado END END WHERE id = ?', [$pagado, $pagado, $r['id']]);
         flash('Cobro registrado (' . dinero($monto) . '). Quedó como ingreso en Finanzas.');

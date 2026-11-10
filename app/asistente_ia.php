@@ -60,7 +60,7 @@ const IA_PREGUNTAS_MINUTO = 10;
 /** Módulos que «*» (todos) no trae ni la demo: un plan los trae solo si los nombra («*,asistente_ia», el plan más alto); si no, se cotizan aparte. */
 function modulos_fuera_de_planes(): array
 {
-    return ['asistente_ia'];
+    return ['asistente_ia', 'facturacion'];   // (9 nov 2026) la factura electrónica con TuFactura va a pedido
 }
 
 /* ============================================================

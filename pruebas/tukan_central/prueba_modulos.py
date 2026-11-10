@@ -112,7 +112,7 @@ chk(set(cat) == mods_sis, 'catálogo: tiene todos los módulos del sistema')
 FUERA = pj('modulos_fuera_de_planes()')
 chk(all(isinstance(x['precio_mensual'], (int, float)) and (x['precio_mensual'] > 0 or x['id'] in FUERA) and x['grupo'] in pj('grupos_modulos()') and all(d in cat for d in x['depende_de']) for x in cat.values()),
     'catálogo: precio, grupo y dependencias válidas en cada módulo (el Asistente IA: precio 0, por cotización)')
-chk(FUERA == ['asistente_ia'] and cat.get('asistente_ia', {}).get('grupo') == 'extras' and 'asistente_ia' not in pj('modulos_plan(null)'), 'catálogo: «Asistente IA» en Extras y fuera de los planes')
+chk(FUERA == ['asistente_ia', 'facturacion'] and cat.get('asistente_ia', {}).get('grupo') == 'extras' and cat.get('facturacion', {}).get('grupo') == 'extras' and not {'asistente_ia', 'facturacion'} & set(pj('modulos_plan(null)')), 'catálogo: «Asistente IA» y «Factura electrónica con TuFactura» en Extras y fuera de los planes')
 chk(all(k not in pj('dependencias_modulo("' + k + '", catalogo_modulos())') for k in cat), 'catálogo: sin círculos de dependencias')
 r = php('try { guardar_catalogo_modulos([["id" => "reservas", "depende_de" => ["finanzas"]], ["id" => "finanzas", "depende_de" => ["reservas"]]], [], "prueba"); echo "guardo"; } catch (RuntimeException $e) { echo "no: ", $e->getMessage(); }')
 chk(r.startswith('no:') and 'círculo' in r, 'catálogo: no deja guardar dependencias en círculo') if 'reservas' in cat else chk(True, 'catálogo: (sin reservas)')
@@ -159,7 +159,7 @@ chk(e == 'no', 'cambiar: un módulo que no existe se rechaza')
 php("q(\"DELETE FROM ligas WHERE slug = 'demo-mods-x'\");")
 php("q(\"INSERT INTO ligas (nombre, slug, vence, es_prueba, activa, es_demo, tipo, plan_id) VALUES ('Demo Mods', 'demo-mods-x', ?, 1, 1, 0, '" + T + "', " + PL + ")\", [date('Y-m-d', strtotime('+5 days'))]);")
 D = "fila(\"SELECT * FROM ligas WHERE slug = 'demo-mods-x'\")"
-chk(set(pj('modulos_cliente(' + D + ')')['activos']) == set(catT) - {'asistente_ia'} and pj('modulos_cliente(' + D + ')')['todos_en_demo'] is True, 'demo: tiene todos los módulos (menos el Asistente IA, que se cotiza)')
+chk(set(pj('modulos_cliente(' + D + ')')['activos']) == set(catT) - {'asistente_ia', 'facturacion'} and pj('modulos_cliente(' + D + ')')['todos_en_demo'] is True, 'demo: tiene todos los módulos (menos el Asistente IA, que se cotiza, y la factura electrónica, que va con TuFactura)')
 r = pj('cambiar_modulos_cuenta(' + D + ', [], ["' + APAGAR + '"], [])')
 chk(set(r['despues']['activos']) == set(catT) - {APAGAR}, 'demo: si el súper apaga uno, se apaga solo ese (lo demás sigue)')
 
@@ -304,7 +304,7 @@ else:
     chk('profesores, árbitros y delegados' in lg and 'secretaría' not in lg, 'ingreso (ligas): el texto de TuVocalía sigue igual')
 
 # ---------- 9) Planes de $20 y $45 (decisión de Dimitry, 28 oct 2026) ----------
-chk(pj('modulos_fuera_del_cupo()') == ['asistente_ia'], 'cupo: el Asistente IA no cuenta entre los módulos a elegir')
+chk(pj('modulos_fuera_del_cupo()') == ['asistente_ia', 'facturacion'], 'cupo: el Asistente IA y la factura electrónica no cuentan entre los módulos a elegir')
 if not ACADEMIA:
     chk(php("echo ajuste('planes_20_45');") == '' and pj('catalogo_modulos()')['asistente_ia']['precio_mensual'] == 0
         and php("echo (int)valor('SELECT COUNT(*) FROM planes WHERE modulos_elegir > 0');") == '0', '(ligas) los planes de $20 y $45 son solo de TuAcademia: en modo ligas nada cambia')

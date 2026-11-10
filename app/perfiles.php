@@ -75,7 +75,7 @@ function area_pagina(string $p): string
         'ligas' => 'super', 'planes' => 'super', 'suscripciones' => 'super', 'ajustes' => 'super', 'vendedores' => 'super', 'demos' => 'super', 'modulos' => 'super', 'requisito_doc' => '*', 'requisitos' => '*', // (v35)
         'negocio' => 'super', 'pedidos' => 'campeonatos', 'acumuladas' => 'campeonatos',
         // (v12)
-        'mi_plan' => 'config', 'pagos_linea' => 'finanzas', 'pasarela' => 'super', 'google_play' => 'super', 'mi_rol' => '*',
+        'mi_plan' => 'config', 'pagos_linea' => 'finanzas', 'tufactura' => 'finanzas', 'pasarela' => 'super', 'google_play' => 'super', 'mi_rol' => '*',
         // (v11) Escuelas
         'alumnos' => 'alumnos', 'alumno' => 'alumnos', 'grupos' => 'alumnos', 'esc_carnets' => 'alumnos',
         'asistencia' => 'clases', 'evaluaciones' => 'evaluaciones', 'competencias' => 'evaluaciones', 'examenes' => 'evaluaciones',
@@ -147,6 +147,7 @@ function puede_pagina(string $p, bool $editar = false, string $accion = ''): boo
     if (perfil_actual() === 'evento') return olimp_puede_pagina_evento($p, $editar); // (v37) solo sus eventos
     $area = area_pagina($p);
     // (v18) La contabilidad es de quien maneja el dinero: Finanzas en una liga, Pagos en una escuela
+    if ($p === 'tufactura') return puede('finanzas', $editar) || puede('cobros', $editar); // (9 nov 2026) factura electrónica
     if ($p === 'contabilidad') return puede('finanzas', $editar) || puede('cobros', $editar);
     // (v28) Videos: en una liga quien maneja equipos; en una escuela quien ve alumnos y quien da clases o evalúa
     if ($p === 'indicadores') return puede('config', $editar) || puede('finanzas', $editar) || puede('cobros', $editar); // (v28)

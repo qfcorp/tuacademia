@@ -886,6 +886,7 @@ function registrar_pago(int $liga_id, ?int $torneo_id, int $equipo_id, float $mo
        VALUES (?,?,?, 'pago', ?,?,?,?,?,?,?,?,?)", [$liga_id, $torneo_id, $equipo_id, $concepto, mb_substr($desc, 0, 200), round($monto, 2), $fecha, $forma, mb_substr($comprobante, 0, 100), $num, $ref, $por]);
     $id = (int)$pdo->lastInsertId();
     $pdo->commit();
+    FacturaTukan::alCobrar($liga_id, 'm' . $id); // (9 nov 2026) TuFactura: factura sola si se eligió «automático»
     return $id;
 }
 

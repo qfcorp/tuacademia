@@ -1155,7 +1155,7 @@ chk(r.status_code == 200 and dm.get('activos') == [BX['del'][0]] and dm.get('ele
 r, d = ejecutar('crear_demo', {'nombre': 'Demo Con Todo', 'contacto_nombre': 'Eva Demo', 'email': 'demo.todo@v2.ejemplo.com', 'telefono': '0991112288', 'enviar_correo': False,
                                'extra': {'ciudad': 'Quito'} if ACADEMIA else {'tipo': 'liga', 'ciudad': 'Quito'}})
 dm = d.get('resultado', {}).get('modulos', {})
-chk(r.status_code == 200 and dm.get('todos_en_demo') is True and set(dm.get('activos', [])) == {k for k, x in m2.items() if ('escuela' if ACADEMIA else 'liga') in x['para'] and k != 'asistente_ia'}, 'crear_demo sin módulos: la demo tiene todo (menos el Asistente IA, que se cotiza)')
+chk(r.status_code == 200 and dm.get('todos_en_demo') is True and set(dm.get('activos', [])) == {k for k, x in m2.items() if ('escuela' if ACADEMIA else 'liga') in x['para'] and k not in ('asistente_ia', 'facturacion')}, 'crear_demo sin módulos: la demo tiene todo (menos el Asistente IA, que se cotiza, y la factura electrónica)')
 r, d = ejecutar('crear_demo', {'nombre': 'Demo Mala', 'contacto_nombre': 'Eva Demo', 'email': 'demo.mala@v2.ejemplo.com', 'telefono': '0991112277', 'modulos': ['no_existe'],
                                'extra': {'ciudad': 'Quito'} if ACADEMIA else {'tipo': 'liga', 'ciudad': 'Quito'}})
 chk(es_error(r, 'invalido', 422), 'crear_demo con un módulo que no existe → 422')
@@ -1168,7 +1168,7 @@ if ACADEMIA:
 PB = php("echo (int)valor(\"SELECT id FROM planes WHERE slug = 'academia-basico'\");") if ACADEMIA else ''
 PC = php("echo (int)valor(\"SELECT id FROM planes WHERE slug = 'academia-completo'\");") if ACADEMIA else ''
 m = pedir('modulos')
-chk(m.get('fuera_del_cupo') == ['asistente_ia'], 'modulos: fuera_del_cupo = [asistente_ia] (no cuenta entre los elegidos; el Panel calcula el total en vivo) ' + str(m.get('fuera_del_cupo')))
+chk(m.get('fuera_del_cupo') == ['asistente_ia', 'facturacion'], 'modulos: fuera_del_cupo = [asistente_ia, facturacion] (no cuentan entre los elegidos; el Panel calcula el total en vivo) ' + str(m.get('fuera_del_cupo')))
 chk(all(isinstance(p_.get('modulos_elegir'), int) and 'precio_modulo_extra' in p_ for p_ in m.get('planes', [])), 'modulos: cada plan dice modulos_elegir y precio_modulo_extra')
 chk('elegir' in m.get('reglas', {}), 'modulos: las reglas explican los módulos a elegir')
 pls = {p_['codigo']: p_ for p_ in pedir('planes').get('planes', [])}

@@ -99,6 +99,7 @@ require APP_DIR . '/federacion.php'; // (v28) federaciones
 require APP_DIR . '/videos.php'; // (v28) videos del jugador y del alumno
 require APP_DIR . '/negocio_liga.php'; // (v28) indicadores del negocio y referidos
 require APP_DIR . '/entradas.php'; // (v28) venta de entradas con QR
+require APP_DIR . '/factura_tukan.php'; // (9 nov 2026) factura electrónica con TuFactura (módulo facturacion)
 require APP_DIR . '/v29.php'; // (v29) fixture completo imprimible y esquema del campeonato (plan Profesional)
 require APP_DIR . '/v30.php'; // (v30) perfil Asistente con permisos a medida y manuales en 5 idiomas
 require APP_DIR . '/v31.php'; // (v31) escuelas de taekwondo, karate y judo: cinturones, pesos, formas y exámenes de grado

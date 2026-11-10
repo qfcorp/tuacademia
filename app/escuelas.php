@@ -279,6 +279,7 @@ function cobrar_cargos(array $liga, array $ids, string $forma, string $por, stri
     q("UPDATE esc_cargos SET estado = 'pagado', pagado_en = ?, forma_pago = ?, recibo = ?, registrado_por = ?, comprobante_estado = CASE WHEN comprobante <> '' THEN 'aprobado' ELSE comprobante_estado END
        WHERE liga_id = ? AND estado = 'pendiente' AND id IN ($in)", [$fecha ?: date('Y-m-d'), array_key_exists($forma, formas_pago()) ? $forma : 'efectivo', $recibo, $por, $liga['id']]);
     $pdo->commit();
+    FacturaTukan::alCobrar((int)$liga['id'], 'r' . $recibo); // (9 nov 2026) TuFactura: factura sola si se eligió «automático»
     acad_tg_pago_recibido($liga, $recibo, $ids); // (TuAcademia, 14-oct) aviso por Telegram a la familia (nunca falla)
     return $recibo;
 }

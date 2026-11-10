@@ -10,6 +10,7 @@ define('VISTA_PUBLICA', true);
 $pti = mb_substr(trim((string)get('pti')), 0, 500);
 $pcc = mb_substr(trim((string)get('pcc')), 0, 500);
 $ptk = mb_substr(trim((string)get('ptk')), 0, 2000);
+$prc = mb_substr(trim((string)get('prc')), 0, 500);   // prc: identificador del proceso. Plux (10 nov 2026) pide mandar los 4 (pti, pcc, ptk, prc) al cerrar el 3D Secure; sin prc no crea la suscripción.
 $token = (string)($_SESSION['plux_token'] ?? '');
 $pg = preg_match('/^[a-f0-9]{32}$/', $token) ? fila('SELECT * FROM pagos_linea WHERE token = ?', [$token]) : null;
 if (!$pg) {
@@ -32,7 +33,7 @@ if ($pti === '' || $pcc === '' || $ptk === '') {
 if ($pg && $pg['estado'] === 'pagado') ir('pagar.php?t=' . $pg['token']);
 if ($pg) contexto_auditoria(['usuario' => 'Pago en línea: ' . mb_substr($pg['pagador_nombre'], 0, 60), 'rol' => 'publico', 'liga_id' => (int)$pg['liga_id'], 'origen' => 'publico']);
 
-$r = plux_llamar(PLUX_RUTA_3DS, ['pti' => $pti, 'pcc' => $pcc, 'ptk' => $ptk]);
+$r = plux_llamar(PLUX_RUTA_3DS, ['pti' => $pti, 'pcc' => $pcc, 'ptk' => $ptk] + ($prc !== '' ? ['prc' => $prc] : []));
 if (!$pg) {
     // Aprobado por el banco pero no sabemos de qué pago: queda en la bitácora para que el superadministrador lo revise
     if ((int)($r['code'] ?? -1) === 0) {

@@ -69,7 +69,7 @@ if (es_post() && post('accion') === 'cancelar_tarjeta') {
     if (!puede('config', true)) throw new RuntimeException('Solo el administrador puede cancelar la suscripción.');
     $cx = pc_cancelar($liga, (int)post('id'));
     flash(!empty($cx['programada'])
-        ? 'Cancelación programada: ya pasó la fecha límite (2 días antes del cobro), así que el cobro del ' . pc_fecha($cx['pagado_hasta'] ?? '') . ' sigue y después la suscripción se cancela sola.'
+        ? 'Cancelación pendiente: se cancela sola en unos minutos (también en Plux).'
         : 'Suscripción con tarjeta cancelada. Conserva lo que ya pagó.');
     ir('admin.php?p=mi_plan#pagos-tarjeta');
 }

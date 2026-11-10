@@ -126,17 +126,15 @@ function html_pagos_central(array $liga, bool $puede): string
             $h .= $c['cobra_sola'] ? ' · <small>se cobra sola a su tarjeta</small>' : '';
             if (!empty($c['pagado_hasta'])) $h .= ' · <small>pagada hasta el ' . e(pc_fecha($c['pagado_hasta'])) . '</small>';
             if (!empty($c['cancelacion_programada']) && $c['estado'] !== 'cancelada') {
-                $h .= '<br><small>🗓️ <b>Cancelación programada:</b> pidió cancelar después de la fecha límite, así que el cobro del ' . e(pc_fecha($c['cancelacion_programada']))
-                    . ' sigue y después se cancela sola.</small>';
+                $h .= '<br><small>🗓️ <b>Cancelación pendiente:</b> se cancela sola en unos minutos (también en Plux).</small>';
             } elseif (!empty($c['cancelar_hasta']) && in_array($c['estado'], ['activa', 'en_gracia'], true)) {
-                $h .= '<br><small>Para que no se cobre el siguiente período, cancele hasta el <b>' . e(pc_fecha($c['cancelar_hasta'])) . '</b> (2 días antes del cobro).</small>';
+                $h .= '<br><small>Para que no se cobre el siguiente período, cancele antes del cobro del <b>' . e(pc_fecha($c['cancelar_hasta'])) . '</b>. Se cancela al momento.</small>';
             }
         }
         if (!empty($c['url_pago'])) $h .= ' <a class="btn btn-chico" href="' . e((string)$c['url_pago']) . '">Pagar ahora</a>';
         if ($puede && ($c['tipo'] ?? '') === 'suscripcion' && in_array($c['estado'], ['pendiente', 'rechazado', 'activa', 'en_gracia'], true) && empty($c['cancelacion_programada'])) {
-            $tarde = !empty($c['cancelar_hasta']) && date('Y-m-d') > $c['cancelar_hasta'];
-            $msg = $tarde ? '¿Cancelar la suscripción con tarjeta? Ya pasó la fecha límite (' . pc_fecha($c['cancelar_hasta']) . '): el cobro del ' . pc_fecha($c['pagado_hasta'] ?? '') . ' sigue y después se cancela.'
-                : '¿Cancelar la suscripción con tarjeta? Conserva lo que ya pagó.';
+            // (10 nov 2026) Sin fecha límite: se cancela al momento, también en Plux, y conserva lo ya pagado.
+            $msg = '¿Cancelar la suscripción con tarjeta? Se cancela ya (no se cobra la siguiente cuota) y conserva lo que ya pagó.';
             $h .= ' <form method="post" style="display:inline" onsubmit="return confirm(' . e(json_encode($msg, JSON_UNESCAPED_UNICODE)) . ')">' . csrf_campo()
                 . '<input type="hidden" name="accion" value="cancelar_tarjeta"><input type="hidden" name="id" value="' . (int)$c['id'] . '"><button class="btn btn-sec btn-chico">Cancelar suscripción</button></form>';
         }

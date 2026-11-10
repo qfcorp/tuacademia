@@ -561,6 +561,7 @@ Pedido de Dimitry: «TuVocalía y TuAcademia deben unirse… con sus diferentes 
 - Los cobros de la academia a sus familias NO pasan por aquí (siguen con su Plux propio).
 - Manuales: academia.html (cap. 14), escuelas.html (s17) y ligas.html (s19) en español.
 - Pendiente: el código de planes todavía usa los de TuVocalía; los de $20 / $45 (§17) se aplican al definir la lista en el panel.
+- (10 nov 2026) Cancelar la suscripción con tarjeta: **sin fecha límite de 2 días** (pedido de Dimitry). Se cancela al momento, también en Plux, hasta el mismo día del cobro; conserva lo pagado.
 - (6 nov 2026) Cancelar la suscripción con tarjeta: hasta **2 días antes del cobro** (Mi plan muestra la fecha); después queda
   «Cancelación programada» y se cancela sola tras ese cobro. Se cancela sola también en Plux (API de Plux, 6 nov); solo si Plux no la encuentra le llega un correo a Tukán. Plan de Plux por valor
   (plan + extras) en el panel.

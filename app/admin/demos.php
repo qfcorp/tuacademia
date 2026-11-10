@@ -34,7 +34,9 @@ cabecera_admin('Solicitudes de demo');
 <div class="tarjeta">
   <div class="fila-titulo"><h3 style="margin:0"><?= $s['tipo'] === 'escuela' ? '🎓' : '🏆' ?> <?= e($s['organizacion']) ?> <small class="suave"><?= e($s['ciudad']) ?></small></h3>
     <span class="etiqueta"><?= e(estados_solicitud_demo()[$s['estado']] ?? $s['estado']) ?></span></div>
-  <p style="margin:.4rem 0">👤 <b><?= e($s['contacto']) ?></b> · 📞 <?= e($s['telefono']) ?><?= $s['email'] ? ' · ✉ ' . e($s['email']) : '' ?> · <?= e(substr($s['creado'], 0, 16)) ?></p>
+  <p style="margin:.4rem 0">👤 <b><?= e($s['contacto']) ?></b> · 📱 <?= e($s['telefono']) ?><?= ($s['telefono_fijo'] ?? '') !== '' ? ' · ☎ ' . e($s['telefono_fijo']) : '' ?><?= $s['email'] ? ' · ✉ ' . e($s['email']) : '' ?> · <?= e(substr($s['creado'], 0, 16)) ?></p>
+  <?php if (($s['direccion'] ?? '') !== ''): ?><p style="margin:.4rem 0">📍 <?= e($s['direccion']) ?><?= $s['ciudad'] !== '' ? ', ' . e($s['ciudad']) : '' ?></p><?php endif; ?>
+  <?php if (($s['aviso_panel'] ?? '') !== ''): ?><p style="margin:.4rem 0" class="suave">Aviso al Panel Tukán: <?= e($s['aviso_panel']) ?></p><?php endif; ?>
   <p style="margin:.4rem 0"><?= $s['tamano'] ? 'Tamaño: ' . e($s['tamano']) . ' · ' : '' ?><?= $s['plan'] ? 'Le interesa: <b>' . e($s['plan']) . '</b> · ' : '' ?><?= $s['vendedor'] ? '🤝 Vendedor: ' . e($s['vendedor']) : 'Venta directa' ?></p>
   <?php if (($s['deportes'] ?? '') !== ''): ?><p style="margin:.4rem 0">🧩 Deportes: <b><?= e(texto_modulos(explode(',', $s['deportes']))) ?></b></p><?php endif; ?>
   <?php if ($s['mensaje']): ?><p style="margin:.4rem 0" class="suave">“<?= e($s['mensaje']) ?>”</p><?php endif; ?>

@@ -154,7 +154,7 @@ elseif (!$super && get('nuevo') !== ''):
       <h1>🎫 Soporte</h1>
       <div class="tarjeta"><p>En la <b>demostración</b> no se abren tickets. ¿Tiene una pregunta o quiere pedir una funcionalidad? Escríbanos y le ayudamos enseguida.</p>
         <?php if ($wa_ventas): ?><a class="btn" target="_blank" rel="noopener" href="https://wa.me/<?= e($wa_ventas) ?>?text=<?= rawurlencode('Hola, estoy probando la demo de ' . marca() . ' y tengo una consulta: ') ?>">💬 Escribir por WhatsApp</a><?php endif; ?>
-        <a class="btn btn-sec" href="<?= e(url_empezar()) ?>">Solicitar mi demo de <?= (int)ajuste('dias_demo', 7) ?> días</a></div>
+        <a class="btn btn-sec" href="<?= e(url_empezar()) ?>">Solicitar mi demo de <?= dias_demo() ?> días</a></div>
     <?php elseif ($tipo === 'funcionalidad'): ?>
       <h1>💡 Pedir una funcionalidad nueva</h1>
       <p class="suave">Cuéntenos con detalle qué le gustaría que haga <?= e(marca()) ?>. Mientras más claro, más rápido lo podemos evaluar y desarrollar. Le avisamos aquí cuando tengamos novedades.</p>

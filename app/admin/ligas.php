@@ -57,7 +57,7 @@ if (es_post() && $correo_post === null) {
     if ($accion === 'crear') {
         $tipo = post('vigencia');
         $vence = match ($tipo) {
-            'prueba' => date('Y-m-d', strtotime('+' . entero(post('dias_prueba'), 1, 365) . ' days')),
+            'prueba' => date('Y-m-d', strtotime('+' . (post('dias_prueba') !== '' ? entero(post('dias_prueba'), 1, 365) : dias_demo()) . ' days')), // (10 nov 2026) 3 días en todo
             'pagada' => post('vence') !== '' && strtotime(post('vence')) ? date('Y-m-d', strtotime(post('vence'))) : throw new RuntimeException('Escriba hasta qué fecha está pagada.'),
             default => '',
         };
@@ -284,7 +284,7 @@ if ($nueva): ?>
         <div><label>Vigencia</label>
           <select name="vigencia" onchange="document.getElementById('vg-p').style.display=this.value==='prueba'?'':'none';document.getElementById('vg-f').style.display=this.value==='pagada'?'':'none'">
             <option value="prueba">Demo (por días)</option><option value="pagada">Pagada hasta una fecha</option><option value="sin">Sin vencimiento (cortesía / propia)</option></select></div>
-        <div id="vg-p"><label>Días de la demo</label><input type="number" name="dias_prueba" min="1" max="365" value="<?= (int)ajuste('dias_demo', 7) ?>"></div>
+        <div id="vg-p"><label>Días de la demo</label><input type="number" name="dias_prueba" min="1" max="365" value="<?= dias_demo() ?>"></div>
         <?php $vends = filas('SELECT id, nombre, codigo FROM vendedores WHERE activo = 1 ORDER BY nombre'); if ($vends): ?><div><label>Vendedor (comisión)</label><select name="vendedor_id"><option value="">— venta directa —</option><?php foreach ($vends as $vd): ?><option value="<?= (int)$vd['id'] ?>"><?= e($vd['nombre'] . ' (' . $vd['codigo'] . ')') ?></option><?php endforeach; ?></select></div><?php endif; ?>
         <div id="vg-f" style="display:none"><label>Pagada hasta</label><input type="date" name="vence" value="<?= date('Y-m-d', strtotime('+1 month')) ?>"></div>
       </div>
@@ -300,7 +300,7 @@ if ($nueva): ?>
     <input type="hidden" name="solicitud_demo" value="<?= (int)$sd['id'] ?>">
     <script>
     (function () {
-      var f = document.currentScript.closest('form'), d = <?= json_encode(['nombre' => $sd['organizacion'], 'ciudad' => $sd['ciudad'], 'tipo' => $sd['tipo'], 'admin_nombre' => $sd['contacto'], 'admin_email' => $sd['email'], 'telefono' => $sd['telefono'], 'plan_id' => (string)($sd['plan_id'] ?? ''), 'vendedor_id' => (string)($sd['vendedor_id'] ?? ''), 'vigencia' => 'prueba', 'dias_prueba' => (string)(int)ajuste('dias_demo', 7)], JSON_UNESCAPED_UNICODE) ?>;
+      var f = document.currentScript.closest('form'), d = <?= json_encode(['nombre' => $sd['organizacion'], 'ciudad' => $sd['ciudad'], 'tipo' => $sd['tipo'], 'admin_nombre' => $sd['contacto'], 'admin_email' => $sd['email'], 'telefono' => $sd['telefono'], 'plan_id' => (string)($sd['plan_id'] ?? ''), 'vendedor_id' => (string)($sd['vendedor_id'] ?? ''), 'vigencia' => 'prueba', 'dias_prueba' => (string)dias_demo()], JSON_UNESCAPED_UNICODE) ?>;
       Object.keys(d).forEach(function (k) { var el = f.elements[k]; if (el && d[k] !== '') { el.value = d[k]; el.dispatchEvent(new Event('change')); } });
       var dep = <?= json_encode(array_values(array_filter(explode(',', (string)($sd['deportes'] ?? ''))))) ?>; // (v35) deportes que pidió
       if (dep.length) f.querySelectorAll('input[name="deportes[]"]').forEach(function (c) { c.checked = dep.indexOf(c.value) >= 0; });

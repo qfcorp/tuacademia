@@ -29,7 +29,7 @@ function fixture_pro_motivo(?array $liga, bool $publico = false): string
     if (es_escuela($liga)) return 'El fixture imprimible y el esquema del campeonato son para ligas y campeonatos.';
     if (!empty($liga['es_demo'])) return 'El fixture completo para imprimir y el esquema del campeonato son exclusivos del plan Profesional: no están en la demostración.';
     if (!empty($liga['es_prueba']) || estado_suscripcion($liga)['estado'] === 'prueba') {
-        return 'El fixture completo para imprimir y el esquema del campeonato son exclusivos del plan Profesional: se activan al contratarlo (no están en la demo de 7 días).';
+        return 'El fixture completo para imprimir y el esquema del campeonato son exclusivos del plan Profesional: se activan al contratarlo (no están en la demo).';
     }
     if (!modulo_activo($liga, 'fixture_pro')) return 'Su plan no incluye el fixture completo para imprimir ni el esquema del campeonato: son exclusivos del plan Profesional.';
     return '';

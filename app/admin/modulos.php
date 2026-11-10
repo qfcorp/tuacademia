@@ -122,7 +122,7 @@ if (es_post()) {
 
     if ($accion === 'demo') {
         $ds = leer_deportes_post();
-        $dias = entero(post('dias'), 1, 90);
+        $dias = post('dias') !== '' ? entero(post('dias'), 1, 90) : dias_demo(); // (10 nov 2026) 3 días en todo
         $tipo = post('tipo') === 'escuela' ? 'escuela' : 'liga';
         $dep_esc = post('deporte_escuela');
         if ($tipo === 'escuela' && $ds && !deporte_escuela_permitido(['deportes' => implode(',', $ds)], $dep_esc)) {
@@ -354,7 +354,7 @@ cabecera_admin('Módulos deportivos');
         <div><label>Tipo de cuenta</label><select name="tipo"><option value="liga">🏆 Liga / campeonatos</option><option value="escuela">🎓 Escuela deportiva</option></select></div>
         <div><label>Deporte principal (escuela)</label><select name="deporte_escuela"><?php foreach (deportes_escuela() as $dk => $dv): ?><option value="<?= e($dk) ?>"><?= e($dv) ?></option><?php endforeach; ?></select><div class="ayuda">Si no es de los deportes elegidos, se toma el primero que sí lo sea.</div></div>
         <div><label>Plan</label><select name="plan_id"><option value="">Sin plan (todo)</option><?php foreach ($planes as $pl): ?><option value="<?= (int)$pl['id'] ?>"><?= e($pl['nombre']) ?></option><?php endforeach; ?></select></div>
-        <div><label>Días de la demo</label><input type="number" name="dias" min="1" max="90" value="<?= (int)ajuste('dias_demo', 7) ?>"></div>
+        <div><label>Días de la demo</label><input type="number" name="dias" min="1" max="90" value="<?= dias_demo() ?>"></div>
         <div><label>Nombre del administrador *</label><input type="text" name="admin_nombre" required maxlength="80"></div>
         <div><label>Correo (usuario) *</label><input type="email" name="admin_email" required></div>
         <div><label>Celular / WhatsApp</label><input type="tel" name="telefono" maxlength="30"></div>

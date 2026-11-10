@@ -104,15 +104,20 @@ function correos_solicitud_demo(array $s): void
 {
     $wa = trim((string)ajuste('ventas_whatsapp'));
     if (filter_var((string)$s['email'], FILTER_VALIDATE_EMAIL)) {
-        enviar_correo((string)$s['email'], 'Recibimos su solicitud de demo de ' . marca(), 'Recibimos su solicitud', [
+        $base = rtrim(url_base(), '/');
+        $tm = function_exists('demo_tipo_pdf') ? demo_tipo_pdf((string)$s['tipo']) : 'ligas';
+        enviar_correo((string)$s['email'], 'Recibimos su solicitud de demo de ' . marca(), 'Recibimos su solicitud', array_values(array_filter([
             'Hola ' . $s['contacto'] . ', gracias por su interés en ' . marca() . ' para ' . $s['organizacion'] . '.',
-            'En las próximas horas le escribimos por WhatsApp' . ($s['telefono'] !== '' ? ' al ' . $s['telefono'] : '') . ' para coordinar una demostración corta y crearle su acceso de prueba de ' . (int)ajuste('dias_demo', 7) . ' días con todos los módulos.',
-            'Mientras tanto puede mirar la liga de demostración y los manuales:',
-        ], ['Ver la demostración', rtrim(url_base(), '/') . '/demo']);
+            // (10 nov 2026) demos automáticas de 3 días: el Panel Tukán crea la demo y manda la clave a este mismo correo
+            'En unos minutos le llega a este correo la clave de su demo de ' . dias_demo() . ' días con todos los módulos, el manual y la guía de primeros pasos. Revise también la carpeta de spam.'
+                . ($wa !== '' ? ' Si tiene dudas, escríbanos por WhatsApp al ' . $wa . '.' : ''),
+            function_exists('demo_pdf') && demo_pdf('manual', $tm) ? 'Manual: ' . $base . '/' . demo_url_pdf('manual', $tm) : '',
+            function_exists('demo_pdf') && demo_pdf('primeros_pasos', $tm) ? 'Guía de primeros pasos: ' . $base . '/' . demo_url_pdf('primeros_pasos', $tm) : '',
+        ], fn($p) => $p !== '')), ['Ver la demostración', $base . '/demo']);
     }
     foreach (correos_super() as $c) {
         enviar_correo($c, '📝 Solicitud de demo: ' . $s['organizacion'], 'Nueva solicitud de demo', [
-            [['Tipo', $s['tipo'] === 'escuela' ? 'Escuela' : 'Liga / campeonato'], ['Organización', $s['organizacion'] . ($s['ciudad'] !== '' ? ' (' . $s['ciudad'] . ')' : '')], ['Contacto', $s['contacto']], ['Celular', $s['telefono']], ['Correo', $s['email'] !== '' ? $s['email'] : '—'], ['Tamaño', $s['tamano'] !== '' ? $s['tamano'] : '—']],
+            [['Tipo', $s['tipo'] === 'escuela' ? 'Escuela' : 'Liga / campeonato'], ['Organización', $s['organizacion'] . ($s['ciudad'] !== '' ? ' (' . $s['ciudad'] . ')' : '')], ['Contacto', $s['contacto']], ['Celular', $s['telefono']], ['Teléfono', ($s['telefono_fijo'] ?? '') !== '' ? $s['telefono_fijo'] : '—'], ['Dirección', ($s['direccion'] ?? '') !== '' ? $s['direccion'] : '—'], ['Correo', $s['email'] !== '' ? $s['email'] : '—'], ['Tamaño', $s['tamano'] !== '' ? $s['tamano'] : '—']],
             $s['mensaje'] !== '' ? 'Mensaje: «' . $s['mensaje'] . '»' : '',
         ], ['Atender la solicitud', rtrim(url_base(), '/') . '/admin.php?p=demos']);
     }

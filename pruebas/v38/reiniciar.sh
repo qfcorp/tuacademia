@@ -32,5 +32,5 @@ require "app/bootstrap.php";
 crear_liga_completa(["nombre"=>"Liga Prueba Play","modalidad"=>"F7","admin_nombre"=>"Admin Liga","admin_email"=>"liga@prueba.com","admin_clave"=>"clave12345","tipo"=>"liga","plan_id"=>1,"vence"=>date("Y-m-d", strtotime("+3 days")),"deportes"=>["futbol"],"crear_campeonato"=>true]);
 crear_liga_completa(["nombre"=>"Escuela Prueba Play","modalidad"=>"F7","admin_nombre"=>"Admin Escuela","admin_email"=>"escuela@prueba.com","admin_clave"=>"clave12345","tipo"=>"escuela","plan_id"=>5,"vence"=>date("Y-m-d", strtotime("+3 days")),"deportes"=>["futbol"]]);'
 (cd "$P" && nohup php -S 127.0.0.1:$SIM simulador_google.php > sim.log 2>&1 &)
-(nohup php -S 127.0.0.1:$PUERTO -t public > "$P/web.log" 2>&1 &)
+(nohup php -S 127.0.0.1:$PUERTO -t public "$REPO/pruebas/router.php" > "$P/web.log" 2>&1 &) # router: /manual.pdf y /primeros_pasos.pdf como nginx
 sleep 1; echo "entorno listo ($MODO) en http://127.0.0.1:$PUERTO/"

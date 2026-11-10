@@ -12,6 +12,10 @@
 require __DIR__ . '/../app/bootstrap.php';
 define('VISTA_PUBLICA', true);
 
+// (10 nov 2026) Demos automáticas: /manual.pdf y /primeros_pasos.pdf públicos. nginx los trae aquí (try_files).
+$ruta_pdf = (string)parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+if ($ruta_pdf === '/manual.pdf' || $ruta_pdf === '/primeros_pasos.pdf') demo_servir_pdf($ruta_pdf === '/manual.pdf' ? 'manual' : 'primeros_pasos', get('tipo'));
+
 // (v9) Si llega con el enlace de un vendedor (?ref=CODIGO), se recuerda 60 días para su comisión
 recordar_vendedor();
 

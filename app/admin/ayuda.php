@@ -40,7 +40,12 @@ cabecera_admin('Ayuda');
   <p class="suave" style="margin-bottom:0">¿Le sirvió? Si no, escríbanos por WhatsApp <a target="_blank" rel="noopener" href="https://wa.me/<?= $wa ?>?text=<?= rawurlencode('Hola, tengo una duda con ' . marca() . ': ' . $pregunta) ?>">098 366 2181</a>.</p>
 </div>
 <?php endif; ?>
-<p class="suave">También puede leer los <a href="manual" target="_blank">manuales</a> o abrir un <a href="admin.php?p=soporte">ticket de soporte</a>.</p>
+<div class="tarjeta" id="ayuda-manuales" style="max-width:760px">
+  <h2 style="margin-top:0">📚 Manual y primeros pasos</h2>
+  <p style="margin:0">Descárguelos en PDF para leerlos o imprimirlos<?= cuenta_en_demo($liga) ? ' mientras prueba su demo' : '' ?>.</p>
+  <?= html_botones_manual_pdf($liga) // (10 nov 2026) para todos ?>
+</div>
+<p class="suave">También puede leer los <a href="manual" target="_blank">manuales</a> en la web o abrir un <a href="admin.php?p=soporte">ticket de soporte</a>.</p>
 <?php if (es_super()): ?><div class="aviso aviso-info">🛠 Superadministrador: <a href="admin.php?p=ayuda_faq">revisar las preguntas frecuentes</a>.</div><?php endif; ?>
 <?php
 pie_admin();

@@ -24,6 +24,7 @@ $lesionados = filas("SELECT l.*, a.nombres, a.apellidos FROM esc_lesiones l JOIN
 cabecera_admin(es_academia() ? 'Resumen de la academia' : 'Resumen de la escuela'); // (arreglos 14-oct)
 ?>
 <h1>🎓 <?= e($liga['nombre']) ?></h1>
+<?= html_tarjeta_demo($liga) // (10 nov 2026) mientras es demo: hasta cuándo dura y el manual y los primeros pasos en PDF ?>
 <div class="cifras">
   <div class="cifra"><b><?= $activos ?></b>Alumnos activos</div>
   <div class="cifra"><b><?= $asist['t'] ? round(100 * (int)$asist['v'] / (int)$asist['t']) . '%' : '—' ?></b>Asistencia (30 días)</div>

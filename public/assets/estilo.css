@@ -880,3 +880,7 @@ table.comparativa td:first-child { text-align: left; }
 .tukan-legal-aviso label{display:inline-flex;gap:8px;align-items:center;margin-right:10px}
 .pie-legal{font-size:.85rem;opacity:.8;margin-top:10px}
 .tukan-legal-enlaces a{color:inherit}
+/* (10 nov 2026) Solicitar demo: error junto a cada campo y tarjeta de la demo en el inicio */
+.error-campo { color: #b3261e; font-size: .88rem; margin-top: 3px; font-weight: 600; }
+.campo-con-error input, .campo-con-error textarea, .campo-con-error select { border-color: #b3261e !important; background: #fff6f6; }
+.campo-con-error label { color: #b3261e; }

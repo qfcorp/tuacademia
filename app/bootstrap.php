@@ -74,6 +74,7 @@ require APP_DIR . '/escuela_v36.php'; // (v36) deportes nuevos en las escuelas
 require APP_DIR . '/carreras.php'; // (v22)
 require APP_DIR . '/ciclismo_ruta.php'; // (v34) ruta UCI y MTB
 require APP_DIR . '/demos.php';
+require APP_DIR . '/demos_auto.php'; // (10 nov 2026) demos automáticas de 3 días: 7 datos obligatorios, aviso al Panel, manual y primeros pasos en PDF
 require APP_DIR . '/demo_completa.php';
 require APP_DIR . '/v12.php';
 require APP_DIR . '/plux.php';

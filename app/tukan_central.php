@@ -1299,7 +1299,7 @@ function tc2_planes(): array
     return [
         'editable' => false,
         'planes' => $planes,
-        'ajustes' => ['dias_prueba' => (int)ajuste('dias_prueba', tc_producto()[0] === 'tuacademia' ? 7 : 30), 'dias_demo' => (int)ajuste('dias_demo', 7), 'dias_gracia' => (int)ajuste('dias_gracia', 7),
+        'ajustes' => ['dias_prueba' => (int)ajuste('dias_prueba', DEMO_DIAS_AUTO), 'dias_demo' => dias_demo(), 'dias_gracia' => (int)ajuste('dias_gracia', 7),
                       'dias_gracia_demo' => (int)ajuste('dias_gracia_demo', 0), 'registro_abierto' => false], // (18 oct 2026) no hay prueba gratis: todo se pide demo
     ];
 }
@@ -1385,7 +1385,7 @@ function tc2_solicitudes_todas(array $f = [], bool $completo = false, ?string $s
                     tc2_campo('email', 'Correo (será su usuario)', 'email', true, ['valor' => (string)$s['email']]),
                     tc2_campo('telefono', 'Celular', 'telefono', true, ['valor' => (string)$s['telefono']]),
                     tc2_campo('plan', 'Plan', 'opcion', false, ['valor' => $s['plan_id'] ? (string)$s['plan_id'] : null, 'opciones' => array_map(fn($p) => ['valor' => (string)$p['id'], 'etiqueta' => (string)$p['nombre']], array_values(tc2_planes_para(['tipo' => $s['tipo'] === 'escuela' || tc_producto()[2] ? 'escuela' : 'liga'])))]),
-                    tc2_campo('dias', 'Días de prueba', 'dias', true, ['valor' => (int)ajuste('dias_demo', 7), 'min' => 1, 'max' => 90]),
+                    tc2_campo('dias', 'Días de prueba', 'dias', true, ['valor' => dias_demo(), 'min' => 1, 'max' => 90]),
                     tc2_campo('enviar_correo', 'Enviarle el correo de bienvenida', 'si_no', false, ['valor' => true]),
                 ], array_map(fn($c) => $c['campo'] === 'tipo' ? ['valor' => $s['tipo'] === 'escuela' ? 'escuela' : 'liga'] + $c : ($c['campo'] === 'ciudad' ? ['valor' => tc2_txt($s['ciudad'], 80)] + $c : $c),
                     tc2_form_crear_demo())));
@@ -1399,7 +1399,8 @@ function tc2_solicitudes_todas(array $f = [], bool $completo = false, ?string $s
                 'quien' => ['nombre' => tc2_txt($s['contacto']), 'organizacion' => tc2_txt($s['organizacion']), 'telefono' => (string)$s['telefono'] ?: null, 'whatsapp' => $wa, 'email' => (string)$s['email'] ?: null],
                 'resumen' => implode(' · ', array_filter([$s['tipo'] === 'escuela' ? (tc_producto()[2] ? 'Academia' : 'Escuela') : 'Liga', tc2_txt($s['ciudad']), tc2_txt($s['tamano']), $s['plan_nombre'] ? 'Le interesa: ' . $s['plan_nombre'] : ''])),
                 'estado' => $est, 'estado_producto' => (string)$s['estado'], 'prioridad' => $est === 'pendiente' ? 'alta' : 'normal',
-                'detalle' => ['tipo' => (string)$s['tipo'], 'ciudad' => tc2_txt($s['ciudad']), 'tamano' => tc2_txt($s['tamano']),
+                // (10 nov 2026) los 7 datos del contrato de las demos automáticas, con sus claves exactas (app/demos_auto.php)
+                'detalle' => demo_campos_contrato($s) + ['tipo' => (string)$s['tipo'], 'tamano' => tc2_txt($s['tamano']),
                               'plan_interes' => $s['plan_id'] ? ['codigo' => (string)$s['plan_id'], 'nombre' => (string)$s['plan_nombre']] : null,
                               'deportes' => ($s['deportes'] ?? '') !== '' ? explode(',', (string)$s['deportes']) : [], 'mensaje' => tc2_txt($s['mensaje']),
                               'vendedor' => $s['vendedor'] ? (string)$s['vendedor'] : null, 'nota' => tc2_txt($s['nota']), 'atendido_por' => tc2_txt($s['atendido_por'])],
@@ -2280,7 +2281,7 @@ function tc2_op_crear_demo(array $d, array $ctx): array
     if (fila('SELECT id FROM usuarios WHERE lower(email) = ?', [$email])) throw tc2_mal('datos.email', 'Ese correo ya tiene una cuenta en ' . tc_producto()[1] . '. Use otro.');
     $tel = is_string($d['telefono'] ?? null) ? trim($d['telefono']) : '';
     if (mb_strlen($tel) < 9 || mb_strlen($tel) > 30 || strlen(preg_replace('/\D/', '', $tel)) < 9) throw tc2_mal('datos.telefono', 'Escriba el celular (al menos 9 números).');
-    $dias = tc2_entero($d, 'dias', (int)ajuste('dias_demo', 7), 1, 90, 'datos.dias');
+    $dias = tc2_entero($d, 'dias', dias_demo(), 1, 90, 'datos.dias');
     $extra = $d['extra'] ?? [];
     if (!is_array($extra) || ($extra !== [] && array_is_list($extra))) throw tc2_mal('datos.extra', '«extra» debe ser un objeto.');
     // los campos propios (formularios.crear_demo) pueden venir en «extra» o sueltos en «datos» (formulario de un pedido de demo)

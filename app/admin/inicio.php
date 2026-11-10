@@ -28,6 +28,7 @@ $activo = $activo ?? ($de_equipo[0] ?? null);
 cabecera_admin('Resumen');
 ?>
 <h1>Resumen de <?= e($liga['nombre']) ?></h1>
+<?= html_tarjeta_demo($liga) // (10 nov 2026) mientras es demo: hasta cuándo dura y el manual y los primeros pasos en PDF ?>
 <div class="cifras">
   <div class="cifra"><b><?= $n_equipos ?></b>Equipos</div>
   <div class="cifra"><b><?= $n_jugadores ?></b>Jugadores activos</div>

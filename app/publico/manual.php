@@ -56,7 +56,7 @@ if ($idm !== 'es' && is_file(APP_DIR . '/manuales/' . $m . '.' . $idm . '.html')
     $traducido = true;
 }
 $html = (string)@file_get_contents($archivo_manual);
-$html = str_replace('7 días', (int)ajuste('dias_demo', 7) . ' días', $html);
+$html = str_replace('(3 días con todos', '(' . dias_demo() . ' días con todos', $html); // (10 nov 2026) solo la nota de la demo (antes cambiaba cualquier «7 días»)
 preg_match_all('#<h2 id="(s\d+)">(.*?)</h2>#s', $html, $sec, PREG_SET_ORDER);
 $impresion = get('imprimir') === '1';
 $host_manual = preg_replace('#^https?://#', '', rtrim(url_base(), '/'));

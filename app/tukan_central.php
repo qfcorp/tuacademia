@@ -1270,6 +1270,8 @@ function tc2_planes(): array
     foreach (filas('SELECT * FROM planes ORDER BY orden, precio_mensual, id') as $pl) {
         $para = (string)($pl['tipo_cuenta'] ?? '') !== '' ? (string)$pl['tipo_cuenta'] : 'ambos';
         if ($acad && $para === 'liga') continue; // (TuAcademia) los planes de ligas no se venden
+        // (10 nov 2026) un plan apagado y sin clientes ya no se vende: no va al Panel (así no sale en la lista de precios ni pide plan de Plux)
+        if ((int)$pl['activo'] !== 1 && (int)($cuentas[$pl['id']] ?? 0) === 0) continue;
         $precios = [];
         foreach (opciones_precio($pl) as $k => $o) {
             $precios[] = ['periodo' => $k, 'meses' => $o['meses'], 'precio' => tc2_dinero($o['precio']), 'meses_gratis' => $o['gratis'], 'incluye_dominio' => $o['dominio']];

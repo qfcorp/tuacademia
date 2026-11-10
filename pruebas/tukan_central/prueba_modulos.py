@@ -315,9 +315,9 @@ else:
     PC = php("echo (int)valor(\"SELECT id FROM planes WHERE slug = 'academia-completo'\");")
     planes = {x['slug']: x for x in pj("filas(\"SELECT * FROM planes WHERE slug IN ('academia-basico', 'academia-completo')\")")}
     b, c = planes['academia-basico'], planes['academia-completo']
-    chk([b['precio_mensual'], b['precio_semestral'], b['precio_anual'], b['precio_trimestral'], b['modulos_elegir'], b['precio_modulo_extra']] == [20, 100, 200, 0, 3, 5]
-        and [c['precio_mensual'], c['precio_semestral'], c['precio_anual'], c['modulos'], c['modulos_elegir'], c['precio_modulo_extra']] == [45, 225, 450, '*,asistente_ia', 0, None],
-        'planes: Básico $20/$100/$200 con 3 módulos a elegir y $5 cada uno más; Completo $45/$225/$450 con todo y el Asistente IA')
+    chk([b['precio_mensual'], b['precio_semestral'], b['precio_anual'], b['precio_trimestral'], b['modulos_elegir'], b['precio_modulo_extra']] == [12.99, 64.95, 129.9, 0, 3, 5]
+        and [c['precio_mensual'], c['precio_semestral'], c['precio_anual'], c['modulos'], c['modulos_elegir'], c['precio_modulo_extra']] == [25, 125, 250, '*,asistente_ia', 0, None],
+        'planes (10 nov 2026, marca planes_1299_25): Básico $12,99/$64,95/$129,90 con 3 módulos a elegir y $5 cada uno más; Completo $25/$125/$250 con todo y el Asistente IA')
     chk(pj("valor(\"SELECT COUNT(*) FROM planes WHERE activo = 1 AND tipo_cuenta IN ('escuela', 'ambos')\")") == 2, 'planes: solo dos planes visibles (Básico y Completo)')
     chk(pj('catalogo_modulos("escuela")')['asistente_ia']['precio_mensual'] == 5, 'Asistente IA: $5 al mes (antes $0 por cotización)')
     chk(pj('modulos_plan(fila("SELECT * FROM planes WHERE id = ' + PB + '"))') == [], 'Básico: el plan no trae módulos (planes.modulos = «-»): el cliente los elige')

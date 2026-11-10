@@ -571,3 +571,15 @@ Pedido de Dimitry: «TuVocalía y TuAcademia deben unirse… con sus diferentes 
 - **Aceptar términos y privacidad** (módulo común `TukanLegal.php`): aviso arriba para el dueño/administrador hasta que acepte (casilla + Aceptar, se guarda en `tukan_aceptaciones` con versión `2026-10-27` de tukansoftware.com/terminos.html); enlaces **Términos · Privacidad** en el menú y en la pantalla de entrar.
 - Manual: capítulo nuevo «Términos, privacidad y cancelar tu plan» y PDF regenerado (`SOLO_PDF=1`).
 - Pruebas nuevas en las pruebas de pantallas (cancelar, seguir, aceptar términos, casilla de reserva).
+
+## Precios del 10 nov 2026: Básico $12,99 y Completo $25 (decisión de Dimitry, Excel «Precios y planes Tukán»)
+- TuAcademia queda igual que los demás programas. Todos los precios son más IVA.
+  - **Básico $12,99 al mes** ($64,95 por 6 meses, $129,90 por 1 año): la base + 3 módulos a elegir; cada módulo más $5.
+  - **Completo $25 al mes** ($125 / $250): todo, con el Asistente IA.
+- Antes eran $20 y $45 (28 oct).
+- Se cambia **una sola vez** (`planes_1299_25()`, marca `planes_1299_25`), solo en modo academia y solo si el precio seguía en $20 / $45.
+- Se apagan los planes viejos que venían de TuVocalía: **Liga Grande, Escuela Básico y Escuela Completo**. No se borran de la base.
+- El Panel ya no recibe los planes apagados que no tienen clientes (`tc2_planes()`).
+- Google Play (apagado): Básico $15,99 / $76,99 / $152,99; Completo $29,99 / $147,99 / $294,99.
+- Pruebas (10 nov): `prueba_modulos.py` 108/108, `prueba_central_v2.py` 394/394, `prueba_central.py` 125/125, `prueba_tufactura.py` 19/0, `prueba_academia.py` 258/259.
+  - La que falla es vieja y depende de la fecha: «familia Ruiz: con la que vence en 2 días…».

@@ -124,14 +124,14 @@ cabecera_admin('Google Play');
 <?php foreach ($productos as $p): ?><tr><td><code><?= e($p['id']) ?></code></td><td><?= e($p['titulo']) ?></td><td><?= e(['P1M' => '1 mes', 'P3M' => '3 meses', 'P6M' => '6 meses', 'P1Y' => '1 año'][$p['periodo']] ?? $p['periodo']) ?></td><td class="num"><?= dinero($p['precio_web']) ?></td><td class="num"><b><?= dinero($p['precio']) ?></b></td></tr><?php endforeach; ?>
 </table></div>
 
-<?php if (es_academia()): // (28 oct 2026) planes de $20 y $45 ?>
+<?php if (es_academia()): // (10 nov 2026) planes de $12,99 y $25 (antes $20 y $45) ?>
 <div class="tarjeta" id="planes-20-45">
-  <h3 style="margin-top:0">Planes del 28 oct 2026 (los que se venden en Google Play)</h3>
+  <h3 style="margin-top:0">Planes del 10 nov 2026 (los que se venden en Google Play)</h3>
   <p class="suave" style="margin-top:0">Solo dos planes. <b>Básico</b> = la base + 3 módulos que elige el cliente (cada uno más: $5 al mes). <b>Completo</b> = todos los módulos, con el Asistente IA.
     En Google Play solo se venden los dos planes: los módulos que el cliente elige en el Básico (y los que pase de 3, el Asistente IA o las disciplinas adicionales) los enciende y cobra Tukán desde el panel.
     Estos precios son solo para Tukán: <b>nunca se publican al cliente</b> (en la web todo es «por cotización»).</p>
   <div class="tabla-scroll"><table><tr><th>Plan</th><th>Período</th><th class="num">Web</th><th class="num">Google Play (web ÷ 0,85, a ,99)</th></tr>
-    <?php foreach ([['Básico', '1 mes', 20], ['Básico', '6 meses', 100], ['Básico', '1 año', 200], ['Completo', '1 mes', 45], ['Completo', '6 meses', 225], ['Completo', '1 año', 450]] as [$pn, $pp, $pw]): ?>
+    <?php foreach ([['Básico', '1 mes', 12.99], ['Básico', '6 meses', 64.95], ['Básico', '1 año', 129.9], ['Completo', '1 mes', 25], ['Completo', '6 meses', 125], ['Completo', '1 año', 250]] as [$pn, $pp, $pw]): ?>
       <tr><td><?= e($pn) ?></td><td><?= e($pp) ?></td><td class="num"><?= dinero($pw) ?></td><td class="num"><b><?= dinero(precio_play((float)$pw)) ?></b></td></tr>
     <?php endforeach; ?>
   </table></div>

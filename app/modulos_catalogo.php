@@ -97,6 +97,7 @@ function esquema_modulos(PDO $pdo): void
             }
         }
         planes_20_45($pdo);
+        planes_1299_25($pdo);
     }
 }
 
@@ -176,6 +177,40 @@ function planes_20_45(PDO $pdo): void
         $t = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'modulos_catalogo'")->fetchColumn();
         if ($t) $pdo->exec("UPDATE modulos_catalogo SET precio_mensual = NULL WHERE clave = 'asistente_ia' AND precio_mensual = 0");
         $pdo->prepare("INSERT INTO ajustes (clave, valor) VALUES ('planes_20_45', ?) ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor")->execute([date('Y-m-d H:i:s')]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+}
+
+/**
+ * (10 nov 2026, decisión de Dimitry, Excel «Precios y planes Tukán») TuAcademia queda igual que los demás programas:
+ * Básico $12,99 (la base + 3 módulos a elegir, $5 cada uno más) y Completo $25 (todo, con el Asistente IA).
+ * Semestral: paga 5 y recibe 6. Anual: paga 10 y recibe 12. UNA sola vez (ajuste «planes_1299_25»), solo en modo academia.
+ *  - Cada precio se cambia solo si seguía en el de antes ($20 / $45): si Dimitry ya lo cambió desde el panel, no se pisa.
+ *  - Los planes viejos de TuVocalía que seguían a la vista (Liga Grande, Escuela Básico, Escuela Completo) se apagan.
+ *    No se borran: así una cuenta vieja que los tuviera no se rompe. El Panel ya no los muestra (tc2_planes()).
+ */
+function planes_1299_25_precios(): array
+{
+    return ['academia-basico' => ['antes' => 20, 'mensual' => 12.99, 'semestral' => 64.95, 'anual' => 129.9],
+            'academia-completo' => ['antes' => 45, 'mensual' => 25, 'semestral' => 125, 'anual' => 250]];
+}
+
+function planes_1299_25(PDO $pdo): void
+{
+    if ((defined('PRODUCTO') ? PRODUCTO : 'academia') !== 'academia') return;
+    $hay = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('planes', 'ajustes')")->fetchAll(PDO::FETCH_COLUMN);
+    if (count($hay) < 2) return;
+    if ((string)$pdo->query("SELECT valor FROM ajustes WHERE clave = 'planes_20_45'")->fetchColumn() === '') return; // primero la de $20 y $45
+    if ((string)$pdo->query("SELECT valor FROM ajustes WHERE clave = 'planes_1299_25'")->fetchColumn() !== '') return;
+    $pdo->beginTransaction();
+    try {
+        $pp = $pdo->prepare('UPDATE planes SET precio_mensual = ?, precio_trimestral = 0, precio_semestral = ?, precio_anual = ? WHERE slug = ? AND precio_mensual = ?');
+        foreach (planes_1299_25_precios() as $slug => $x) $pp->execute([$x['mensual'], $x['semestral'], $x['anual'], $slug, $x['antes']]);
+        $pdo->exec("UPDATE planes SET activo = 0, destacado = 0 WHERE slug NOT IN ('academia-basico', 'academia-completo')");
+        $pdo->prepare("INSERT INTO ajustes (clave, valor) VALUES ('planes_1299_25', ?) ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor")->execute([date('Y-m-d H:i:s')]);
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();

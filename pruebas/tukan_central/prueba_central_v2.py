@@ -1164,7 +1164,9 @@ chk(int(php("echo (int)valor('SELECT COUNT(*) FROM modulos_pedidos WHERE liga_id
 
 # ---------- 9d) Planes de $20 y $45 (28 oct 2026): módulos a elegir, precio de cada uno más y fuera_del_cupo ----------
 if ACADEMIA:
-    php("q(\"UPDATE planes SET modulos = '-', modulos_elegir = 3, precio_modulo_extra = 5, precio_mensual = 20 WHERE slug = 'academia-basico'\");")
+    # (10 nov 2026) los precios de hoy son $12,99 y $25; esta sección prueba el mecanismo con los de $20 y $45, así que los pone ella misma
+    php("q(\"UPDATE planes SET modulos = '-', modulos_elegir = 3, precio_modulo_extra = 5, precio_mensual = 20, precio_semestral = 100, precio_anual = 200 WHERE slug = 'academia-basico'\");"
+        "q(\"UPDATE planes SET precio_mensual = 45, precio_semestral = 225, precio_anual = 450 WHERE slug = 'academia-completo'\");")
 PB = php("echo (int)valor(\"SELECT id FROM planes WHERE slug = 'academia-basico'\");") if ACADEMIA else ''
 PC = php("echo (int)valor(\"SELECT id FROM planes WHERE slug = 'academia-completo'\");") if ACADEMIA else ''
 m = pedir('modulos')

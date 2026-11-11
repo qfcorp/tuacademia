@@ -4,7 +4,7 @@ Pruebas de los arreglos del 14-oct-2026 en TuAcademia (contra php -S + simulador
 Antes:  bash pruebas/v38/reiniciar.sh        (modo academia; crea el simulador de Google/Payphone/Telegram)
 Correr: python3 pruebas/academia/prueba_arreglos_14oct.py
 
-1. Demo de 7 días (ya no hay prueba gratis ni registro abierto: 18 oct 2026): portada, plan, manual, botón; la migración v35 deja dias_prueba en 7.
+1. Demo de 3 días desde el 10 nov 2026 (antes 7; ya no hay prueba gratis ni registro abierto: 18 oct 2026): portada, plan, manual, botón; la migración v35 deja dias_prueba en 7.
 2. Textos de academia: «Resumen de la academia», perfiles sin equipos ni árbitros, sin botón Federación, Requisitos solo si aplica,
    carnet con edad (no Sub-7) en ballet, «pensión» en vez de «mensualidad» en las ayudas.
 3. Fotos de la demo: de baile y música (no de fútbol) y la demo tiene clases con fotos.
@@ -127,7 +127,7 @@ anon = requests.Session()
 # =====================================================================
 # 1. PRUEBA GRATIS = 7 DÍAS
 # =====================================================================
-chk(pj('ajuste("dias_prueba")') in ('7', 7), 'ajuste dias_prueba = 7 en una base nueva')
+chk(pj('ajuste("dias_prueba")') in ('3', 3), 'ajuste dias_prueba = 3 en una base nueva (10 nov 2026: demos de 3 días)')
 chk(pj('ajustes_por_defecto()["dias_prueba"]') == 7, 'valor por defecto del código = 7')
 # Una base vieja con 14: la migración v35 lo deja en 7
 php('guardar_ajuste("dias_prueba", 14); db()->exec("PRAGMA user_version = 34"); esquema_v35(db()); db()->exec("PRAGMA user_version = 35");')
@@ -137,7 +137,7 @@ chk(r.status_code == 301 and 'v=solicitar' in r.headers.get('Location', ''), 're
 r = anon.get(B + 'index.php')
 chk('gratis' not in r.text.lower() and '14 días' not in r.text and 'Solicitar demo' in r.text, 'portada: sin «gratis», con «Solicitar demo»')
 r = anon.get(B + 'index.php?v=solicitar')
-chk('7 días' in r.text and 'gratis' not in r.text.lower(), 'pedir demo: «Demo de 7 días», sin «gratis»')
+chk('3 días' in r.text and 'gratis' not in r.text.lower(), 'pedir demo: demo de 3 días, sin «gratis»')
 r = anon.get(B + 'index.php?v=manual&m=escuelas')
 limpio(r, 'manual de academias')
 chk('14 días' not in r.text, 'manual: ya no dice 14 días')

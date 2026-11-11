@@ -153,7 +153,9 @@ function cabecera_publica(string $titulo, ?array $liga = null): void
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($titulo) ?></title>
 <?= etiqueta_base() ?>
-<link rel="stylesheet" href="assets/estilo.css?v=331">
+<?php if (!$liga): // (10 nov 2026) sitio del programa (solicitar demo, registro): kit común con el color del programa; la página de la liga no lo usa ?><link rel="stylesheet" href="assets/tukan-ui.css?v=1"><?php endif; ?>
+<link rel="stylesheet" href="assets/estilo.css?v=332">
+<?= !$liga ? tk_color_programa() : '' ?>
 <meta property="og:title" content="<?= e($titulo) ?>">
 <?= html_metas_compartir($titulo, $liga) // (v33) descripción, imagen y dirección para buscadores y WhatsApp ?>
 <?= cabecera_app() ?>

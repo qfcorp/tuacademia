@@ -67,7 +67,7 @@ cabecera_publica('Solicitar demo · ' . marca());
     </ul>
     <?php if (!es_academia() && liga_demo()): ?><p>¿Quiere mirar primero? <a href="index.php?v=demo">👀 Vea la liga de demostración</a>.</p><?php endif; ?>
   </div>
-  <div class="tarjeta">
+  <div class="tk-tarjeta tk-solicitar"><?php // (10 nov 2026) identidad gráfica común de Tukán: tarjeta y botón del kit con el color del programa ?>
   <?php if ($enviada): ?>
     <h2 style="margin-top:0" id="demo-gracias">✓ ¡Solicitud recibida!</h2>
     <p><b>¡Listo! Estamos preparando su demo: toma entre 5 y 10 minutos aproximadamente. Cuando esté lista le llega al correo su clave, el manual y la guía de primeros pasos. Revise también la carpeta de spam.</b></p>
@@ -97,7 +97,7 @@ cabecera_publica('Solicitar demo · ' . marca());
         <div class="campo-ancho"><label>¿Algo que debamos saber?</label><textarea name="mensaje" rows="3" maxlength="600" placeholder="<?= es_academia() ? 'Ej: cuándo es su próximo recital, qué le interesa más' : 'Ej: cuándo empieza su campeonato, qué le interesa más' ?>"><?= e(post('mensaje')) ?></textarea></div>
         <div class="campo-ancho<?= $ec('acepto') ?>"><label class="check" style="font-weight:400"><input type="checkbox" name="acepto" value="1" required <?= post('acepto') === '1' ? 'checked' : '' ?>> Acepto que <?= e(ajuste('empresa', 'QF Producciones')) ?> me contacte por WhatsApp, llamada o correo sobre esta solicitud, y la <a href="index.php?v=privacidad" target="_blank">política de privacidad</a> (datos guardados en servidores fuera del Ecuador).</label><?= $em('acepto') ?></div>
       </div>
-      <button class="btn btn-grande" type="submit">📝 Solicitar mi demo</button>
+      <button class="tk-boton grande" type="submit" style="width:100%">📝 Solicitar mi demo</button>
     </form>
     <p class="suave" style="text-align:center">¿Ya tiene cuenta? <a href="admin.php?p=login">Ingresar</a></p>
   <?php endif; ?>

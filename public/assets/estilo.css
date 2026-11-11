@@ -893,7 +893,9 @@ table.comparativa td:first-child { text-align: left; }
    ===================================================================================================================== */
 body.tk { --acento: var(--tk-color); --acento2: var(--tk-noche); --fondo: #f1f5f9; --tarjeta: #fff; --texto: #0f172a; --suave: #64748b; --borde: #e2e8f0; --radio: 8px; color-scheme: light; }
 body.tk a { color: var(--tk-color); }
-body.tk .tk-arriba a, body.tk a.tk-boton, body.tk a.btn, body.tk .barra-abajo a { color: inherit; }
+body.tk .tk-arriba a, body.tk a.tk-boton, body.tk a.btn { color: inherit; }
+body.tk .barra-abajo a, body.tk .barra-abajo button { color: #b9c5c0; }
+body.tk .tk-arriba small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body.tk .tk-arriba .tk-salir { color: var(--tk-noche); }
 body.tk .tk-menu a { color: var(--tk-menu-texto); }
 body.tk .tk-menu a:hover { color: #fff; }
@@ -985,3 +987,6 @@ body.tk .ayuda-menu a { color: var(--tk-tinta); }
   body.tk .pestanas-ico { top: 56px; }
 }
 @media print { body.tk .tk-fondo-menu, body.tk .barra-abajo { display: none !important; } body.tk { display: block; } }
+/* Solicitar demo (sitio del programa, sin body.tk): tarjeta del kit */
+.tk-solicitar { margin-bottom: 0; }
+.tk-solicitar .error-campo { color: var(--tk-mal); font-weight: 700; font-size: 12.5px; }

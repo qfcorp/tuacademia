@@ -111,6 +111,7 @@ require APP_DIR . '/academia.php'; // (TuAcademia) baile, música, natación, ni
 require APP_DIR . '/acad_telegram.php'; // (TuAcademia, 14-oct) avisos por Telegram a los padres
 require APP_DIR . '/demo_v28.php';
 require APP_DIR . '/menu.php';
+require APP_DIR . '/tukan_ui.php'; // (10 nov 2026) identidad gráfica común de Tukán: saludo, tira y tarjetas del Inicio
 require APP_DIR . '/directorio.php';
 require APP_DIR . '/vista_previa.php';
 require APP_DIR . '/idioma.php'; // (v28) idiomas: inglés, francés, portugués e italiano

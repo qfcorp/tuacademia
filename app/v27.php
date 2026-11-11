@@ -359,30 +359,51 @@ function pasos_puesta_en_marcha(array $liga): array
     return $pasos;
 }
 
-/** Tarjeta "Primeros pasos" con barra de avance (desaparece cuando todo está hecho). */
+/** (10 nov 2026) ¿El administrador ocultó «Primeros pasos» del Inicio? Se guarda por negocio (ajuste pasos_ocultos_<id>). */
+function pasos_ocultos(array $liga): bool
+{
+    return (string)ajuste('pasos_ocultos_' . (int)$liga['id']) === '1';
+}
+
+/** «Ocultar» de Primeros pasos (formulario del Inicio). Devuelve true si atendió el pedido. */
+function atender_ocultar_pasos(array $liga): bool
+{
+    if (!es_post() || post('accion') !== 'ocultar_pasos') return false;
+    if (puede('config', true)) {
+        guardar_ajuste('pasos_ocultos_' . (int)$liga['id'], '1');
+        bitacora_evento('config', 'Ocultó «Primeros pasos» del Inicio', (int)$liga['id']);
+        flash('Listo: «Primeros pasos» ya no se muestra en el Inicio. La guía completa sigue en el manual.');
+    }
+    ir('admin.php');
+}
+
+/**
+ * Tarjeta «Primeros pasos» del Inicio (identidad gráfica común de Tukán, 10 nov 2026): los mismos pasos reales de
+ * pasos_puesta_en_marcha(), cada uno con «Hacerlo», barra de avance, y «Ocultar» que se guarda por negocio.
+ * Desaparece cuando todos están hechos.
+ */
 function html_primeros_pasos(array $liga): string
 {
     $pasos = pasos_puesta_en_marcha($liga);
     $hechos = count(array_filter($pasos, fn($x) => $x[1]));
-    if ($hechos >= count($pasos) || !puede('config', true)) return '';
+    if ($hechos >= count($pasos) || !puede('config', true) || pasos_ocultos($liga)) return '';
     $pct = (int)round($hechos * 100 / max(1, count($pasos)));
     [$man] = ayuda_de_pagina('inicio', $liga);
-    $sig = null;
-    foreach ($pasos as $x) if (!$x[1]) { $sig = $x; break; }
+    $que = es_escuela($liga) ? 'su escuela' : (es_federacion($liga) ? 'su federación' : 'su liga');
     ob_start(); ?>
-    <div class="tarjeta guia-pasos">
-      <div class="fila-titulo" style="margin:0"><h2 style="margin:0">🚀 Primeros pasos <small class="suave"><?= $hechos ?> de <?= count($pasos) ?></small></h2>
-        <a class="btn btn-sec btn-chico" href="manual/<?= e($man) ?>#s2" target="_blank">📘 Ver la guía completa</a></div>
-      <div class="barra-avance" role="progressbar" aria-valuenow="<?= $pct ?>" aria-valuemin="0" aria-valuemax="100"><span style="width:<?= $pct ?>%"></span></div>
-      <?php if ($sig): ?><p style="margin:.5rem 0">👉 <b>Siguiente paso:</b> <a href="<?= e($sig[2]) ?>"><?= e($sig[0]) ?></a></p><?php endif; ?>
+    <section class="tk-pasos guia-pasos" aria-labelledby="tk-pp">
+      <div class="tk-tarjeta-cabeza"><div><h2 id="tk-pp">🚀 Primeros pasos</h2><p>Complete estos pasos y <?= $que ?> queda lista (<?= $hechos ?> de <?= count($pasos) ?>)</p></div>
+        <div class="tk-acciones"><a class="tk-boton chico secundario" href="manual/<?= e($man) ?>#s2" target="_blank">📘 Ver la guía completa</a>
+          <form method="post" action="admin.php"><?= csrf_campo() ?><input type="hidden" name="accion" value="ocultar_pasos"><button class="tk-boton chico secundario" type="submit" title="No mostrar más estos pasos en el Inicio">Ocultar</button></form></div></div>
+      <div class="tk-barra barra-avance" role="progressbar" aria-valuenow="<?= $pct ?>" aria-valuemin="0" aria-valuemax="100" aria-label="Avance de los primeros pasos"><i style="width:<?= $pct ?>%"></i></div>
       <ol class="pasos">
-        <?php foreach ($pasos as [$txt, $ok, $link]): ?>
-          <li style="<?= $ok ? 'color:var(--suave);text-decoration:line-through' : '' ?>"><?= $ok ? '✅' : '⬜' ?> <a href="<?= e($link) ?>"><?= e($txt) ?></a></li>
+        <?php foreach ($pasos as $n => [$txt, $ok, $link]): ?>
+          <?php if ($ok): ?><li class="hecho"><span class="tk-check">✓</span><span class="tk-paso-texto"><?= e($txt) ?></span></li>
+          <?php else: ?><li><span class="tk-check"><?= $n + 1 ?></span><span class="tk-paso-texto"><a href="<?= e($link) ?>"><?= e($txt) ?></a></span><a class="tk-boton chico" href="<?= e($link) ?>">Hacerlo</a></li><?php endif; ?>
         <?php endforeach; ?>
       </ol>
-      <p class="suave" style="margin:0 0 4px">Página pública: <a href="<?= e(url_liga($liga)) ?>" target="_blank"><?= e(url_liga($liga)) ?></a> · Instale el sistema en su celular: abra <a href="app.php">la aplicación</a> y elija «Instalar».</p>
-      <?php if (motivo_solo_pagadas($liga, 'carga_masiva') === ''): ?><p class="suave" style="margin:0">📥 ¿Tiene sus datos en Excel? Súbalos todos de una vez en <a href="admin.php?p=cargas">Subir datos desde Excel</a>.</p><?php endif; ?>
-    </div>
+      <p class="tk-pie-pasos">🌐 Página pública: <a href="<?= e(url_liga($liga)) ?>" target="_blank"><?= e(url_liga($liga)) ?></a> · 📱 Instale el sistema en su celular: abra <a href="app.php">la aplicación</a> y elija «Instalar».<?php if (motivo_solo_pagadas($liga, 'carga_masiva') === ''): ?> · 📥 ¿Tiene sus datos en Excel? Súbalos todos de una vez en <a href="admin.php?p=cargas">Subir datos desde Excel</a>.<?php endif; ?></p>
+    </section>
     <?php return (string)ob_get_clean();
 }
 

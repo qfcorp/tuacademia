@@ -162,31 +162,44 @@ function menu_badge(int $n): string
     return $n > 0 ? ' <span class="etiqueta roja">' . $n . '</span>' : '';
 }
 
-/** Menú de arriba: grupos con submenú de botones con ícono (en el celular se abre como hoja con «Más»). */
+/**
+ * (10 nov 2026, identidad gráfica común de Tukán) Menú de la izquierda (azul noche): los mismos grupos y opciones de menu_panel(),
+ * con el título de cada sección en el color del programa, el emoji de cada opción y el globito con el número de pendientes.
+ * En el celular se abre con ☰ (assets/tukan-ui.js). «Resumen» queda en la sección «Principal» con la página pública y el cambio de cuenta.
+ */
 function html_menu_panel(): string
 {
     $h = '';
-    foreach (menu_panel() as $id => $gr) {
-        $items = $gr['items'];
-        $activo = (bool)array_filter($items, 'menu_item_activo');
-        if (count($items) === 1) {
-            $i = $items[0];
-            $h .= '<a class="menu-top' . ($activo ? ' activo' : '') . '" href="' . $i['url'] . '"><span class="menu-ico">' . $i['ico'] . '</span> ' . e($i['texto']) . menu_badge($i['badge']) . '</a>';
-            continue;
+    $liga = liga_trabajo();
+    $opcion = function (array $i, string $extra = ''): string {
+        $act = menu_item_activo($i);
+        return '<a href="' . $i['url'] . '"' . ($act ? ' class="activo" aria-current="page"' : '') . $extra . '><span class="tk-ico">' . $i['ico'] . '</span> ' . e($i['texto'])
+            . ($i['badge'] > 0 ? ' <span class="tk-globito">' . (int)$i['badge'] . '</span>' : '') . '</a>';
+    };
+    $grupos = menu_panel();
+    // Las secciones de una sola opción de arriba (Resumen y, en una federación, Federación) van juntas en «Principal»
+    $principal = [];
+    foreach (['inicio', 'federacion'] as $k) if (isset($grupos[$k]) && count($grupos[$k]['items']) === 1 && ($k === 'inicio' || isset($grupos['inicio']))) { $principal[] = $grupos[$k]['items'][0]; unset($grupos[$k]); }
+    if ($principal || $liga) {
+        $h .= '<div class="tk-menu-titulo">Principal</div>';
+        foreach ($principal as $i) $h .= $opcion($i);
+        if ($liga) {
+            $h .= '<a href="' . e(url_liga($liga)) . '" target="_blank" rel="noopener"><span class="tk-ico">🌐</span> Ver página pública ↗</a>';
+            if (es_super()) {
+                $h .= '<a href="admin.php?p=ligas&amp;salir_liga=1"><span class="tk-ico">🔁</span> ' . (es_academia() ? 'Cambiar de academia' : 'Cambiar de liga o escuela') . '</a>';
+            } elseif (($cbo = combo_de($liga)) && (usuario()['perfil'] ?? 'admin') === 'admin') { // (v16) combo liga + escuela
+                $h .= '<a href="admin.php?combo=' . (int)$cbo['id'] . '"><span class="tk-ico">🔁</span> Ir a ' . (($cbo['tipo'] ?? 'liga') === 'escuela' ? '🎓' : '🏆') . ' ' . e($cbo['nombre']) . '</a>';
+            }
         }
-        $badge = array_sum(array_column($items, 'badge'));
-        $h .= '<div class="menu-grupo' . ($id === 'cuenta' ? ' menu-grupo-der' : '') . '"><button type="button" class="menu-top' . ($activo ? ' activo' : '') . '" aria-expanded="false">'
-            . '<span class="menu-ico">' . $gr['ico'] . '</span> ' . e($gr['titulo']) . menu_badge($badge) . ' <span class="menu-flecha">▾</span></button><div class="menu-sub">';
-        foreach ($items as $i) {
-            $h .= '<a class="menu-boton' . (menu_item_activo($i) ? ' activo' : '') . '" href="' . $i['url'] . '"><span class="menu-boton-ico">' . $i['ico'] . '</span><span><b>' . e($i['texto']) . menu_badge($i['badge']) . '</b>'
-                . ($i['desc'] !== '' ? '<small>' . e($i['desc']) . '</small>' : '') . '</span></a>';
-        }
-        $h .= '</div></div>';
+    }
+    foreach ($grupos as $gr) {
+        $h .= '<div class="tk-menu-titulo">' . e($gr['titulo']) . '</div>';
+        foreach ($gr['items'] as $i) $h .= $opcion($i);
     }
     return $h;
 }
 
-/** Barra fija de abajo en el celular: las 4 opciones principales + «Más» (abre el menú completo). */
+/** Barra fija de abajo en el celular: las 4 opciones principales + «Más» (abre el menú completo de la izquierda). */
 function html_barra_abajo(): string
 {
     $pri = [];
@@ -197,7 +210,28 @@ function html_barra_abajo(): string
     foreach ($pri as $i) {
         $h .= '<a href="' . $i['url'] . '"' . (menu_item_activo($i) ? ' class="activo"' : '') . '><span>' . $i['ico'] . ($i['badge'] ? '<i>' . $i['badge'] . '</i>' : '') . '</span>' . e($i['texto']) . '</a>';
     }
-    return $h . '<button type="button" onclick="document.body.classList.toggle(\'menu-abierto\');window.scrollTo(0,0)"><span>☰</span>Más</button></nav>';
+    return $h . '<button type="button" onclick="var b=document.querySelector(\'.tk-boton-menu\');if(b)b.click()"><span>☰</span>Más</button></nav>';
+}
+
+/** (10 nov 2026) Accesos rápidos del Inicio: 3 a 6 botones grandes con las opciones principales que el usuario puede usar. */
+function html_accesos_rapidos(): string
+{
+    $pri = [];
+    foreach (menu_panel() as $id => $gr) {
+        if (in_array($id, ['inicio', 'cuenta'], true)) continue;
+        foreach ($gr['items'] as $i) if ($i['principal']) $pri[] = $i;
+    }
+    if (count($pri) < 3) { // completa con las demás opciones de trabajo
+        foreach (menu_panel() as $id => $gr) {
+            if (in_array($id, ['inicio', 'cuenta', 'super'], true)) continue;
+            foreach ($gr['items'] as $i) if (!$i['principal'] && count($pri) < 3) $pri[] = $i;
+        }
+    }
+    $pri = array_slice($pri, 0, 6);
+    if (!$pri) return '';
+    $h = '<section class="tk-tarjeta tk-accesos no-imprimir"><div class="tk-tarjeta-cabeza"><div><h2>⚡ Accesos rápidos</h2><p>Lo que más se usa, a un toque</p></div></div><div class="tk-acciones">';
+    foreach ($pri as $i) $h .= '<a class="tk-boton grande secundario" href="' . $i['url'] . '">' . $i['ico'] . ' ' . e($i['texto']) . ($i['badge'] ? ' <span class="tk-chip mal">' . (int)$i['badge'] . '</span>' : '') . '</a>';
+    return $h . '</div></section>';
 }
 
 /** Botones grandes del Resumen, agrupados como el menú (sin «Resumen» ni «Mi cuenta»). */

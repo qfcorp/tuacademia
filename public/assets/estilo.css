@@ -884,3 +884,104 @@ table.comparativa td:first-child { text-align: left; }
 .error-campo { color: #b3261e; font-size: .88rem; margin-top: 3px; font-weight: 600; }
 .campo-con-error input, .campo-con-error textarea, .campo-con-error select { border-color: #b3261e !important; background: #fff6f6; }
 .campo-con-error label { color: #b3261e; }
+
+/* =====================================================================================================================
+   (10 nov 2026) IDENTIDAD GRÁFICA COMÚN DE TUKÁN en el panel del negocio (body.tk). El diseño lo da assets/tukan-ui.css (kit
+   común, idéntico en todos los programas; NO se edita). Aquí solo van las reglas propias de este programa: que las pantallas que
+   ya existían (.tarjeta, .btn, tablas, avisos, cifras, pestañas…) se vean con el kit, y lo que el kit no trae (selector de idioma
+   en la barra, barra de abajo del celular, botón de Ayuda). La página pública de la liga y la vocalía no usan body.tk: no cambian.
+   ===================================================================================================================== */
+body.tk { --acento: var(--tk-color); --acento2: var(--tk-noche); --fondo: #f1f5f9; --tarjeta: #fff; --texto: #0f172a; --suave: #64748b; --borde: #e2e8f0; --radio: 8px; color-scheme: light; }
+body.tk a { color: var(--tk-color); }
+body.tk .tk-arriba a, body.tk a.tk-boton, body.tk a.btn, body.tk .barra-abajo a { color: inherit; }
+body.tk .tk-arriba .tk-salir { color: var(--tk-noche); }
+body.tk .tk-menu a { color: var(--tk-menu-texto); }
+body.tk .tk-menu a:hover { color: #fff; }
+body.tk .tk-menu a.activo, body.tk .tk-menu a[aria-current="page"] { color: var(--tk-color-texto); }
+body.tk .tk-arriba small { color: inherit; }
+body.tk .tk-cifra small, body.tk .tk-cifra-detalle a { color: inherit; }
+.tk-arriba-izq { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tk-arriba .tk-marca > span:not(.tk-logo) { min-width: 0; display: flex; flex-direction: column; }
+.tk-usuario .selector-idioma { margin-left: 0; }
+.tk-usuario .selector-idioma summary { background: rgba(0,0,0,.18); color: var(--tk-color-texto); }
+.tk-usuario .selector-idioma-menu a { color: var(--tk-tinta); }
+.tk-usuario .tc-volver { background: rgba(0,0,0,.18) !important; }
+.tk-contenido.contenedor { max-width: none; margin: 0; }
+.tk-contenido > .pie { margin-top: 30px; padding: 18px 0 0; border-top: 1px solid var(--tk-linea); }
+body.tk-sin-menu .tk-contenido { display: flex; flex-direction: column; }
+body.tk .login { max-width: 420px; margin: 40px auto; border-left: 5px solid var(--tk-color); }
+body.tk .login h1 { text-align: center; }
+/* Títulos y tarjetas de las pantallas existentes con la forma del kit */
+body.tk .tk-contenido > h1, body.tk .fila-titulo h1 { font-size: 22px; font-weight: 900; margin: 0 0 16px; }
+body.tk .tk-contenido h2 { font-weight: 800; }
+body.tk .tarjeta { border-left: 5px solid var(--tk-color); border-radius: var(--tk-radio); box-shadow: 0 1px 3px rgba(0,0,0,.03); }
+body.tk .tarjeta > h2:first-child, body.tk .tarjeta > h3:first-child { font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: .2px; }
+body.tk .cifra { background: var(--tk-noche); color: #fff; border: 0; border-left: 5px solid var(--tk-color); border-radius: var(--tk-radio); box-shadow: var(--tk-sombra); padding: 16px 18px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #94a3b8; }
+body.tk .cifra b { color: var(--tk-color-claro); font-size: 24px; font-weight: 900; text-transform: none; letter-spacing: 0; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+body.tk .cifra a { color: #cbd5e1; } body.tk .cifra small { color: #cbd5e1; }
+/* Botones existentes = botones del kit */
+body.tk .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; border-radius: 6px; font-weight: 800; font-size: 13.5px; background: var(--tk-color); color: var(--tk-color-texto); border: 1px solid transparent; }
+body.tk .btn:hover { filter: brightness(.95); }
+body.tk .btn-sec { background: #fff; color: var(--tk-tinta); border-color: #cbd5e1; }
+body.tk .btn-peligro { background: var(--tk-mal); color: #fff; }
+body.tk .btn-chico { min-height: 30px; padding: 5px 10px; font-size: 12px; border-radius: 5px; }
+body.tk .btn-grande { display: flex; min-height: 48px; font-size: 15px; }
+body.tk .btn-wa { background: var(--tk-ok); color: #fff; }
+body.tk .btn-blanco { background: #fff; color: var(--tk-tinta); }
+body.tk .btn-sec-blanco { background: #fff; color: var(--tk-tinta); border-color: #cbd5e1; }
+body.tk button:disabled.btn { opacity: .6; }
+/* Formularios: etiqueta arriba, campos del kit */
+body.tk label { font-size: 12px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: .3px; }
+body.tk .check, body.tk .lista-presentes label, body.tk label.check { text-transform: none; font-size: 14px; letter-spacing: 0; color: var(--tk-tinta); }
+body.tk input[type=text], body.tk input[type=email], body.tk input[type=password], body.tk input[type=number], body.tk input[type=date], body.tk input[type=time], body.tk input[type=search], body.tk input[type=tel], body.tk input[type=url], body.tk input[type=month], body.tk select, body.tk textarea { border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; min-height: 42px; font-size: 14px; }
+body.tk input:focus, body.tk select:focus, body.tk textarea:focus { border-color: var(--tk-color); background: #fff; outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-color) 25%, transparent); }
+/* Tablas existentes: cabecera azul noche */
+body.tk .tk-contenido table:not(.tk-tabla) th { background: var(--tk-noche); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .5px; }
+body.tk .tk-contenido table:not(.tk-tabla) th a { color: #fff; }
+body.tk .tk-contenido table:not(.tk-tabla) { font-size: 13px; border-radius: var(--tk-radio); overflow: hidden; }
+body.tk .tk-contenido table:not(.tk-tabla) tr:hover td { background: #f8fafc; }
+/* Avisos existentes = avisos del kit */
+/* (solo los avisos viejos: .tk-cifra.aviso, .tk-tarjeta.aviso y .tk-aviso.aviso son del kit) */
+body.tk .tk-cifra.aviso, body.tk .tk-tarjeta.aviso, body.tk .tk-aviso.aviso { border-radius: var(--tk-radio); }
+body.tk .tk-cifra.aviso { padding: 18px 22px; margin: 0; } body.tk .tk-tarjeta.aviso { padding: 20px; margin-bottom: 20px; } body.tk .tk-aviso.aviso { padding: 12px 16px; margin-bottom: 16px; }
+body.tk .aviso:not([class*="tk-"]) { border: 0; border-left: 5px solid var(--tk-info); border-radius: var(--tk-radio); background: #e0f2fe; color: #0c4a6e; font-size: 14px; }
+body.tk .aviso-ok:not([class*="tk-"]) { border-left-color: var(--tk-ok); background: #dcfce7; color: #14532d; }
+body.tk .aviso-error:not([class*="tk-"]) { border-left-color: var(--tk-mal); background: #fee2e2; color: #7f1d1d; }
+body.tk .aviso a { color: inherit; font-weight: 800; }
+body.tk .demo-cinta { background: #fff; color: var(--tk-tinta); border-left: 5px solid var(--tk-aviso); border-radius: var(--tk-radio); text-align: left; padding: 10px 14px; margin-bottom: 16px; font-size: 13.5px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+body.tk .demo-cinta a { color: var(--tk-color); }
+/* Chips, pestañas y partidos */
+body.tk .etiqueta { border-radius: 4px; font-size: 10.5px; font-weight: 800; letter-spacing: .3px; }
+body.tk .etiqueta.verde { background: var(--tk-ok); }
+body.tk .pestanas a { border-radius: 6px; font-weight: 700; }
+body.tk .pestanas a.activa { background: var(--tk-color); border-color: var(--tk-color); color: var(--tk-color-texto); }
+body.tk .pestanas-ico { background: var(--tk-fondo); top: 56px; }
+body.tk .partido .marcador { background: var(--tk-noche); }
+body.tk .partido { border-radius: var(--tk-radio); }
+/* Barra de abajo del celular (útil: queda, con los colores del kit) y botón de Ayuda */
+body.tk .barra-abajo { background: var(--tk-noche); }
+body.tk .barra-abajo .activo { color: var(--tk-color-claro); }
+body.tk .ayuda-boton { background: var(--tk-color); color: var(--tk-color-texto); }
+body.tk .ayuda-menu a { color: var(--tk-tinta); }
+/* Inicio (dashboard): saludo, primeros pasos con «Hacerlo» y «Ocultar», tarjetas de partidos */
+.tk-saludo h1 span.tk-hora { white-space: nowrap; }
+.tk-tira .tk-acciones { gap: 8px; }
+.tk-tira > div:first-child { min-width: 0; }
+.tk-pasos .tk-paso-texto a { color: inherit; text-decoration: none; }
+.tk-pasos .tk-pie-pasos { font-size: 12.5px; color: var(--tk-muy-suave); margin: 12px 0 0; }
+.tk-pasos form { margin: 0; }
+@media (min-width: 1100px) { .tk-pasos ol { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tk-pasos li.hecho { padding: 7px 12px; font-size: 13px; }
+.tk-tarjeta .partido-link { color: inherit; text-decoration: none; }
+.tk-tarjeta ul.tk-lista { margin: 0; padding-left: 18px; font-size: 14px; } .tk-tarjeta ul.tk-lista li { margin: 4px 0; }
+.tk-tarjeta .tk-linea-dato { margin: 6px 0; font-size: 14px; }
+.tk-grupo-hoy { background: var(--tk-fondo); border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; }
+.tk-grupo-hoy small { color: var(--tk-muy-suave); }
+@media (max-width: 768px) {
+  body.tk .tk-contenido > h1, body.tk .fila-titulo h1 { font-size: 19px; }
+  .tk-usuario .selector-idioma summary { padding: 6px 8px; }
+  .tk-tira { flex-direction: column; align-items: flex-start; }
+  .tk-pasos li { flex-wrap: wrap; } .tk-pasos li .tk-paso-texto { flex: 1; min-width: 0; }
+  body.tk .pestanas-ico { top: 56px; }
+}
+@media print { body.tk .tk-fondo-menu, body.tk .barra-abajo { display: none !important; } body.tk { display: block; } }

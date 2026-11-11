@@ -202,13 +202,19 @@ function cuenta_en_demo(?array $l): bool
     return $l !== null && !empty($l['es_prueba']) && empty($l['es_demo']);
 }
 
-/** Tarjeta del inicio mientras la cuenta es demo: «Su demo dura hasta el dd/mm. Descargue el manual y la guía de primeros pasos». */
+/** Tarjeta del inicio mientras la cuenta es demo: «Su demo dura hasta el dd/mm. Descargue el manual y la guía de primeros pasos».
+ *  (10 nov 2026, identidad gráfica común de Tukán) Es la tira de arriba del dashboard: días que quedan y «Ver Mi plan». */
 function html_tarjeta_demo(?array $l): string
 {
     if (!cuenta_en_demo($l)) return '';
     $v = (string)($l['vence'] ?? '');
     $hasta = preg_match('/^\d{4}-(\d{2})-(\d{2})/', $v, $m) ? $m[2] . '/' . $m[1] : '';
-    return '<div class="tarjeta tarjeta-demo" id="tarjeta-demo" style="border-left:5px solid #f2b705">'
+    $s = estado_suscripcion($l);
+    $dias = $s['estado'] === 'prueba' ? ((int)$s['dias'] === 0 ? 'vence hoy' : 'le quedan ' . (int)$s['dias'] . ' día' . ((int)$s['dias'] === 1 ? '' : 's')) : 'terminó';
+    $plan = function_exists('en_app_android') && en_app_android() || !puede('config') ? '' // (28 oct 2026) en la app de Android no se contrata
+        : '<a class="tk-boton chico" href="admin.php?p=mi_plan#contratar">⭐ Ver Mi plan</a>';
+    return '<div class="tk-tira tarjeta-demo" id="tarjeta-demo"><div>'
+        . '<span>⏳ <b>Demo:</b> ' . e($dias) . '.</span> '
         . '<b>🎁 ' . ($hasta !== '' ? 'Su demo dura hasta el ' . e($hasta) . '.' : 'Está en su demo.') . ' Descargue el manual y la guía de primeros pasos</b>'
-        . html_botones_manual_pdf($l) . '</div>';
+        . html_botones_manual_pdf($l) . '</div>' . $plan . '</div>';
 }

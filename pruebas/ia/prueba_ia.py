@@ -559,7 +559,7 @@ try:
     # =====================================================================
     print('\n== Nunca «límite», «cupo» ni «saldo» al cliente')
     # Solo el contenido de cada pantalla: el menú es de los otros módulos (ej. «Clases particulares… saldo de clases», que no es de la IA)
-    pantallas = [re.sub(r'<nav class="menu">.*?</nav>', ' ', x, flags=re.S) for x in pantallas]
+    pantallas = [re.sub(r'<nav class="(?:tk-)?menu"[^>]*>.*?</nav>', ' ', x, flags=re.S) for x in pantallas]
     malas = [PROHIBIDAS.search(re.sub(r'<[^>]+>', ' ', x)).group(0) for x in pantallas if PROHIBIDAS.search(re.sub(r'<[^>]+>', ' ', x))]
     chk(not malas, 'ninguna pantalla ni respuesta de la Ayuda / Asistente (%d revisadas)' % len(pantallas), malas)
     fuentes = ['app/asistente_ia.php', 'app/admin/ayuda.php', 'app/admin/asistente.php']

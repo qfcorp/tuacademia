@@ -3,49 +3,74 @@
  * Plantillas visuales (encabezado y pie) del panel y de la página pública.
  */
 
+/** (10 nov 2026) Identidad gráfica común de Tukán: la ÚNICA línea que cambia por programa es su color (kit tukan-ui.css). */
+function tk_color_programa(): string
+{
+    return '<style>:root{ --tk-color:#7b3fb0; --tk-color-claro:#c9a2ef; --tk-color-texto:#ffffff; }</style>';
+}
+
+/** Iniciales del programa para el círculo de la barra (TuAcademia → TA) cuando el negocio no subió su logo. */
+function tk_iniciales_programa(): string
+{
+    preg_match_all('/\p{Lu}/u', marca(), $m);
+    $ini = implode('', array_slice($m[0], 0, 2));
+    return $ini !== '' ? $ini : mb_strtoupper(mb_substr(marca(), 0, 2));
+}
+
+/** Línea chica de la barra: «Programa · Plan». */
+function tk_linea_plan(?array $liga): string
+{
+    if (!$liga) return es_super() ? marca() . ' · Superadministrador' : (usuario() ? marca() : 'Ingreso al panel');
+    if (!empty($liga['es_demo'])) return marca() . ' · Demostración';
+    if (cuenta_en_demo($liga)) return marca() . ' · Demo';
+    $plan = plan_de_liga($liga);
+    if (!$plan) return marca() . ' · ' . (es_escuela($liga) ? (es_academia() ? 'Academia' : 'Escuela') : (es_federacion($liga) ? 'Federación' : 'Liga'));
+    $n = trim((string)$plan['nombre']);
+    return marca() . ' · ' . (preg_match('/^plan\b/i', $n) ? $n : 'Plan ' . $n);
+}
+
 function cabecera_admin(string $titulo): void
 {
     $u = usuario();
     $liga = liga_trabajo();
-    acad_vocabulario_activar($liga); // (TuAcademia) palabras de la academia (disciplina, clase, salón)
     $p = get('p', 'inicio');
-    $activo = fn(array $ps) => in_array($p, $ps, true) ? ' class="activo"' : '';
+    acad_vocabulario_activar($liga); // (TuAcademia) palabras de la academia (disciplina, clase, salón)
+    $nombre_neg = $liga ? (string)$liga['nombre'] : marca();
     ?><!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($titulo) ?> · Panel <?= e(marca()) ?></title>
-<link rel="stylesheet" href="assets/estilo.css?v=331">
+<link rel="stylesheet" href="assets/tukan-ui.css?v=1">
+<link rel="stylesheet" href="assets/estilo.css?v=332">
+<?= tk_color_programa() ?>
 <meta name="robots" content="noindex">
 <?= cabecera_app() ?>
 </head>
-<body class="admin" style="--acento: <?= e($liga['color'] ?? '#0b6e4f') ?>; --acento2: <?= e(($liga['color2'] ?? '') !== '' ? $liga['color2'] : ($liga['color'] ?? '#0b6e4f')) ?>">
-<header class="barra">
-  <div class="barra-in">
-    <a class="marca" href="admin.php"><?= es_academia() ? '🎓' : '⚽' ?> <?= e(marca()) ?> <small>Panel</small></a>
+<body class="tk admin<?= $u ? '' : ' tk-sin-menu' ?>">
+<header class="tk-arriba">
+  <div class="tk-arriba-izq">
+    <?php if ($u): ?><button class="tk-boton-menu" type="button" aria-label="Abrir el menú" aria-expanded="false">☰</button><?php endif; ?>
+    <a class="tk-marca" href="admin.php"><?= $liga && ($liga['logo'] ?? '') !== '' ? '<img src="' . e($liga['logo']) . '" alt="">' : '<span class="tk-logo">' . e(tk_iniciales_programa()) . '</span>' ?><span><b><?= e($nombre_neg) ?></b><small><?= e(tk_linea_plan($liga)) ?></small></span></a>
+  </div>
+  <div class="tk-usuario">
     <?= tc_enlace_volver() // (Tukán Central) «← Panel Tukán» si la sesión vino del panel central ?>
     <?= html_selector_idioma('idioma-panel') // (v28) ?>
     <?php if ($u): ?>
-    <button class="menu-btn" type="button" onclick="document.body.classList.toggle('menu-abierto')" aria-label="Menú">☰</button>
-    <nav class="menu"><?= html_menu_panel() // (v19) menú agrupado: app/menu.php ?></nav>
+    <span class="tk-nombre">👤 <?= e((string)$u['nombre']) ?></span><span class="tk-rol"><?= e(es_super() ? 'Súper' : nombre_perfil(perfil_actual())) ?></span><a class="tk-salir" href="admin.php?p=salir">Salir</a>
     <?php endif; ?>
   </div>
-  <?php if ($liga): ?>
-  <div class="subbarra"><div class="barra-in">
-    <?= escudo($liga['logo'], $liga['nombre'], $liga['color'], 'mini') ?>
-    <strong><?= e($liga['nombre']) ?></strong> · <?= es_escuela($liga) ? (count($deps_l = deportes_de_escuela($liga)) > 1 ? '🎓 ' . (es_academia() ? 'Academia' : 'Escuela multideporte') . ' (' . e(mb_strtolower(texto_deportes($deps_l))) . ')' : '🎓 ' . (es_academia() ? 'Academia' : 'Escuela') . ' de ' . e(mb_strtolower(deportes_escuela()[$liga['deporte_escuela']] ?? 'deporte'))) : e(nombre_modalidad($liga['modalidad'])) ?>
- · <a href="<?= e(url_liga($liga)) ?>" target="_blank">ver página pública ↗</a>
-    <?php if (es_super()): ?> · <a href="admin.php?p=ligas&amp;salir_liga=1"><?= es_academia() ? 'cambiar de academia' : 'cambiar de liga o escuela' ?></a><?php else: ?> · <span class="suave">Perfil: <?= e(nombre_perfil(perfil_actual())) ?></span><?php endif; ?>
-    <?php // (v16) combo liga + escuela
-    if (!es_super() && ($cbo = combo_de($liga)) && (usuario()['perfil'] ?? 'admin') === 'admin'): ?> · <a class="btn btn-chico btn-sec-blanco" href="admin.php?combo=<?= (int)$cbo['id'] ?>">🔁 Ir a <?= ($cbo['tipo'] ?? 'liga') === 'escuela' ? '🎓' : '🏆' ?> <?= e($cbo['nombre']) ?></a><?php elseif (es_super() && ($cbo = combo_de($liga))): ?> · <span class="suave">combo con <?= e($cbo['nombre']) ?></span><?php endif; ?>
-  </div></div>
-  <?php endif; ?>
 </header>
+<div class="tk-cuerpo">
+<?php if ($u): ?>
+  <nav class="tk-menu" aria-label="Menú principal"><?= html_menu_panel() // menú agrupado: app/menu.php ?></nav>
+  <div class="tk-fondo-menu"></div>
+<?php endif; ?>
+<main class="tk-contenido contenedor">
 <?php if ($u && !es_super() && !empty($liga['es_demo'])): ?>
 <div class="demo-cinta">👀 Está en la <b>demostración</b> de <?= e(marca()) ?> <?= demo_guardar() ? '(puede probar y guardar; todo se borra cada madrugada)' : '(solo mirar, no se guardan cambios)' ?>. <a href="index.php?v=demo">← Entrar a otro panel</a> · <a href="<?= e(url_empezar()) ?>">Solicite su demo →</a></div>
 <?php endif; ?>
-<main class="contenedor">
 <?php if ($liga && $u && get('p') !== 'login' && empty($liga['es_demo']) && liga_suspendida($liga)): // (Tukán Central v2) cuenta suspendida por Tukán ?>
   <div class="aviso aviso-error aviso-suspendida" id="cuenta-suspendida">⛔ <b><?= e(texto_suspension($liga)) ?></b><?= es_super() && ($liga['suspendida_motivo'] ?? '') !== '' ? ' Motivo: ' . e($liga['suspendida_motivo']) : '' ?></div>
 <?php endif; ?>
@@ -53,7 +78,8 @@ function cabecera_admin(string $titulo): void
   <?= html_aviso_vencimiento($liga) ?>
 <?php elseif ($liga && $u && get('p') !== 'login' && empty($liga['es_demo'])):
     $sus = estado_suscripcion($liga);
-    if (in_array($sus['estado'], ['prueba', 'gracia', 'vencida'], true) && ($sus['estado'] !== 'prueba' || $sus['dias'] <= 10 || get('p', 'inicio') === 'inicio')):
+    // (10 nov 2026) En el Inicio, la demo se avisa en la tira de arriba del dashboard (con «Ver Mi plan»): aquí no se repite
+    if (in_array($sus['estado'], ['prueba', 'gracia', 'vencida'], true) && ($sus['estado'] !== 'prueba' || ($sus['dias'] <= 10 && $p !== 'inicio'))):
         $wa = telefono_wa((string)ajuste('ventas_whatsapp')); ?>
   <div class="aviso <?= $sus['estado'] === 'prueba' ? 'aviso-info' : 'aviso-error' ?> aviso-suscripcion">
     <?= $sus['estado'] === 'prueba' ? '🎁' : '⚠️' ?> <?= e($sus['texto']) ?>
@@ -104,9 +130,13 @@ function script_origen_app(): string
 function pie_admin(): void
 {
     ?>
-</main>
 <footer class="pie"><?= e(marca()) ?> · <?= e(ajuste('empresa', 'Tukán Software')) ?> · <a href="manual" target="_blank">Manuales</a> · <a href="https://tukansoftware.com/terminos.html" target="_blank" rel="noopener">Términos</a> · <a href="index.php?v=privacidad" target="_blank">Privacidad</a></footer>
-<?= usuario() ? html_barra_abajo() . script_menu_panel() . html_boton_ayuda() : '' ?>
+</main>
+</div>
+<?= usuario() ? html_barra_abajo() . html_boton_ayuda() : '' ?>
+<script>/* (10 nov 2026) Los formularios con confirmación, los que abren otra pestaña y los de búsqueda (GET, también las descargas) no quedan en «Procesando…» */
+document.querySelectorAll('form[onsubmit], form[target], form:not([method]), form[method="get"], form[method="GET"]').forEach(function (f) { f.setAttribute('data-sin-ocupado', ''); });</script>
+<script src="assets/tukan-ui.js?v=1"></script>
 </body>
 </html>
 <?php

@@ -379,7 +379,7 @@ Usa el **mismo bot y la misma cola** de Telegram que ya tenía el sistema (no ha
 ### 13.5 Pruebas (14-oct-2026)
 | Prueba | Modo | Resultado |
 |---|---|---|
-| `pruebas/academia/prueba_arreglos_14oct.py` (nueva: 7 días, textos, fotos, Telegram simulado: conectar, por vencer, días configurables, vencida, pago, falta, particular, comunicados, activar/desactivar, sin repetir, Telegram caído, desconectar) | academia | **107/107** |
+| `pruebas/academia/prueba_arreglos_14oct.py` (nueva: 7 días, textos, fotos, Telegram simulado: conectar, por vencer, días configurables, vencida, pago, falta, particular, comunicados, activar/desactivar, sin repetir, Telegram caído, desconectar) | academia | **108/108** |
 | `pruebas/academia/prueba_academia.py` | academia | **236/236** |
 | `pruebas/academia/navegador_academia.py` | academia | **19/19** |
 | `pruebas/tukan_central/prueba_central.py` / `prueba_central_v2.py` | academia | **125/125** / **262/262** |
@@ -593,10 +593,10 @@ El Panel Tukán Central crea la demo solo y le manda la clave al correo del inte
 - El Panel los recibe en la solicitud `demo_pedida` con las claves `nombre`, `nombre_comercial`, `celular`, `telefono` (igual al celular), `direccion`,
   `ciudad`, `email`. Al guardar, el programa **avisa al Panel al instante** (`/demo_aviso.php`, token v2 tipo «demo», máximo 5 s; si el
   Panel no contesta, el pedido queda igual y lo ve en 15 minutos).
-- Gracias: «¡Listo! En unos minutos le llega al correo su clave, el manual y la guía de primeros pasos. Revise también la carpeta de spam.»
+- Gracias: «¡Listo! Estamos preparando su demo: toma entre 5 y 10 minutos aproximadamente. Cuando esté lista le llega al correo su clave, el manual y la guía de primeros pasos. Revise también la carpeta de spam.» (10 nov, 19:48: Dimitry pidió avisar que toma 5 a 10 minutos; el formulario también lo dice)
 - **PDF públicos**: `/manual.pdf` (`Manual_TuAcademia.pdf`) y `/primeros_pasos.pdf` (`Primeros_Pasos_TuAcademia.pdf`), desde `docs/`.
 - En la demo, el **Resumen** muestra «Su demo dura hasta el dd/mm. Descargue el manual y la guía de primeros pasos» con dos botones;
   en **❓ Ayuda** están los mismos botones para todas las academias. Manual (cap. 15) actualizado y PDF regenerado.
 - **«3 días en todo»** (decisión de Dimitry): toda demo dura 3 días (formulario, Panel y la que el súper crea a mano; si no escribe
   los días, 3). `dias_demo` (7 → 3) y `dias_prueba` (7 → 3) cambian una sola vez; si Tukán había puesto otro valor, se respeta. Alargar sigue igual.
-- Prueba nueva: `bash pruebas/v38/reiniciar.sh && python3 pruebas/demos_auto/prueba_demos_auto.py` → **96/96**.
+- Prueba nueva: `bash pruebas/v38/reiniciar.sh && python3 pruebas/demos_auto/prueba_demos_auto.py` → **97/97**.

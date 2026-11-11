@@ -70,7 +70,7 @@ cabecera_publica('Solicitar demo · ' . marca());
   <div class="tarjeta">
   <?php if ($enviada): ?>
     <h2 style="margin-top:0" id="demo-gracias">✓ ¡Solicitud recibida!</h2>
-    <p><b>¡Listo! En unos minutos le llega al correo su clave, el manual y la guía de primeros pasos. Revise también la carpeta de spam.</b></p>
+    <p><b>¡Listo! Estamos preparando su demo: toma entre 5 y 10 minutos aproximadamente. Cuando esté lista le llega al correo su clave, el manual y la guía de primeros pasos. Revise también la carpeta de spam.</b></p>
     <p>Gracias, <?= e($enviada['contacto']) ?>. Lo enviamos a <b><?= e($enviada['email']) ?></b> para la demo de <b><?= e($enviada['organizacion']) ?></b>.</p>
     <?php if ($wa): ?><a class="btn btn-grande btn-wa" target="_blank" href="https://wa.me/<?= e($wa) ?>?text=<?= rawurlencode('Hola, acabo de solicitar una demo de ' . marca() . ' para ' . $enviada['organizacion'] . '. Mi nombre es ' . $enviada['contacto'] . '.') ?>">💬 Escribirnos ahora por WhatsApp</a><?php endif; ?>
   <?php else: ?>
@@ -83,7 +83,7 @@ cabecera_publica('Solicitar demo · ' . marca());
         <div class="campo-ancho"><label>¿Qué organiza?</label><select name="tipo"><option value="liga" <?= $tipo === 'liga' ? 'selected' : '' ?>>🏆 Una liga o campeonatos</option><option value="escuela" <?= $tipo === 'escuela' ? 'selected' : '' ?>>🎓 Una escuela deportiva</option></select></div>
         <?php endif; ?>
         <div class="campo-ancho"><label><?= es_academia() ? '¿Qué disciplinas enseña?' : '¿Qué deportes?' ?> <small class="suave">(marque todos los que necesite)</small></label><?= html_casillas_modulos(leer_deportes_post() ?: (get('modulo') !== '' && modulo_info(get('modulo')) ? [get('modulo')] : []), 'deportes') ?></div>
-        <div class="campo-ancho"><div class="aviso aviso-info" style="margin:0">✉ <b>Le enviaremos la clave de su demo a este correo: escríbalo bien.</b> La demo dura <?= dias_demo() ?> días. Todos los datos con * son obligatorios.</div></div>
+        <div class="campo-ancho"><div class="aviso aviso-info" style="margin:0">✉ <b>Le enviaremos la clave de su demo a este correo: escríbalo bien.</b> La demo dura <?= dias_demo() ?> días. Preparar su demo toma entre 5 y 10 minutos aproximadamente. Todos los datos con * son obligatorios.</div></div>
         <div class="campo-ancho<?= $ec('organizacion') ?>"><label for="f-organizacion"><?= es_academia() ? 'Nombre de la academia *' : 'Nombre de la liga o escuela *' ?></label><input type="text" id="f-organizacion" name="organizacion" required minlength="3" maxlength="120" value="<?= e(post('organizacion')) ?>" autocomplete="organization"><?= $em('organizacion') ?></div>
         <div class="<?= $ec('contacto') ?>"><label for="f-contacto">Su nombre y apellido *</label><input type="text" id="f-contacto" name="contacto" required minlength="3" maxlength="80" value="<?= e(post('contacto')) ?>" autocomplete="name"><?= $em('contacto') ?></div>
         <div class="<?= $ec('celular') ?>"><label for="f-celular">Celular / WhatsApp *</label><input type="tel" id="f-celular" name="celular" required maxlength="20" pattern="\+?[0-9 \(\)\-]{9,22}" value="<?= e(post('celular')) ?>" autocomplete="tel" placeholder="0991234567"><?= $em('celular') ?></div>

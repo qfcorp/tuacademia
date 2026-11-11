@@ -109,7 +109,7 @@ function correos_solicitud_demo(array $s): void
         enviar_correo((string)$s['email'], 'Recibimos su solicitud de demo de ' . marca(), 'Recibimos su solicitud', array_values(array_filter([
             'Hola ' . $s['contacto'] . ', gracias por su interés en ' . marca() . ' para ' . $s['organizacion'] . '.',
             // (10 nov 2026) demos automáticas de 3 días: el Panel Tukán crea la demo y manda la clave a este mismo correo
-            'En unos minutos le llega a este correo la clave de su demo de ' . dias_demo() . ' días con todos los módulos, el manual y la guía de primeros pasos. Revise también la carpeta de spam.'
+            'Estamos preparando su demo de ' . dias_demo() . ' días con todos los módulos: toma entre 5 y 10 minutos aproximadamente. Cuando esté lista le llega a este correo su clave, el manual y la guía de primeros pasos. Revise también la carpeta de spam.'
                 . ($wa !== '' ? ' Si tiene dudas, escríbanos por WhatsApp al ' . $wa . '.' : ''),
             function_exists('demo_pdf') && demo_pdf('manual', $tm) ? 'Manual: ' . $base . '/' . demo_url_pdf('manual', $tm) : '',
             function_exists('demo_pdf') && demo_pdf('primeros_pasos', $tm) ? 'Guía de primeros pasos: ' . $base . '/' . demo_url_pdf('primeros_pasos', $tm) : '',

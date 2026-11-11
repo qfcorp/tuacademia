@@ -117,6 +117,7 @@ chk(r.status_code == 200, 'el formulario abre')
 for campo in CAMPOS:
     chk(re.search(r'<input[^>]*name="%s"[^>]*required' % campo, r.text) is not None, 'el campo «%s» es obligatorio en el navegador (required)' % campo)
 chk('Le enviaremos la clave de su demo a este correo: escríbalo bien.' in r.text, 'el formulario dice que la clave llega al correo y que lo escriba bien')
+chk('La demo dura 3 días. Preparar su demo toma entre 5 y 10 minutos aproximadamente.' in r.text, 'el formulario dice que preparar la demo toma entre 5 y 10 minutos')
 chk('La demo dura 3 días' in r.text and 'Demo de 3 días' in r.text, 'el formulario dice que la demo dura 3 días')
 chk(re.search(r'name="acepto" value="1" required', r.text) is not None, 'la casilla de la política de privacidad sigue obligatoria')
 chk('name="tamano"' in r.text and 'name="mensaje"' in r.text and 'name="ref"' in r.text, 'los campos propios (tamaño, mensaje, vendedor) siguen')
@@ -183,7 +184,7 @@ sid = int(php('echo (int)valor("SELECT MAX(id) FROM solicitudes_demo");'))
 fila = pj('fila("SELECT * FROM solicitudes_demo WHERE id = %d")' % sid)
 chk(fila['contacto'] == 'Ana Pérez' and fila['organizacion'] == CAMPOS['organizacion'] and 'telefono_fijo' not in fila and fila['telefono'] == '0991234567'
     and fila['direccion'] == CAMPOS['direccion'] and fila['ciudad'] == 'Quito' and fila['email'] == 'ana.perez@ejemplo.com', 'pedido completo: guarda los 6 datos (celular solo con números, correo en minúsculas y sin espacios)', str(fila))
-chk('¡Listo! En unos minutos le llega al correo su clave, el manual y la guía de primeros pasos. Revise también la carpeta de spam.' in r.text, 'página de gracias con el texto del contrato')
+chk('¡Listo! Estamos preparando su demo: toma entre 5 y 10 minutos aproximadamente. Cuando esté lista le llega al correo su clave, el manual y la guía de primeros pasos. Revise también la carpeta de spam.' in r.text, 'página de gracias con el texto del contrato')
 chk(len(AVISOS) == 1, 'aviso al instante: llegó un aviso al Panel simulado', str(len(AVISOS)))
 if AVISOS:
     a = AVISOS[0]
@@ -231,19 +232,19 @@ chk(dias.get('valor') == 3, 'conector: el botón «Crear demo» trae 3 días', s
 conectar('http://127.0.0.1:%d' % (PUERTO + 8))
 n0 = cuenta()
 r, seg = enviar(CAMPOS | {'email': 'lento@ejemplo.com'})
-chk(cuenta() == n0 + 1 and '¡Listo! En unos minutos' in r.text, 'Panel que no contesta: el pedido se guarda y sale la página de gracias')
+chk(cuenta() == n0 + 1 and '¡Listo! Estamos preparando su demo' in r.text, 'Panel que no contesta: el pedido se guarda y sale la página de gracias')
 chk(seg < 8, 'Panel que no contesta: espera como máximo unos 5 segundos (%.1f s)' % seg)
 chk(pj('valor("SELECT aviso_panel FROM solicitudes_demo WHERE id = (SELECT MAX(id) FROM solicitudes_demo)")').startswith('sin respuesta'), 'Panel que no contesta: queda anotado «sin respuesta»')
 libre = socket.socket(); libre.bind(('127.0.0.1', 0)); puerto_libre = libre.getsockname()[1]; libre.close()
 conectar('http://127.0.0.1:%d' % puerto_libre)
 n0 = cuenta()
 r, seg = enviar(CAMPOS | {'email': 'apagado@ejemplo.com'})
-chk(cuenta() == n0 + 1 and '¡Listo! En unos minutos' in r.text and seg < 6, 'Panel apagado: el pedido se guarda y sale la página de gracias al momento')
+chk(cuenta() == n0 + 1 and '¡Listo! Estamos preparando su demo' in r.text and seg < 6, 'Panel apagado: el pedido se guarda y sale la página de gracias al momento')
 os.remove(ENV)
 AVISOS.clear()
 n0 = cuenta()
 r, seg = enviar(CAMPOS | {'email': 'sinpanel@ejemplo.com'})
-chk(cuenta() == n0 + 1 and '¡Listo! En unos minutos' in r.text and not AVISOS
+chk(cuenta() == n0 + 1 and '¡Listo! Estamos preparando su demo' in r.text and not AVISOS
     and pj('valor("SELECT aviso_panel FROM solicitudes_demo WHERE id = (SELECT MAX(id) FROM solicitudes_demo)")') == '', 'sin conectar al Panel: se guarda y no se avisa a nadie')
 MODO['demora'] = 0
 

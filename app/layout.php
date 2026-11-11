@@ -17,16 +17,23 @@ function tk_iniciales_programa(): string
     return $ini !== '' ? $ini : mb_strtoupper(mb_substr(marca(), 0, 2));
 }
 
-/** Línea chica de la barra: «Programa · Plan». */
+/** Qué es el negocio (lo que decía la franja de antes): «Fútbol 7», «Escuela de fútbol», «Academia de ballet»… */
+function tk_tipo_negocio(array $liga): string
+{
+    return es_escuela($liga) ? (count($deps_l = deportes_de_escuela($liga)) > 1 ? (es_academia() ? 'Academia' : 'Escuela multideporte') . ' (' . mb_strtolower(texto_deportes($deps_l)) . ')' : (es_academia() ? 'Academia' : 'Escuela') . ' de ' . mb_strtolower(deportes_escuela()[$liga['deporte_escuela']] ?? 'deporte')) : (es_federacion($liga) ? 'Federación' : nombre_modalidad($liga['modalidad']));
+}
+
+/** Línea chica de la barra: «Programa · tipo de negocio · Plan». */
 function tk_linea_plan(?array $liga): string
 {
     if (!$liga) return es_super() ? marca() . ' · Superadministrador' : (usuario() ? marca() : 'Ingreso al panel');
-    if (!empty($liga['es_demo'])) return marca() . ' · Demostración';
-    if (cuenta_en_demo($liga)) return marca() . ' · Demo';
+    $base = marca() . ' · ' . tk_tipo_negocio($liga);
+    if (!empty($liga['es_demo'])) return $base . ' · Demostración';
+    if (cuenta_en_demo($liga)) return $base . ' · Demo';
     $plan = plan_de_liga($liga);
-    if (!$plan) return marca() . ' · ' . (es_escuela($liga) ? (es_academia() ? 'Academia' : 'Escuela') : (es_federacion($liga) ? 'Federación' : 'Liga'));
+    if (!$plan) return $base;
     $n = trim((string)$plan['nombre']);
-    return marca() . ' · ' . (preg_match('/^plan\b/i', $n) ? $n : 'Plan ' . $n);
+    return $base . ' · ' . (preg_match('/^plan\b/i', $n) ? $n : 'Plan ' . $n);
 }
 
 function cabecera_admin(string $titulo): void

@@ -600,3 +600,16 @@ El Panel Tukán Central crea la demo solo y le manda la clave al correo del inte
 - **«3 días en todo»** (decisión de Dimitry): toda demo dura 3 días (formulario, Panel y la que el súper crea a mano; si no escribe
   los días, 3). `dias_demo` (7 → 3) y `dias_prueba` (7 → 3) cambian una sola vez; si Tukán había puesto otro valor, se respeta. Alargar sigue igual.
 - Prueba nueva: `bash pruebas/v38/reiniciar.sh && python3 pruebas/demos_auto/prueba_demos_auto.py` → **97/97**.
+
+## Identidad gráfica común de Tukán (10 nov 2026, pedido de Dimitry: «misma lógica y misma identidad gráfica»)
+- Todo el panel de la academia (`admin.php`) usa el **kit común** `public/assets/tukan-ui.css` + `tukan-ui.js` (idéntico en todos los
+  programas: no se edita aquí) con el **morado de TuAcademia `#7b3fb0`** (el de su ícono y de la Academia Demo; el CSS viejo era el
+  verde copiado de TuVocalía). Detalle en **`docs/LINEA_GRAFICA.md`**.
+- Barra de arriba morada con logo (o «TA»), nombre de la academia y «TuAcademia · tipo · Plan»; menú de la izquierda azul noche con
+  secciones (Principal, Alumnos, Dinero, Configuración, Mi cuenta) y emoji; en el celular ☰ y la barra de abajo de siempre.
+- **Resumen** nuevo: saludo según la hora, tira con el aviso más importante (demo con «Ver Mi plan»), **Primeros pasos** con
+  «Hacerlo» y «Ocultar» (por academia), cifras en tarjetas oscuras, «Hoy tienen clase», «Pagos vencidos» (6 + enlace), cumpleaños,
+  lesionados y accesos rápidos. **Factura electrónica** ahora sale con la barra y el menú. Solicitar demo con tarjeta y botón del kit.
+- No cambian: página pública, portal de los padres, PDF y correos. No cambia ningún dato ni función.
+- Manual: capítulo 2 (Entrar y el Resumen) con el texto nuevo, todas las capturas y los PDF regenerados con `docs/manual/generar/generar.sh`.
+- Prueba nueva: `TA_PUERTO=9350 TA_SIM=9351 bash pruebas/v38/reiniciar.sh && TA_PUERTO=9350 python3 pruebas/identidad_grafica/prueba_identidad.py`.

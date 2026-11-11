@@ -168,7 +168,7 @@ for txt in ['Cursos y horarios', 'Niveles y exámenes', 'Recitales y presentacio
 for txt in ['Campeonatos', 'Árbitros', 'Equipos</b>', 'Vocalía']:
     chk(txt not in r.text, 'menú sin ' + txt)
 chk('Academia de ballet' in r.text or 'Academia de Ballet' in r.text, 'subtítulo «Academia de ballet»')
-chk('🎓 TuAcademia' in r.text, 'encabezado del panel con TuAcademia')
+chk('<small>TuAcademia · ' in r.text, 'encabezado del panel con TuAcademia')  # (10 nov 2026) identidad gráfica: el programa va en la línea chica de la barra
 r = ba.get(B + 'admin.php?p=torneos')
 chk('Campeonatos' not in r.text.split('<main')[-1][:3000] or 'Hoy tienen clase' in r.text, 'admin.php?p=torneos no abre campeonatos')
 r = post(ba, 'admin.php?p=grupos', {'accion': 'guardar', 'id': '0', 'nombre': 'Ballet infantil', 'deporte': 'ballet', 'categoria': 'abierta', 'anio_desde': '', 'anio_hasta': '',

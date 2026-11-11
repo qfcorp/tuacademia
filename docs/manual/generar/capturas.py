@@ -160,7 +160,8 @@ with sync_playwright() as p:
             pg.goto(B + ruta.format(**D))
         pg.wait_for_load_state('networkidle')
         if accion == 'abrir_menu':
-            pg.evaluate("() => { document.body.classList.add('menu-abierto'); window.scrollTo(0, 0); }")
+            pg.evaluate("() => { const b = document.querySelector('.tk-boton-menu'); if (b) b.click(); else document.body.classList.add('menu-abierto'); window.scrollTo(0, 0); }")  # (10 nov 2026) menú ☰ del kit común
+            pg.wait_for_timeout(400)
         elif accion == 'ir_primeros':
             pg.evaluate("() => { const e = [...document.querySelectorAll('details, .tarjeta, section')].find(x => /Primeros pasos/.test(x.innerText) && x.innerText.length < 1500); if (e) { if (e.tagName === 'DETAILS') e.open = true; window.scrollTo(0, e.getBoundingClientRect().top + window.scrollY - 70); } }")
         elif accion == 'ir_hija':

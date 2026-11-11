@@ -892,7 +892,7 @@ table.comparativa td:first-child { text-align: left; }
    en la barra, barra de abajo del celular, botón de Ayuda). La página pública de la liga y la vocalía no usan body.tk: no cambian.
    ===================================================================================================================== */
 body.tk { --acento: var(--tk-color); --acento2: var(--tk-noche); --fondo: #f1f5f9; --tarjeta: #fff; --texto: #0f172a; --suave: #64748b; --borde: #e2e8f0; --radio: 8px; color-scheme: light; }
-body.tk a { color: var(--tk-color); }
+body.tk a { color: color-mix(in srgb, var(--tk-color) 70%, #000); } /* enlaces: el color del programa un poco más oscuro (contraste AA sobre blanco) */
 body.tk .tk-arriba a, body.tk a.tk-boton, body.tk a.btn { color: inherit; }
 body.tk .barra-abajo a, body.tk .barra-abajo button { color: #b9c5c0; }
 body.tk .tk-arriba small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -905,9 +905,9 @@ body.tk .tk-cifra small, body.tk .tk-cifra-detalle a { color: inherit; }
 .tk-arriba-izq { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .tk-arriba .tk-marca > span:not(.tk-logo) { min-width: 0; display: flex; flex-direction: column; }
 .tk-usuario .selector-idioma { margin-left: 0; }
-.tk-usuario .selector-idioma summary { background: rgba(0,0,0,.18); color: var(--tk-color-texto); }
+.tk-usuario .selector-idioma summary { background: color-mix(in srgb, var(--tk-color-texto) 14%, transparent); color: var(--tk-color-texto); }
 .tk-usuario .selector-idioma-menu a { color: var(--tk-tinta); }
-.tk-usuario .tc-volver { background: rgba(0,0,0,.18) !important; }
+.tk-usuario .tc-volver { background: color-mix(in srgb, var(--tk-color-texto) 14%, transparent) !important; color: var(--tk-color-texto) !important; }
 .tk-contenido.contenedor { max-width: none; margin: 0; }
 .tk-contenido > .pie { margin-top: 30px; padding: 18px 0 0; border-top: 1px solid var(--tk-linea); }
 body.tk-sin-menu .tk-contenido { display: flex; flex-direction: column; }
@@ -951,7 +951,7 @@ body.tk .aviso-ok:not([class*="tk-"]) { border-left-color: var(--tk-ok); backgro
 body.tk .aviso-error:not([class*="tk-"]) { border-left-color: var(--tk-mal); background: #fee2e2; color: #7f1d1d; }
 body.tk .aviso a { color: inherit; font-weight: 800; }
 body.tk .demo-cinta { background: #fff; color: var(--tk-tinta); border-left: 5px solid var(--tk-aviso); border-radius: var(--tk-radio); text-align: left; padding: 10px 14px; margin-bottom: 16px; font-size: 13.5px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
-body.tk .demo-cinta a { color: var(--tk-color); }
+body.tk .demo-cinta a { color: color-mix(in srgb, var(--tk-color) 70%, #000); }
 /* Chips, pestañas y partidos */
 body.tk .etiqueta { border-radius: 4px; font-size: 10.5px; font-weight: 800; letter-spacing: .3px; }
 body.tk .etiqueta.verde { background: var(--tk-ok); }
@@ -989,4 +989,8 @@ body.tk .ayuda-menu a { color: var(--tk-tinta); }
 @media print { body.tk .tk-fondo-menu, body.tk .barra-abajo { display: none !important; } body.tk { display: block; } }
 /* Solicitar demo (sitio del programa, sin body.tk): tarjeta del kit */
 .tk-solicitar { margin-bottom: 0; }
-.tk-solicitar .error-campo { color: var(--tk-mal); font-weight: 700; font-size: 12.5px; }
+.tk-solicitar .error-campo { font-weight: 700; }
+/* (10 nov 2026, color de la web) Con colores claros el texto sobre el color del programa es oscuro (--tk-color-texto): pantallas viejas */
+body.tk .tk-marca small { color: inherit; }
+body.tk .jugador-card .dorsal, body.tk .sorteo-grupo h3, body.tk .eval-num input:checked + b, body.tk .periodos button.activo, body.tk .rpe input:checked + b,
+body.tk .esq-paso, body.tk .dir-tabs a.activa, body.tk .comparativa .comp-dest, body.tk .plan-cinta { color: var(--tk-color-texto); }

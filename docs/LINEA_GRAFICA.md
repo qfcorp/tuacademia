@@ -7,8 +7,9 @@ Mismo diseño y misma lógica que todos los programas Tukán (modelo: ERP para p
   hacen que las pantallas que ya existían (`.tarjeta`, `.btn`, tablas, avisos, cifras, pestañas) se vean con el kit, y estilan lo que el
   kit no trae (selector de idioma en la barra, barra de abajo del celular, botón ❓ Ayuda).
 - **Color del programa** (única línea que cambia, en `tk_color_programa()` de `app/layout.php`):
-  `--tk-color:#7b3fb0` (el morado del ícono de TuAcademia y de la Academia Demo; el CSS viejo era una copia del verde de TuVocalía),
-  `--tk-color-claro:#c9a2ef`, `--tk-color-texto:#ffffff` (contraste 6,4:1). En el Panel Tukán Central TuAcademia figura con #3B6FE0: si Dimitry prefiere ese azul, se cambia esta línea.
+  `--tk-color:#E1292F` (tono de pantalla del #E5484D de la web, para que el texto blanco tenga contraste AA), `--tk-color-claro:#EB7074`,
+  `--tk-color-texto:#ffffff`. **Decisión de Dimitry 10 nov: el color de la web** tukansoftware.com (antes, en esta misma rama, el morado #7b3fb0).
+  `theme-color` y `manifest.php` con el mismo color. Los enlaces usan el color un poco más oscuro para el contraste sobre blanco.
 - **Dónde aplica**: el panel del negocio (`admin.php`: ingreso, Resumen, todas las pantallas, Mi plan, Mi cuenta) con `body class="tk"`.
   No cambian: la página pública de la liga/escuela, la vocalía en vivo, los portales de árbitro, delegado y familia, los PDF y los correos.
 

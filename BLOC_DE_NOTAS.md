@@ -603,9 +603,9 @@ El Panel Tukán Central crea la demo solo y le manda la clave al correo del inte
 
 ## Identidad gráfica común de Tukán (10 nov 2026, pedido de Dimitry: «misma lógica y misma identidad gráfica»)
 - Todo el panel de la academia (`admin.php`) usa el **kit común** `public/assets/tukan-ui.css` + `tukan-ui.js` (idéntico en todos los
-  programas: no se edita aquí) con el **morado de TuAcademia `#7b3fb0`** (el de su ícono y de la Academia Demo; el CSS viejo era el
-  verde copiado de TuVocalía). Detalle en **`docs/LINEA_GRAFICA.md`**.
-- Barra de arriba morada con logo (o «TA»), nombre de la academia y «TuAcademia · tipo · Plan»; menú de la izquierda azul noche con
+  programas: no se edita aquí) con el **rojo de TuAcademia en tukansoftware.com** (`#E1292F`, tono de pantalla de `#E5484D` para contraste AA;
+  decisión de Dimitry 10 nov: el color de la web; el CSS viejo era el verde copiado de TuVocalía). Detalle en **`docs/LINEA_GRAFICA.md`**.
+- Barra de arriba roja con logo (o «TA»), nombre de la academia y «TuAcademia · tipo · Plan»; menú de la izquierda azul noche con
   secciones (Principal, Alumnos, Dinero, Configuración, Mi cuenta) y emoji; en el celular ☰ y la barra de abajo de siempre.
 - **Resumen** nuevo: saludo según la hora, tira con el aviso más importante (demo con «Ver Mi plan»), **Primeros pasos** con
   «Hacerlo» y «Ocultar» (por academia), cifras en tarjetas oscuras, «Hoy tienen clase», «Pagos vencidos» (6 + enlace), cumpleaños,
@@ -613,3 +613,8 @@ El Panel Tukán Central crea la demo solo y le manda la clave al correo del inte
 - No cambian: página pública, portal de los padres, PDF y correos. No cambia ningún dato ni función.
 - Manual: capítulo 2 (Entrar y el Resumen) con el texto nuevo, todas las capturas y los PDF regenerados con `docs/manual/generar/generar.sh`.
 - Prueba nueva: `TA_PUERTO=9350 TA_SIM=9351 bash pruebas/v38/reiniciar.sh && TA_PUERTO=9350 python3 pruebas/identidad_grafica/prueba_identidad.py`.
+- Pruebas con la rama (base nueva en cada una, puertos 9350/9351): prueba_academia **258/259** (la única falla es la vieja conocida
+  «familia Ruiz», igual en main), navegador_academia **19/19**, prueba_arreglos_14oct **105/105**, prueba38 **100/100** y navegador38
+  **13/13** (modo ligas), conector v1 **125/125**, v2 **394/394**, módulos **108/108**, cancelar plan **11/11**, usuarios **43/43**,
+  IA **92/92**, demos automáticas **97/97**, TuFactura **19/19**, identidad gráfica **39/39** (modo academia y modo ligas),
+  recorrido 20 min sin errores de PHP, Plux 3DS **4/4**.

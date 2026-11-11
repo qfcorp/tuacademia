@@ -3,10 +3,11 @@
  * Plantillas visuales (encabezado y pie) del panel y de la página pública.
  */
 
-/** (10 nov 2026) Identidad gráfica común de Tukán: la ÚNICA línea que cambia por programa es su color (kit tukan-ui.css). */
+/** (10 nov 2026) Identidad gráfica común de Tukán: la ÚNICA línea que cambia por programa es su color (kit tukan-ui.css).
+ *  Color = el del programa en tukansoftware.com (decisión de Dimitry, 10 nov 2026), tono de pantalla de #E5484D para contraste AA. */
 function tk_color_programa(): string
 {
-    return '<style>:root{ --tk-color:#7b3fb0; --tk-color-claro:#c9a2ef; --tk-color-texto:#ffffff; }</style>';
+    return '<style>:root{ --tk-color:#E1292F; --tk-color-claro:#EB7074; --tk-color-texto:#ffffff; }</style>';
 }
 
 /** Iniciales del programa para el círculo de la barra (TuAcademia → TA) cuando el negocio no subió su logo. */
@@ -115,7 +116,7 @@ if ($liga && $u && in_array($p, ['torneo', 'carrera', 'duelo', 'bolos', 'pruebas
 function cabecera_app(): string
 {
     return '<link rel="manifest" href="manifest.php">
-<meta name="theme-color" content="#0f1614">
+<meta name="theme-color" content="#E1292F">
 <link rel="icon" href="assets/icono-192.png">
 <link rel="apple-touch-icon" href="assets/icono-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">

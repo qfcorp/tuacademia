@@ -587,10 +587,10 @@ Pedido de Dimitry: «TuVocalía y TuAcademia deben unirse… con sus diferentes 
 ## Demos automáticas de 3 días (10 nov 2026, pedido de Dimitry)
 El Panel Tukán Central crea la demo solo y le manda la clave al correo del interesado; aquí está la parte del programa
 (`app/demos_auto.php`, el mismo archivo que TuVocalía).
-- **Pida su demo** (`index.php?v=solicitar`): 7 datos obligatorios (en el navegador y en el servidor, con el error en rojo junto a
-  cada campo y sin perder lo escrito): nombre y apellido, nombre de la academia, teléfono de contacto, celular (09XXXXXXXX o
+- **Pida su demo** (`index.php?v=solicitar`): 6 datos obligatorios (en el navegador y en el servidor, con el error en rojo junto a
+  cada campo y sin perder lo escrito): nombre y apellido, nombre de la academia, celular (un solo teléfono, sin fijo: 09XXXXXXXX o
   +5939XXXXXXXX), dirección, ciudad y correo. Dice «Le enviaremos la clave de su demo a este correo: escríbalo bien.» y «La demo dura 3 días».
-- El Panel los recibe en la solicitud `demo_pedida` con las claves `nombre`, `nombre_comercial`, `telefono`, `celular`, `direccion`,
+- El Panel los recibe en la solicitud `demo_pedida` con las claves `nombre`, `nombre_comercial`, `celular`, `telefono` (igual al celular), `direccion`,
   `ciudad`, `email`. Al guardar, el programa **avisa al Panel al instante** (`/demo_aviso.php`, token v2 tipo «demo», máximo 5 s; si el
   Panel no contesta, el pedido queda igual y lo ve en 15 minutos).
 - Gracias: «¡Listo! En unos minutos le llega al correo su clave, el manual y la guía de primeros pasos. Revise también la carpeta de spam.»
@@ -599,4 +599,4 @@ El Panel Tukán Central crea la demo solo y le manda la clave al correo del inte
   en **❓ Ayuda** están los mismos botones para todas las academias. Manual (cap. 15) actualizado y PDF regenerado.
 - **«3 días en todo»** (decisión de Dimitry): toda demo dura 3 días (formulario, Panel y la que el súper crea a mano; si no escribe
   los días, 3). `dias_demo` (7 → 3) y `dias_prueba` (7 → 3) cambian una sola vez; si Tukán había puesto otro valor, se respeta. Alargar sigue igual.
-- Prueba nueva: `bash pruebas/v38/reiniciar.sh && python3 pruebas/demos_auto/prueba_demos_auto.py` → **102/102**.
+- Prueba nueva: `bash pruebas/v38/reiniciar.sh && python3 pruebas/demos_auto/prueba_demos_auto.py` → **96/96**.

@@ -139,7 +139,7 @@ r = anon.get(B + 'index.php?v=solicitar')
 limpio(r, 'solicitar demo')
 chk('Liga (campeonatos)' not in r.text and 'gratis' not in r.text.lower(), 'pedir demo: siempre academia y sin «gratis»')
 r = anon.post(B + 'index.php?v=solicitar', data={'csrf': csrf(r.text), 'sitio': '', 'tipo': 'liga', 'organizacion': 'Academia de Danza Allegro', 'ciudad': 'Quito',
-                                                   'contacto': 'María Torres', 'telefono': '022345678', 'celular': '0991112233', 'direccion': 'Av. 6 de Diciembre y Colón',  # (10 nov 2026) 7 datos obligatorios
+                                                   'contacto': 'María Torres', 'celular': '0991112233', 'direccion': 'Av. 6 de Diciembre y Colón',  # (10 nov 2026) 6 datos obligatorios, un solo teléfono
                                                    'email': 'baile@prueba.com', 'plan_id': str(planes and 8),
                                                    'deportes[]': ['baile'], 'mensaje': 'Queremos la demo', 'acepto': '1'})
 limpio(r, 'pedir la demo')

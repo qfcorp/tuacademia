@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SOLO PRUEBAS. Demos automáticas de 3 días (10 nov 2026, app/demos_auto.php) — la parte del programa:
-#   formulario «Solicitar demo» con 7 datos obligatorios (rechazo campo por campo, correo malo, conserva lo escrito),
-#   pedido guardado con las 7 claves del contrato y visible en «solicitudes» / «solicitud» del conector v2,
+#   formulario «Solicitar demo» con 6 datos obligatorios (un solo teléfono: el celular) (rechazo campo por campo, correo malo, conserva lo escrito),
+#   pedido guardado con las claves del contrato (celular y telefono iguales) y visible en «solicitudes» / «solicitud» del conector v2,
 #   aviso al instante a un Panel SIMULADO (token v2 tipo «demo» bien firmado) y, si el Panel no contesta, el pedido se guarda igual,
 #   /manual.pdf y /primeros_pasos.pdf públicos, tarjeta de la demo solo en cuentas demo, botones en Ayuda, demo de 3 días.
 # Sirve para TuVocalía y TuAcademia (mismo código).
@@ -108,7 +108,7 @@ def conectar(url):
 conectar('http://127.0.0.1:%d' % (PUERTO + 7))
 
 # ---------- Formulario ----------
-CAMPOS = {'contacto': 'Ana Pérez', 'organizacion': 'Academia Los Pinos' if ACADEMIA else 'Liga Barrial Los Pinos', 'telefono': '(02) 255-1234',
+CAMPOS = {'contacto': 'Ana Pérez', 'organizacion': 'Academia Los Pinos' if ACADEMIA else 'Liga Barrial Los Pinos',
           'celular': '099 123 4567', 'direccion': 'Av. Amazonas N24-10 y Colón', 'ciudad': 'Quito', 'email': '  Ana.Perez@Ejemplo.COM '}
 s = requests.Session()
 s.trust_env = False
@@ -170,9 +170,8 @@ for malo in ['ana@', 'ana arroba ejemplo.com', 'ana@ejemplo', '@ejemplo.com']:
 for malo in ['12345', '0812345678', '09123', '+59381234567', 'celular']:
     r, _ = enviar(CAMPOS | {'celular': malo})
     chk(cuenta() == antes and re.findall(r'id="error-([a-z_]+)"', r.text) == ['celular'], 'celular malo «%s»: rechazado' % malo)
-for malo in ['123', 'abc1234567', '1234567890123456']:
-    r, _ = enviar(CAMPOS | {'telefono': malo})
-    chk(cuenta() == antes and re.findall(r'id="error-([a-z_]+)"', r.text) == ['telefono'], 'teléfono malo «%s»: rechazado' % malo)
+chk('name="telefono"' not in r.text and 'id="f-telefono"' not in r.text and 'Teléfono de contacto' not in r.text and 'Celular / WhatsApp *' in r.text,
+    'el formulario pide UN solo teléfono: «Celular / WhatsApp» (ya no hay teléfono fijo)')
 r, _ = enviar(CAMPOS | {'acepto': ''})
 chk(cuenta() == antes and re.findall(r'id="error-([a-z_]+)"', r.text) == ['acepto'], 'sin aceptar la política de privacidad: rechazado')
 
@@ -182,8 +181,8 @@ r, seg = enviar(CAMPOS)
 chk(cuenta() == antes + 1, 'pedido completo: se guarda')
 sid = int(php('echo (int)valor("SELECT MAX(id) FROM solicitudes_demo");'))
 fila = pj('fila("SELECT * FROM solicitudes_demo WHERE id = %d")' % sid)
-chk(fila['contacto'] == 'Ana Pérez' and fila['organizacion'] == CAMPOS['organizacion'] and fila['telefono_fijo'] == '022551234' and fila['telefono'] == '0991234567'
-    and fila['direccion'] == CAMPOS['direccion'] and fila['ciudad'] == 'Quito' and fila['email'] == 'ana.perez@ejemplo.com', 'pedido completo: guarda los 7 datos (teléfonos solo con números, correo en minúsculas y sin espacios)', str(fila))
+chk(fila['contacto'] == 'Ana Pérez' and fila['organizacion'] == CAMPOS['organizacion'] and 'telefono_fijo' not in fila and fila['telefono'] == '0991234567'
+    and fila['direccion'] == CAMPOS['direccion'] and fila['ciudad'] == 'Quito' and fila['email'] == 'ana.perez@ejemplo.com', 'pedido completo: guarda los 6 datos (celular solo con números, correo en minúsculas y sin espacios)', str(fila))
 chk('¡Listo! En unos minutos le llega al correo su clave, el manual y la guía de primeros pasos. Revise también la carpeta de spam.' in r.text, 'página de gracias con el texto del contrato')
 chk(len(AVISOS) == 1, 'aviso al instante: llegó un aviso al Panel simulado', str(len(AVISOS)))
 if AVISOS:
@@ -213,17 +212,17 @@ def post2(accion, cuerpo):
                          headers={'Content-Type': 'application/json', 'X-Tukan-Token': token2(accion, raw), 'CF-Connecting-IP': ip()})
 
 
-ESPERADO = {'nombre': 'Ana Pérez', 'nombre_comercial': CAMPOS['organizacion'], 'telefono': '022551234', 'celular': '0991234567',
+ESPERADO = {'nombre': 'Ana Pérez', 'nombre_comercial': CAMPOS['organizacion'], 'telefono': '0991234567', 'celular': '0991234567',
             'direccion': CAMPOS['direccion'], 'ciudad': 'Quito', 'email': 'ana.perez@ejemplo.com'}
 rs = post2('solicitudes', {'tipos': ['demo_pedida'], 'por_pagina': 200})
 lista = {x['id']: x for x in rs.json().get('solicitudes', [])} if rs.status_code == 200 else {}
 sol = lista.get('demo_pedida:%d' % sid, {})
 det = sol.get('detalle', {})
 chk(rs.status_code == 200 and sol.get('tipo') == 'demo_pedida', 'conector «solicitudes»: el pedido sale como demo_pedida', rs.text[:300])
-chk({k: det.get(k) for k in ESPERADO} == ESPERADO, 'conector «solicitudes»: detalle con las 7 claves exactas del contrato', str(det))
+chk({k: det.get(k) for k in ESPERADO} == ESPERADO, 'conector «solicitudes»: detalle con las claves exactas del contrato (telefono = celular)', str(det))
 chk(det.get('tamano') == '80 alumnos' and det.get('mensaje') == 'Quiero probar' and det.get('tipo') == ('escuela' if ACADEMIA else 'liga'), 'conector: siguen los datos propios (tipo, tamaño, mensaje)')
 r1 = post2('solicitud', {'id': 'demo_pedida:%d' % sid})
-chk(r1.status_code == 200 and {k: r1.json().get('solicitud', {}).get('detalle', {}).get(k) for k in ESPERADO} == ESPERADO, 'conector «solicitud»: la misma solicitud con las 7 claves')
+chk(r1.status_code == 200 and {k: r1.json().get('solicitud', {}).get('detalle', {}).get(k) for k in ESPERADO} == ESPERADO, 'conector «solicitud»: la misma solicitud con las mismas claves')
 crear = next((b for b in sol.get('acciones_posibles', []) if b.get('accion') == 'crear_demo'), {})
 dias = next((c for c in crear.get('campos', []) if c.get('campo') == 'dias'), {})
 chk(dias.get('valor') == 3, 'conector: el botón «Crear demo» trae 3 días', str(dias))

@@ -23,7 +23,7 @@ function db(): PDO
     crear_esquema($pdo);
     esquema_tukan_central($pdo); // (Tukán Central v2) columnas y tablas propias, sin PRAGMA user_version
     esquema_modulos($pdo); // (Anexo B) módulos por cliente (quitados, precio acordado) y pedidos de módulos
-    esquema_demos_auto($pdo); // (10 nov 2026) solicitudes_demo.telefono_fijo/direccion/aviso_panel y demo de 3 días (app/demos_auto.php)
+    esquema_demos_auto($pdo); // (10 nov 2026) solicitudes_demo.direccion/aviso_panel y demo de 3 días (app/demos_auto.php)
     esquema_ia($pdo); // (21 oct 2026) tablas tukan_ia_faq y tukan_ia_gasto y ligas.ia_tope_usd (app/asistente_ia.php), sin PRAGMA user_version
     return $pdo;
 }

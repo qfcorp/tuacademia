@@ -117,7 +117,7 @@ function correos_solicitud_demo(array $s): void
     }
     foreach (correos_super() as $c) {
         enviar_correo($c, '📝 Solicitud de demo: ' . $s['organizacion'], 'Nueva solicitud de demo', [
-            [['Tipo', $s['tipo'] === 'escuela' ? 'Escuela' : 'Liga / campeonato'], ['Organización', $s['organizacion'] . ($s['ciudad'] !== '' ? ' (' . $s['ciudad'] . ')' : '')], ['Contacto', $s['contacto']], ['Celular', $s['telefono']], ['Teléfono', ($s['telefono_fijo'] ?? '') !== '' ? $s['telefono_fijo'] : '—'], ['Dirección', ($s['direccion'] ?? '') !== '' ? $s['direccion'] : '—'], ['Correo', $s['email'] !== '' ? $s['email'] : '—'], ['Tamaño', $s['tamano'] !== '' ? $s['tamano'] : '—']],
+            [['Tipo', $s['tipo'] === 'escuela' ? 'Escuela' : 'Liga / campeonato'], ['Organización', $s['organizacion'] . ($s['ciudad'] !== '' ? ' (' . $s['ciudad'] . ')' : '')], ['Contacto', $s['contacto']], ['Celular', $s['telefono']], ['Dirección', ($s['direccion'] ?? '') !== '' ? $s['direccion'] : '—'], ['Correo', $s['email'] !== '' ? $s['email'] : '—'], ['Tamaño', $s['tamano'] !== '' ? $s['tamano'] : '—']],
             $s['mensaje'] !== '' ? 'Mensaje: «' . $s['mensaje'] . '»' : '',
         ], ['Atender la solicitud', rtrim(url_base(), '/') . '/admin.php?p=demos']);
     }

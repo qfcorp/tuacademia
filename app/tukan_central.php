@@ -1399,7 +1399,7 @@ function tc2_solicitudes_todas(array $f = [], bool $completo = false, ?string $s
                 'quien' => ['nombre' => tc2_txt($s['contacto']), 'organizacion' => tc2_txt($s['organizacion']), 'telefono' => (string)$s['telefono'] ?: null, 'whatsapp' => $wa, 'email' => (string)$s['email'] ?: null],
                 'resumen' => implode(' · ', array_filter([$s['tipo'] === 'escuela' ? (tc_producto()[2] ? 'Academia' : 'Escuela') : 'Liga', tc2_txt($s['ciudad']), tc2_txt($s['tamano']), $s['plan_nombre'] ? 'Le interesa: ' . $s['plan_nombre'] : ''])),
                 'estado' => $est, 'estado_producto' => (string)$s['estado'], 'prioridad' => $est === 'pendiente' ? 'alta' : 'normal',
-                // (10 nov 2026) los 7 datos del contrato de las demos automáticas, con sus claves exactas (app/demos_auto.php)
+                // (10 nov 2026) los datos del contrato de las demos automáticas (celular y telefono con el mismo valor), con sus claves exactas (app/demos_auto.php)
                 'detalle' => demo_campos_contrato($s) + ['tipo' => (string)$s['tipo'], 'tamano' => tc2_txt($s['tamano']),
                               'plan_interes' => $s['plan_id'] ? ['codigo' => (string)$s['plan_id'], 'nombre' => (string)$s['plan_nombre']] : null,
                               'deportes' => ($s['deportes'] ?? '') !== '' ? explode(',', (string)$s['deportes']) : [], 'mensaje' => tc2_txt($s['mensaje']),

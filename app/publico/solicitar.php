@@ -1,6 +1,6 @@
 <?php
 /* (v14) SOLICITAR UNA DEMO: la única forma de empezar (no hay prueba gratis). QF decide a quién se la crea.
- * (10 nov 2026) Demos automáticas de 3 días: 7 datos obligatorios (nombre, nombre comercial, teléfono, celular, dirección, ciudad
+ * (10 nov 2026) Demos automáticas de 3 días: 6 datos obligatorios (nombre, nombre comercial, celular, dirección, ciudad
  * y correo), con el error junto a cada campo; al guardar se avisa al Panel Tukán al instante (app/demos_auto.php). */
 $planes = filas('SELECT * FROM planes WHERE activo = 1 ORDER BY orden, precio_mensual');
 $errores = [];     // errores generales (arriba)
@@ -13,7 +13,7 @@ if (es_post()) {
     csrf_verificar();
     if (post('sitio') !== '') exit; // campo trampa contra robots
     if (demasiados_intentos('solicitud_demo', 5, '-1 day')) $errores[] = 'Ya recibimos varias solicitudes desde su conexión hoy. Le contactaremos pronto.';
-    [$dp, $err] = demo_validar_pedido($_POST); // (10 nov 2026) los 7 datos obligatorios
+    [$dp, $err] = demo_validar_pedido($_POST); // (10 nov 2026) los 6 datos obligatorios
     if (post('acepto') !== '1') $err['acepto'] = 'Debe aceptar que le contactemos y la política de privacidad.';
     $vend = vendedor_del_visitante(post('ref'));
     if (post('ref') !== '' && !$vend) $err['ref'] = 'El código de vendedor "' . post('ref') . '" no existe. Revíselo o déjelo vacío.';
@@ -21,9 +21,9 @@ if (es_post()) {
     if ($err && !$errores) $errores[] = 'Revise los datos marcados en rojo: todos son obligatorios.';
     if (!$errores && !$err) {
         contexto_auditoria(['usuario' => 'Solicitud de demo: ' . mb_substr($dp['contacto'], 0, 60), 'rol' => 'publico', 'origen' => 'publico']);
-        // «telefono» es el celular / WhatsApp (como siempre) y «telefono_fijo» el teléfono de contacto
-        q('INSERT INTO solicitudes_demo (tipo, organizacion, ciudad, contacto, telefono, telefono_fijo, direccion, email, tamano, plan_id, mensaje, vendedor_id, ip) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', [
-            $tipo, $dp['organizacion'], $dp['ciudad'], $dp['contacto'], $dp['celular'], $dp['telefono'], $dp['direccion'],
+        // «telefono» es el celular / WhatsApp (un solo teléfono)
+        q('INSERT INTO solicitudes_demo (tipo, organizacion, ciudad, contacto, telefono, direccion, email, tamano, plan_id, mensaje, vendedor_id, ip) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', [
+            $tipo, $dp['organizacion'], $dp['ciudad'], $dp['contacto'], $dp['celular'], $dp['direccion'],
             $dp['email'], mb_substr(post('tamano'), 0, 40), $plan, mb_substr(post('mensaje'), 0, 600), $vend['id'] ?? null, ip_cliente(),
         ]);
         $sid = (int)db()->lastInsertId();
@@ -86,9 +86,8 @@ cabecera_publica('Solicitar demo · ' . marca());
         <div class="campo-ancho"><div class="aviso aviso-info" style="margin:0">✉ <b>Le enviaremos la clave de su demo a este correo: escríbalo bien.</b> La demo dura <?= dias_demo() ?> días. Todos los datos con * son obligatorios.</div></div>
         <div class="campo-ancho<?= $ec('organizacion') ?>"><label for="f-organizacion"><?= es_academia() ? 'Nombre de la academia *' : 'Nombre de la liga o escuela *' ?></label><input type="text" id="f-organizacion" name="organizacion" required minlength="3" maxlength="120" value="<?= e(post('organizacion')) ?>" autocomplete="organization"><?= $em('organizacion') ?></div>
         <div class="<?= $ec('contacto') ?>"><label for="f-contacto">Su nombre y apellido *</label><input type="text" id="f-contacto" name="contacto" required minlength="3" maxlength="80" value="<?= e(post('contacto')) ?>" autocomplete="name"><?= $em('contacto') ?></div>
-        <div class="<?= $ec('email') ?>"><label for="f-email">Correo *</label><input type="email" id="f-email" name="email" required maxlength="120" value="<?= e(post('email')) ?>" autocomplete="email" placeholder="ahí le llega la clave"><?= $em('email') ?></div>
         <div class="<?= $ec('celular') ?>"><label for="f-celular">Celular / WhatsApp *</label><input type="tel" id="f-celular" name="celular" required maxlength="20" pattern="\+?[0-9 \(\)\-]{9,22}" value="<?= e(post('celular')) ?>" autocomplete="tel" placeholder="0991234567"><?= $em('celular') ?></div>
-        <div class="<?= $ec('telefono') ?>"><label for="f-telefono">Teléfono de contacto *</label><input type="tel" id="f-telefono" name="telefono" required maxlength="20" pattern="\+?[0-9 \(\)\-]{7,22}" value="<?= e(post('telefono')) ?>" placeholder="fijo u otro número"><?= $em('telefono') ?></div>
+        <div class="campo-ancho<?= $ec('email') ?>"><label for="f-email">Correo *</label><input type="email" id="f-email" name="email" required maxlength="120" value="<?= e(post('email')) ?>" autocomplete="email" placeholder="ahí le llega la clave"><?= $em('email') ?></div>
         <div class="campo-ancho<?= $ec('direccion') ?>"><label for="f-direccion">Dirección *</label><input type="text" id="f-direccion" name="direccion" required minlength="5" maxlength="160" value="<?= e(post('direccion')) ?>" autocomplete="street-address" placeholder="Calle, número y referencia"><?= $em('direccion') ?></div>
         <div class="<?= $ec('ciudad') ?>"><label for="f-ciudad">Ciudad *</label><input type="text" id="f-ciudad" name="ciudad" required minlength="3" maxlength="80" value="<?= e(post('ciudad')) ?>" autocomplete="address-level2"><?= $em('ciudad') ?></div>
         <div><label for="f-tamano">Tamaño aproximado</label><input type="text" id="f-tamano" name="tamano" maxlength="40" value="<?= e(post('tamano')) ?>" placeholder="<?= es_academia() ? 'Ej: 80 alumnos, 3 profesores' : 'Ej: 16 equipos · 80 alumnos' ?>"></div>

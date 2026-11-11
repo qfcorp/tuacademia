@@ -3,7 +3,7 @@
  * (10 nov 2026) DEMOS AUTOMÁTICAS DE 3 DÍAS — la parte del programa (contrato fijo con el Panel Tukán Central).
  * Pedido de Dimitry: el interesado llena TODOS sus datos, la clave le llega a su correo (así sabemos que es verdadero) junto con
  * el manual y la guía de primeros pasos, y dentro de la demo tiene dónde bajarlos. El Panel crea la demo solo; aquí:
- *   1) El formulario «Solicitar demo» pide 7 datos obligatorios: nombre, nombre comercial, teléfono, celular, dirección, ciudad y
+ *   1) El formulario «Solicitar demo» pide 6 datos obligatorios: nombre, nombre comercial, celular (un solo teléfono), dirección, ciudad y
  *      correo (demo_validar_pedido). El Panel los ve en la solicitud «demo_pedida» con esas claves exactas (tukan_central.php).
  *   2) Apenas se guarda el pedido se avisa al Panel al instante (demo_avisar_panel): POST {Panel}/demo_aviso.php firmado con el
  *      token v2 tipo «demo». Máximo 5 segundos; si el Panel no contesta no pasa nada (lo verá en su revisión de cada 15 minutos).
@@ -15,17 +15,17 @@
  */
 
 const DEMO_DIAS_AUTO = 3;
-const DEMO_CAMPOS = ['nombre', 'nombre_comercial', 'telefono', 'celular', 'direccion', 'ciudad', 'email'];
+const DEMO_CAMPOS = ['nombre', 'nombre_comercial', 'celular', 'direccion', 'ciudad', 'email']; // (10 nov, 19:45) un solo teléfono: el celular
 
 /**
- * Columnas nuevas de solicitudes_demo (telefono_fijo, direccion, aviso_panel) y paso único de dias_demo 7 → 3.
- * En la tabla, «telefono» sigue siendo el celular / WhatsApp (como siempre) y «telefono_fijo» el teléfono de contacto.
+ * Columnas nuevas de solicitudes_demo (direccion, aviso_panel) y paso único de dias_demo 7 → 3.
+ * En la tabla, «telefono» es el celular / WhatsApp (como siempre). No se pide teléfono fijo: con un teléfono es suficiente (Dimitry).
  */
 function esquema_demos_auto(PDO $pdo): void
 {
     $cols = array_column($pdo->query('PRAGMA table_info(solicitudes_demo)')->fetchAll(PDO::FETCH_ASSOC), 'name');
     if (!$cols) return;
-    foreach (['telefono_fijo' => "TEXT NOT NULL DEFAULT ''", 'direccion' => "TEXT NOT NULL DEFAULT ''", 'aviso_panel' => "TEXT NOT NULL DEFAULT ''"] as $c => $def) {
+    foreach (['direccion' => "TEXT NOT NULL DEFAULT ''", 'aviso_panel' => "TEXT NOT NULL DEFAULT ''"] as $c => $def) {
         if (in_array($c, $cols, true)) continue;
         try {
             $pdo->exec("ALTER TABLE solicitudes_demo ADD COLUMN $c $def");
@@ -63,21 +63,19 @@ function demo_limpiar_telefono(string $t): string
 
 /**
  * Revisa los datos del formulario. Devuelve [datos limpios, errores por campo]. Claves del formulario (POST):
- * contacto (nombre), organizacion (nombre comercial), telefono, celular, direccion, ciudad, email.
+ * contacto (nombre), organizacion (nombre comercial), celular, direccion, ciudad, email.
  */
 function demo_validar_pedido(array $post): array
 {
     $t = fn(string $k, int $max) => mb_substr(trim(preg_replace('/\s+/u', ' ', (string)($post[$k] ?? ''))), 0, $max);
     $d = [
-        'contacto' => $t('contacto', 80), 'organizacion' => $t('organizacion', 120), 'telefono' => demo_limpiar_telefono((string)($post['telefono'] ?? '')),
+        'contacto' => $t('contacto', 80), 'organizacion' => $t('organizacion', 120),
         'celular' => demo_limpiar_telefono((string)($post['celular'] ?? '')), 'direccion' => $t('direccion', 160), 'ciudad' => $t('ciudad', 80),
         'email' => mb_strtolower(preg_replace('/\s+/u', '', (string)($post['email'] ?? ''))),
     ];
     $err = [];
     if (mb_strlen($d['contacto']) < 3) $err['contacto'] = 'Escriba su nombre y apellido.';
     if (mb_strlen($d['organizacion']) < 3) $err['organizacion'] = function_exists('es_academia') && es_academia() ? 'Escriba el nombre de su academia.' : 'Escriba el nombre de su liga o escuela.';
-    if ($d['telefono'] === '') $err['telefono'] = 'Escriba un teléfono de contacto.';
-    elseif (!preg_match('/^\+?\d{7,15}$/', $d['telefono'])) $err['telefono'] = 'El teléfono debe tener solo números (de 7 a 15), puede empezar con +.';
     if ($d['celular'] === '') $err['celular'] = 'Escriba su celular.';
     elseif (!preg_match('/^\+?\d{9,15}$/', $d['celular'])) $err['celular'] = 'El celular debe tener solo números (de 9 a 15), puede empezar con +. Ej: 0991234567.';
     elseif (str_starts_with($d['celular'], '0') && !preg_match('/^09\d{8}$/', $d['celular'])) $err['celular'] = 'Un celular de Ecuador tiene 10 números y empieza con 09. Ej: 0991234567.';
@@ -89,11 +87,11 @@ function demo_validar_pedido(array $post): array
     return [$d, $err];
 }
 
-/** Los 7 datos del contrato (claves exactas) a partir de una fila de solicitudes_demo. */
+/** Los datos del contrato (claves exactas) a partir de una fila de solicitudes_demo. «telefono» va con el mismo valor del celular (compatibilidad). */
 function demo_campos_contrato(array $s): array
 {
     return [
-        'nombre' => trim((string)$s['contacto']), 'nombre_comercial' => trim((string)$s['organizacion']), 'telefono' => (string)($s['telefono_fijo'] ?? ''),
+        'nombre' => trim((string)$s['contacto']), 'nombre_comercial' => trim((string)$s['organizacion']), 'telefono' => (string)$s['telefono'],
         'celular' => (string)$s['telefono'], 'direccion' => trim((string)($s['direccion'] ?? '')), 'ciudad' => trim((string)$s['ciudad']), 'email' => (string)$s['email'],
     ];
 }

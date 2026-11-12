@@ -30,7 +30,7 @@ La guía corta de 3 páginas sigue en [docs/TuAcademia_Primeros_Pasos.pdf](TuAca
 ## Reglas que cumple
 
 - Ningún precio del software. En las capturas los valores en dólares salen como «•••» (lo hace `capturas.py` y avisa si queda alguno).
-- Nunca dice «gratis». Todo por módulos. Contacto: WhatsApp 098 366 2181 · info@tukansoftware.com · tukansoftware.com.
+- Nunca dice «gratis». Todo por módulos. Contacto: WhatsApp 098 366 2181 · info@tukansoftware.com · tukansoftware.com · Grupo de ayuda en Telegram: https://t.me/+dQfU0W9yvo85MzRh.
 
 ## Cómo se vuelve a generar
 

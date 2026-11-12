@@ -987,9 +987,9 @@ function html_mi_plan_modulos(array $l, bool $puede_pedir): string
               <div class="mod-pie">
                 <?php if ($encendidos): ?><span class="etiqueta verde"><?= in_array($k, $m['del_plan'], true) ? 'En su plan' : (in_array($k, $m['elegidos'], true) ? 'Elegido · Incluido'
                       : 'Extra' . (($ver || $paga) && isset($por_extra[$k]) ? ' · ' . dinero($por_extra[$k]) . ' al mes' : '')) ?></span>
-                <?php else: ?><b><?= $puede_elegir ? 'Puede elegirlo en su plan' : ($ver ? dinero($x['precio_mensual']) . ' al mes' : 'Pedir cotización') ?></b>
+                <?php else: ?><b><?= $k === 'facturacion' ? 'Próximamente' : ($puede_elegir ? 'Puede elegirlo en su plan' : ($ver ? dinero($x['precio_mensual']) . ' al mes' : 'Pedir cotización')) ?></b>
                   <?php if (isset($pend[$k])): ?><span class="etiqueta amarilla">Pedido, por revisar</span>
-                  <?php elseif ($puede_pedir): ?><form method="post" class="inline"><?= csrf_campo() ?><input type="hidden" name="accion" value="pedir_modulo"><input type="hidden" name="modulo" value="<?= e($k) ?>"><button class="btn btn-chico"><?= $puede_elegir ? 'Elegir este módulo' : 'Solicitar este módulo' ?></button></form><?php endif; ?>
+                  <?php elseif ($puede_pedir && $k !== 'facturacion'): /* (12 nov 2026) TuFactura: Próximamente, no se pide */ ?><form method="post" class="inline"><?= csrf_campo() ?><input type="hidden" name="accion" value="pedir_modulo"><input type="hidden" name="modulo" value="<?= e($k) ?>"><button class="btn btn-chico"><?= $puede_elegir ? 'Elegir este módulo' : 'Solicitar este módulo' ?></button></form><?php endif; ?>
                 <?php endif; ?>
               </div>
             </div>

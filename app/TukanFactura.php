@@ -518,17 +518,11 @@ final class TukanFactura
            . '.tf-autorizado{background:#E3F4EA;color:#1D7A46}.tf-error,.tf-devuelta,.tf-no_autorizado{background:#FBE7E6;color:#B3261E}.tf-firmado,.tf-recibida,.tf-pendiente{background:#E7EEFB;color:#2C55A8}'
            . '.tf-fila{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.tf-fila form{margin:0}.tf-caja{overflow-x:auto}.tf-check{display:flex;gap:10px;align-items:center;margin:8px 0}</style>';
         if (empty($p['modulo'])) {
-            echo '<section class="bloque tarjeta"><h2>🧾 Factura electrónica del SRI con TuFactura</h2>'
-               . '<p>Cada cobro de ' . $e($prog) . ' puede salir como <strong>factura electrónica autorizada por el SRI</strong>, con un toque o sola al cobrar. Le llega al cliente por correo con el PDF y el XML.</p>'
+            echo '<section class="bloque tarjeta"><h2>🧾 Factura electrónica del SRI con TuFactura · Próximamente</h2>'
+               . '<p>Cada cobro de ' . $e($prog) . ' podrá salir como <strong>factura electrónica autorizada por el SRI</strong>, con un toque o sola al cobrar. Le llegará al cliente por correo con el PDF y el XML.</p>'
                . '<ul><li>Sin escribir dos veces: los datos del cliente y lo que cobraste pasan solos.</li><li>Tus facturas, notas de crédito y el paquete para el contador quedan en TuFactura.</li>'
-               . '<li>Puedes empezar en <strong>ambiente de pruebas</strong> (no vale ante el SRI) y pasar a facturas reales cuando estés listo.</li></ul>'
-               . '<p class="suave">Necesitas tu firma electrónica (.p12) y una cuenta de TuFactura de Tukán Software.</p>';
-            if (!empty($p['sin_compras'])) {   // app de Google Play: sin enlaces para comprar afuera
-                echo '<p class="suave">Pregunta a Tukán Software cómo activarla.</p></section>';
-                return (string) ob_get_clean();
-            }
-            if (!empty($p['pedir'])) echo '<p><a class="boton" href="' . $e($p['pedir']) . '">Quiero facturar con TuFactura</a></p>';
-            echo '<p class="suave">También puedes escribir a Tukán Software por <a href="https://wa.me/593983662181?text=' . rawurlencode('Hola, quiero facturar con TuFactura desde ' . $prog) . '">WhatsApp 098 366 2181</a>.</p></section>';
+               . '<li>Podrás empezar en <strong>ambiente de pruebas</strong> (no vale ante el SRI) y pasar a facturas reales cuando estés listo.</li></ul>'
+               . '<p><strong>TuFactura (facturación electrónica del SRI): Próximamente.</strong></p></section>';   // (12 nov 2026) todavía no se vende: sin precio ni botón para pedirla
             return (string) ob_get_clean();
         }
         $con = $this->conexion($negocio);

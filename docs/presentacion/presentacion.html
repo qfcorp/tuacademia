@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="es-EC">
+<head>
+<meta charset="utf-8">
+<title>TuAcademia · Presentación</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root { --marino: #14213D; --marino-2: #1D2C50; --amarillo: #EB7074; --naranja: #E1292F; --tinta: #1C2333; --suave: #5B6478; --fondo: #F4F5F8; }
+@page { size: 1920px 1080px; margin: 0; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; font-family: "DM Sans", sans-serif; color: var(--tinta); }
+section.diapo { width: 1920px; height: 1080px; position: relative; overflow: hidden; padding: 96px 120px; break-after: page; background: #fff; display: flex; flex-direction: column; }
+section.diapo.oscura { background: var(--marino); color: #fff; }
+h1, h2 { font-family: "Space Grotesk", sans-serif; margin: 0; line-height: 1.05; letter-spacing: -1.5px; }
+h2 { font-size: 72px; color: var(--marino); max-width: 1300px; }
+.oscura h2 { color: #fff; }
+h2 em, h1 em { font-style: normal; color: var(--amarillo); }
+.diapo:not(.oscura) h2 em { color: var(--marino); background: linear-gradient(transparent 62%, var(--amarillo) 62%); }
+.etiqueta { font-family: "Space Grotesk"; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; font-size: 22px; color: var(--naranja); margin-bottom: 22px; }
+.marca { font-family: "Space Grotesk"; font-weight: 700; font-size: 34px; }
+.marca i { color: var(--amarillo); font-style: normal; }
+.pie { position: absolute; left: 120px; right: 120px; bottom: 44px; display: flex; justify-content: space-between; font-size: 20px; color: var(--suave); }
+.oscura .pie { color: rgba(255,255,255,.6); }
+.franja { position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: linear-gradient(90deg, var(--amarillo) 0 72%, var(--naranja) 72%); }
+p.grande { font-size: 32px; line-height: 1.45; max-width: 980px; margin: 28px 0 0; }
+.oscura p.grande { color: rgba(255,255,255,.9); }
+.dos { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; flex: 1; }
+.dos.ancha { grid-template-columns: 640px 1fr; }
+ul.puntos { list-style: none; padding: 0; margin: 40px 0 0; font-size: 30px; line-height: 1.4; }
+ul.puntos li { padding-left: 52px; position: relative; margin-bottom: 22px; }
+ul.puntos li::before { content: ""; position: absolute; left: 0; top: 10px; width: 26px; height: 26px; border-radius: 8px; background: var(--amarillo); }
+ul.puntos b { color: var(--marino); }
+.oscura ul.puntos b { color: var(--amarillo); }
+.compu { width: 100%; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 70px rgba(20,33,61,.25); border: 1px solid #DDE1EA; background: #fff; }
+.compu .barra { height: 38px; background: #E9ECF2; display: flex; gap: 10px; align-items: center; padding: 0 16px; }
+.compu .barra span { width: 14px; height: 14px; border-radius: 50%; background: #C7CCD7; }
+.compu img { width: 100%; height: 680px; object-fit: cover; object-position: top left; display: block; }
+.cel { width: 330px; border: 12px solid #0A1530; border-radius: 48px; overflow: hidden; box-shadow: 0 30px 70px rgba(0,0,0,.35); background: #fff; }
+.cel img { width: 100%; height: 640px; object-fit: cover; object-position: top; display: block; }
+.celes { display: flex; gap: 50px; justify-content: center; align-items: flex-end; }
+.celes .cel:nth-child(2) { transform: translateY(-40px); }
+.portada h1 { font-size: 150px; color: #fff; margin-top: 120px; }
+.portada .bajada { font-size: 40px; max-width: 900px; line-height: 1.35; margin-top: 30px; color: rgba(255,255,255,.92); }
+.portada .celes { position: absolute; right: 120px; top: 150px; }
+.tarjetas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 60px; }
+.tarjeta { background: var(--fondo); border-radius: 22px; padding: 34px 30px; }
+.oscura .tarjeta { background: var(--marino-2); }
+.tarjeta .ico { font-size: 52px; }
+.tarjeta h3 { font-family: "Space Grotesk"; font-size: 30px; margin: 16px 0 10px; color: var(--marino); }
+.oscura .tarjeta h3 { color: var(--amarillo); }
+.tarjeta p { font-size: 22px; line-height: 1.4; margin: 0; color: var(--suave); }
+.oscura .tarjeta p { color: rgba(255,255,255,.8); }
+.modulos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 48px; }
+.modulo { background: var(--marino-2); border-radius: 16px; padding: 20px 22px; font-size: 23px; display: flex; gap: 14px; align-items: center; color: #fff; }
+.modulo span { font-size: 32px; }
+.planes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; margin-top: 60px; }
+.planc { border-radius: 26px; padding: 44px 40px; background: var(--fondo); }
+.planc.dest { background: var(--marino); color: #fff; }
+.planc h3 { font-family: "Space Grotesk"; font-size: 46px; margin: 0 0 10px; color: var(--marino); }
+.planc.dest h3 { color: var(--amarillo); }
+.planc p { font-size: 25px; line-height: 1.45; margin: 0; }
+.cierre { align-items: center; justify-content: center; text-align: center; }
+.cierre h2 { font-size: 130px; max-width: none; }
+.cierre .wa { margin-top: 50px; display: inline-flex; gap: 24px; align-items: center; background: var(--amarillo); color: var(--marino); font-family: "Space Grotesk"; font-weight: 700; font-size: 60px; padding: 26px 60px; border-radius: 999px; }
+.cierre .lema { font-size: 38px; margin-top: 56px; max-width: 1200px; line-height: 1.4; color: rgba(255,255,255,.92); }
+.cierre .lema b { color: var(--amarillo); }
+.cierre .web { margin-top: 30px; font-size: 28px; color: rgba(255,255,255,.7); }
+</style>
+</head>
+<body>
+
+<section class="diapo oscura portada">
+  <div class="marca">tukán<i>.</i></div>
+  <h1>Tu<em>Academia</em></h1>
+  <p class="bajada">El sistema para academias de baile, música, deportes y natación de Ecuador.</p>
+  <ul class="puntos" style="max-width:860px;font-size:32px"><li>Cursos, <b>alumnos y asistencia</b> en un solo lugar</li><li><b>Pensiones</b> claras, sin perseguir a nadie</li><li>Padres con su <b>portal</b> en el celular</li></ul>
+  <div class="celes"><div class="cel"><img src="../manual/capturas/03_resumen_celular.png" alt=""></div><div class="cel"><img src="../manual/capturas/15_asistencia_celular.png" alt=""></div></div>
+  <div class="pie"><span>tuacademia.tukanec.com</span><span>Tukán Software</span></div>
+  <div class="franja"></div>
+</section>
+
+<section class="diapo">
+  <div class="etiqueta">El día a día de una academia</div>
+  <h2>¿Te suena <em>alguno</em> de estos problemas?</h2>
+  <div class="tarjetas"><div class="tarjeta"><div class="ico">📒</div><h3>Cuaderno de asistencia</h3><p>Listas en papel, alumnos que no aparecen y nadie sabe quién faltó.</p></div><div class="tarjeta"><div class="ico">💸</div><h3>Pensiones sin control</h3><p>No sabes quién pagó, quién debe y a quién recordarle cada mes.</p></div><div class="tarjeta"><div class="ico">📱</div><h3>Mensajes a toda hora</h3><p>Padres que preguntan horarios y valores por WhatsApp a medianoche.</p></div><div class="tarjeta"><div class="ico">🎭</div><h3>Recitales a última hora</h3><p>Coreografías, vestuario y alumnos anotados en cien hojas.</p></div></div>
+  <div class="pie"><span>TuAcademia · Tukán Software</span><span>2</span></div>
+</section>
+
+<section class="diapo">
+  <div class="etiqueta">Cursos y horarios</div>
+  <div class="dos ancha">
+    <div>
+      <h2>Tus cursos <em>ordenados</em>.</h2>
+      <ul class="puntos"><li>Baile, música, deportes y natación: cada curso con su <b>profesor, horario y cupo</b></li><li>Alumnos inscritos en uno o varios cursos</li><li>Lo ves todo desde el <b>celular</b></li></ul>
+    </div>
+    <div class="compu"><div class="barra"><span></span><span></span><span></span></div><img src="../manual/capturas/09_cursos.png" alt=""></div>
+  </div>
+  <div class="pie"><span>TuAcademia · Tukán Software</span><span>3</span></div>
+</section>
+
+<section class="diapo oscura">
+  <div class="etiqueta">Alumnos</div>
+  <div class="dos ancha">
+    <div>
+      <h2>Cada alumno, <em>su ficha</em>.</h2>
+      <ul class="puntos"><li>Datos del alumno y de su <b>representante</b></li><li>Cursos, pagos y asistencia en un solo lugar</li><li>Subida de alumnos <b>desde Excel</b></li></ul>
+    </div>
+    <div class="compu"><div class="barra"><span></span><span></span><span></span></div><img src="../manual/capturas/14_ficha_alumno.png" alt=""></div>
+  </div>
+  <div class="pie"><span>TuAcademia · Tukán Software</span><span>4</span></div>
+</section>
+
+<section class="diapo">
+  <div class="etiqueta">Asistencia</div>
+  <div class="dos">
+    <div>
+      <h2>Asistencia con <em>un toque</em>.</h2>
+      <ul class="puntos"><li>El profesor toma lista <b>desde su celular</b></li><li>Historial por alumno y por curso</li><li>Menos papel y menos discusiones</li></ul>
+    </div>
+    <div class="celes"><div class="cel"><img src="../manual/capturas/15_asistencia_celular.png" alt=""></div><div class="cel"><img src="../manual/capturas/35_profesora_celular.png" alt=""></div></div>
+  </div>
+  <div class="pie"><span>TuAcademia · Tukán Software</span><span>5</span></div>
+</section>
+
+<section class="diapo oscura">
+  <div class="etiqueta">Pensiones y cobros</div>
+  <div class="dos ancha">
+    <div>
+      <h2>Cobra <em>sin perseguir</em> a nadie.</h2>
+      <ul class="puntos"><li>Quién pagó, quién debe y <b>cuánto</b></li><li>Recibos y comprobantes de transferencia por revisar</li><li>Caja del mes siempre clara</li></ul>
+    </div>
+    <div class="compu"><div class="barra"><span></span><span></span><span></span></div><img src="../manual/capturas/19_pagos.png" alt=""></div>
+  </div>
+  <div class="pie"><span>TuAcademia · Tukán Software</span><span>6</span></div>
+</section>
+
+<section class="diapo">
+  <div class="etiqueta">Portal de padres</div>
+  <div class="dos">
+    <div>
+      <h2>Las familias ven <em>lo suyo</em>.</h2>
+      <ul class="puntos"><li>Estado de la pensión y comprobantes</li><li>Inscripción en línea desde la <b>página de tu academia</b></li><li>Recordatorios y avisos por WhatsApp</li></ul>
+    </div>
+    <div class="celes"><div class="cel"><img src="../manual/capturas/30_portal_padres.png" alt=""></div><div class="cel"><img src="../manual/capturas/34_inscripcion.png" alt=""></div></div>
+  </div>
+  <div class="pie"><span>TuAcademia · Tukán Software</span><span>7</span></div>
+</section>
+
+<section class="diapo oscura">
+  <div class="etiqueta">Niveles y recitales</div>
+  <div class="dos ancha">
+    <div>
+      <h2>Niveles, exámenes y <em>recitales</em>.</h2>
+      <ul class="puntos"><li>Niveles de fábrica para baile, música y natación</li><li>Certificados al aprobar el examen</li><li>Arma el recital por coreografías u obras, con sus alumnos</li></ul>
+    </div>
+    <div class="compu"><div class="barra"><span></span><span></span><span></span></div><img src="../manual/capturas/26_recital.png" alt=""></div>
+  </div>
+  <div class="pie"><span>TuAcademia · Tukán Software</span><span>8</span></div>
+</section>
+
+<section class="diapo">
+  <div class="etiqueta">Todo tu equipo</div>
+  <h2>Cada uno ve <em>lo suyo</em>.</h2>
+  <div class="tarjetas"><div class="tarjeta"><div class="ico">🧑‍🏫</div><h3>Profesores</h3><p>Ven sus cursos, toman lista y ven su pago del mes.</p></div><div class="tarjeta"><div class="ico">🛎️</div><h3>Secretaría</h3><p>Inscribe y cobra sin ver tus cuentas.</p></div><div class="tarjeta"><div class="ico">🛡️</div><h3>Hasta 4 administradores</h3><p>Con tu mismo nivel, y no cuentan como personas del plan.</p></div><div class="tarjeta"><div class="ico">📲</div><h3>Avisos en el celular</h3><p>Pagos y pendientes llegan solos por Telegram.</p></div></div>
+  <div class="pie"><span>TuAcademia · Tukán Software</span><span>9</span></div>
+</section>
+
+<section class="diapo oscura">
+  <div class="etiqueta">Por módulos</div>
+  <h2>Enciendes solo lo que <em>usas</em>.</h2>
+  <div class="modulos"><div class="modulo"><span>👨‍👩‍👦</span>Portal de padres e inscripción</div><div class="modulo"><span>🧑‍🏫</span>Profesores y rol de pago</div><div class="modulo"><span>📅</span>Planificación de clases</div><div class="modulo"><span>📏</span>Evaluaciones y libreta</div><div class="modulo"><span>🎖️</span>Niveles, exámenes y certificados</div><div class="modulo"><span>🎭</span>Recitales y presentaciones</div><div class="modulo"><span>🎹</span>Clases particulares</div><div class="modulo"><span>🛍</span>Tienda e inventario</div><div class="modulo"><span>🪪</span>Carnets con QR</div><div class="modulo"><span>🎬</span>Videos del alumno</div><div class="modulo"><span>📥</span>Subida masiva desde Excel</div><div class="modulo"><span>📲</span>Avisos por Telegram</div><div class="modulo"><span>💳</span>Cobros con tarjeta</div><div class="modulo"><span>📒</span>Contabilidad con importador del SRI</div><div class="modulo"><span>🌐</span>Dominio propio</div><div class="modulo"><span>✨</span>Asistente IA</div></div>
+  <div class="pie"><span>TuAcademia · Tukán Software</span><span>10</span></div>
+</section>
+
+<section class="diapo">
+  <div class="etiqueta">Ayuda e IA</div>
+  <div class="dos ancha">
+    <div>
+      <h2>Una ayuda que <em>responde</em>.</h2>
+      <ul class="puntos"><li><b>Ayuda</b> en todos los planes: pregunta «¿cómo hago…?» y responde con el manual</li><li><b>Asistente IA</b>: lee fotos de documentos y llena los datos por ti</li><li>Lo importante siempre lo confirma una persona</li></ul>
+    </div>
+    <div class="compu"><div class="barra"><span></span><span></span><span></span></div><img src="../manual/capturas/02_resumen.png" alt=""></div>
+  </div>
+  <div class="pie"><span>TuAcademia · Tukán Software</span><span>11</span></div>
+</section>
+
+<section class="diapo">
+  <div class="etiqueta">Planes</div>
+  <h2>Empieza donde está <em>tu academia</em>.</h2>
+  <ul class="puntos"><li><b>Básico:</b> la base de TuAcademia y <b>3 módulos que tú eliges</b></li><li><b>Completo:</b> todos los módulos, con el Asistente IA</li><li>En el Básico puedes sumar más módulos y más disciplinas. Pide tu cotización. Apagar un módulo nunca borra tus datos.</li></ul>
+  <div class="pie"><span>TuAcademia · Tukán Software</span><span>12</span></div>
+</section>
+
+<section class="diapo">
+  <div class="etiqueta">Factura electrónica</div>
+  <h2>Factura del SRI con <em>TuFactura</em> · Próximamente</h2>
+  <ul class="puntos"><li>Cada pensión o cobro saldrá como factura autorizada por el SRI</li><li>Con un toque o sola al cobrar, y le llegará a la familia por correo</li><li>TuFactura (facturación electrónica del SRI): Próximamente</li></ul>
+  <div class="pie"><span>TuAcademia · Tukán Software</span><span>13</span></div>
+</section>
+
+<section class="diapo oscura cierre">
+  <div class="marca">tukán<i>.</i></div>
+  <h2 style="margin-top:40px">Pida su <em>demo</em></h2>
+  <div class="wa">WhatsApp 098 366 2181</div>
+  <p class="lema"><b>Todo es por módulos:</b> usted elige los módulos que necesita y paga solo por eso. Se cotiza según lo que use y sin permanencia.</p>
+  <p class="web">tuacademia.tukanec.com · tukansoftware.com · info@tukansoftware.com</p>
+  <p class="web" style="margin-top:12px">Grupo de ayuda en Telegram: https://t.me/+dQfU0W9yvo85MzRh</p>
+  <div class="franja"></div>
+</section>
+
+</body>
+</html>

@@ -48,15 +48,14 @@ SOLO_PDF=1 bash docs/manual/generar/generar.sh   # solo vuelve a armar los PDF c
 El mismo PDF se copia a `public/assets/manual/Manual-TuAcademia-Academias.pdf`: en modo academia la página `/manual`
 del programa (`app/publico/manual.php`) muestra el botón «⬇ Descargar PDF». En modo ligas (TuVocalía) no cambia nada.
 
-## Factura electrónica con TuFactura (módulo aparte, viene apagado)
+## Factura electrónica con TuFactura (módulo aparte, viene apagado) — Próximamente
 *9 nov 2026*
 
 Con este módulo, los recibos de las mensualidades y cobros (y, en ligas, los pagos de equipos, reservas y entradas) sale como **factura electrónica autorizada por el SRI** y le llega al cliente por correo.
 
 **Cómo se consigue**
-- **TuFactura cuesta $30 + IVA al año** y este enlace va incluido. En TuAcademia el módulo cuesta $0.
-- Pídelo a Tukán Software. Tukán crea tu cuenta de TuFactura y enciende el módulo desde el Panel Tukán Central.
-- No viene en ningún plan ni en la demo.
+- **TuFactura (facturación electrónica del SRI): Próximamente.** Todavía no se puede pedir.
+- Cuando esté disponible, Tukán Software te avisará. No viene en ningún plan ni en la demo.
 
 **Conectar tu cuenta** (una sola vez, el administrador)
 1. En TuFactura, abre **Configuración → Conexiones** y crea una clave para el punto de emisión que vas a usar. La clave empieza con `tf_`.

@@ -79,7 +79,7 @@ print('== Pantalla apagada')
 s = entrar('liga@prueba.com' if HAY_LIGA else 'escuela@prueba.com')
 CW = LIGA if HAY_LIGA else ESC   # la cuenta que se prueba por la web
 r = s.get(B + 'admin.php?p=tufactura')
-chk(r.status_code == 200 and '<h1>🧾 Factura electrónica</h1>' in r.text and 'Conoce TuFactura' not in r.text and 'TuFactura' in r.text and 'value="conectar"' not in r.text, 'la pantalla abre y explica TuFactura, sin formulario para conectar')
+chk(r.status_code == 200 and '<h1>🧾 Factura electrónica</h1>' in r.text and 'Conoce TuFactura' not in r.text and 'TuFactura' in r.text and 'value="conectar"' not in r.text and 'Próximamente' in r.text and 'Quiero facturar' not in r.text, 'la pantalla abre y explica TuFactura, dice Próximamente y no deja pedirla')
 chk('p=tufactura' in s.get(B + 'admin.php').text, 'el menú tiene «Factura electrónica»')
 
 if HAY_LIGA:

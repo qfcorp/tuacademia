@@ -622,3 +622,5 @@ El Panel Tukán Central crea la demo solo y le manda la clave al correo del inte
   **13/13** (modo ligas), conector v1 **125/125**, v2 **394/394**, módulos **108/108**, cancelar plan **11/11**, usuarios **43/43**,
   IA **92/92**, demos automáticas **97/97**, TuFactura **19/19**, identidad gráfica **39/39** (modo academia y modo ligas),
   recorrido 20 min sin errores de PHP, Plux 3DS **4/4**.
+
+- 13 nov 2026: **Aviso de datos reales en el formulario de demo** (pedido de Dimitry): sin datos verdaderos no se prepara la demo. Prueba nueva (`data-aviso-datos-reales`).

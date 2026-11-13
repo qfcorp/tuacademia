@@ -39,6 +39,8 @@ bash docs/manual/generar/generar.sh          # base de prueba nueva + Academia D
 SOLO_PDF=1 bash docs/manual/generar/generar.sh   # solo vuelve a armar los PDF con las capturas que ya hay
 ```
 
+- **App de iPhone: sin precios ni pagos (regla de Apple), se reconoce por TukanIOS** (13 nov 2026): dentro de la app de iPhone el manual y la Ayuda
+  se muestran sin los capítulos de Mi plan, renovar, cancelar y cotizar (`ios_limpiar_manual()` en `app/app_ios.php`); el archivo no cambia.
 - `docs/manual/manual.html`: el texto del manual (se edita aquí). `generar.sh` lo copia a `app/manuales/academia.html`: lo lee la Ayuda del programa.
 - `docs/manual/generar/capturas.py`: capturas reales con Playwright (celular 390 px y computadora 1280 px); con `--guia` también las de la guía Primeros pasos.
 - `docs/manual/generar/pdf.py`: HTML → PDF A4 con índice de páginas.

@@ -122,7 +122,7 @@ final class FacturaTukan
     {
         $lid = (int) $liga['id'];
         $tf = self::enlace();
-        $app = function_exists('en_app_android') && en_app_android();
+        $app = function_exists('en_app_tienda') && en_app_tienda(); // (13 nov 2026) Google Play o iPhone: sin compras ni «pedir»
         if (!self::activo($liga)) {
             echo $tf->pantalla($lid, ['modulo' => false, 'programa' => self::programa(), 'sin_compras' => $app, 'pedir' => $app ? null : 'admin.php?p=mi_plan#modulos']);
             return;

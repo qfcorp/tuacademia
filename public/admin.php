@@ -93,7 +93,7 @@ if (!puede_pagina($p)) {
 }
 // (v12) Módulos del plan: si el plan de la liga o escuela no incluye esa sección, se ofrece cambiar de plan
 if (!es_super() && ($mod_p = modulo_de_pagina($p)) !== '' && liga_trabajo() && !modulo_activo(liga_trabajo(), $mod_p)) {
-    flash('Su plan no incluye «' . nombre_modulo($mod_p) . '». Puede cambiar de plan aquí.', 'error');
+    flash('Su plan no incluye «' . nombre_modulo($mod_p) . '».' . texto_app_ios(' Puede cambiar de plan aquí.', ''), 'error'); // (13 nov 2026) iPhone: sin «cambie de plan»
     ir('admin.php?p=mi_plan');
 }
 if (es_post() && !in_array($p, ['seguridad', 'clave'], true) && !puede_pagina($p, true, post('accion'))) {
@@ -113,7 +113,7 @@ if (liga_trabajo() && in_array($p, ['torneo', 'carrera', 'duelo', 'bolos', 'prue
             flash('Este campeonato es del módulo ' . nombre_modulo_deporte(modulo_de_modalidad($mod_t)) . ', que su cuenta no tiene: puede verlo pero no cambiarlo. Agregue el módulo en ⭐ Mi plan.', 'error');
             ir($_SERVER['HTTP_REFERER'] ?? 'admin.php?p=torneos');
         }
-        if (!es_post()) flash('🔒 Este campeonato es del módulo ' . nombre_modulo_deporte(modulo_de_modalidad($mod_t)) . ', que su cuenta no tiene. Puede verlo, pero para cambiarlo agregue el módulo en ⭐ Mi plan.', 'error');
+        if (!es_post()) flash('🔒 Este campeonato es del módulo ' . nombre_modulo_deporte(modulo_de_modalidad($mod_t)) . ', que su cuenta no tiene. Puede verlo, pero ' . texto_app_ios('para cambiarlo agregue el módulo en ⭐ Mi plan.', 'no cambiarlo.'), 'error');
     }
 }
 require APP_DIR . '/admin/comun.php';

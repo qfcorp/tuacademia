@@ -186,8 +186,8 @@ function exigir_modalidad(?array $liga, string $mod): void
 {
     if (modalidad_permitida($liga, $mod)) return;
     $k = modulo_de_modalidad($mod);
-    throw new RuntimeException('Su cuenta no tiene el módulo ' . nombre_modulo_deporte($k) . '. Para usar ' . nombre_modalidad($mod)
-        . ' agréguelo en ⭐ Mi plan o pídalo a ' . ajuste('empresa', 'QF Producciones') . '.');
+    throw new RuntimeException('Su cuenta no tiene el módulo ' . nombre_modulo_deporte($k) . '.' . texto_app_ios(' Para usar ' . nombre_modalidad($mod)
+        . ' agréguelo en ⭐ Mi plan o pídalo a ' . ajuste('empresa', 'QF Producciones') . '.', '')); // (13 nov 2026) iPhone: sin «agréguelo»
 }
 
 function exigir_deporte_escuela(?array $liga, string $d): void
@@ -636,7 +636,7 @@ function html_casillas_modulos(array $sel, string $campo = 'deportes', bool $con
 /** Tarjeta "Agregue más deportes": los módulos que la cuenta no tiene (para Campeonatos, Grupos, Mi plan). */
 function html_modulos_bloqueados(?array $liga): string
 {
-    if (!$liga) return '';
+    if (!$liga || en_app_ios()) return ''; // (13 nov 2026) en el iPhone no se ofrecen módulos para agregar
     $faltan = array_diff_key(modulos_deporte(true), array_flip(deportes_liga($liga)));
     if (!$faltan) return '';
     $ver = ver_precios_software(); // (20 oct 2026) el cliente no ve el precio por deporte o disciplina: «por cotización»
@@ -659,5 +659,5 @@ function html_modulos_bloqueados(?array $liga): string
 function html_aviso_modulo_bloqueado(array $t): string
 {
     $k = modulo_de_torneo($t);
-    return '<div class="aviso aviso-error">🔒 Este campeonato es del módulo <b>' . e(nombre_modulo_deporte($k)) . '</b>, que su cuenta ya no tiene. Puede verlo, pero para cambiarlo agregue el módulo en <a href="admin.php?p=mi_plan#contratar">⭐ Mi plan</a>.</div>';
+    return '<div class="aviso aviso-error">🔒 Este campeonato es del módulo <b>' . e(nombre_modulo_deporte($k)) . '</b>, que su cuenta ya no tiene. Puede verlo, pero ' . texto_app_ios('para cambiarlo agregue el módulo en <a href="admin.php?p=mi_plan#contratar">⭐ Mi plan</a>.', 'no cambiarlo.') . '</div>';
 }

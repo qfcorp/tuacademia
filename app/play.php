@@ -5,7 +5,7 @@
  * Hay 3 formas de usar TuAcademia en el celular:
  *  - Navegador / PWA (como siempre): precios normales.
  *  - APK directo (com.tukan.tuacademia.directo, se baja de tuacademia.tukanec.com/descargar.php): precios normales.
- *  - App de Google Play (com.tukan.tuacademia): el plan se paga DENTRO de la app con Google Play (regla de Google),
+ *  - App de Google Play (com.tukansoftware.tuacademia; abre /app.php?origen=play): el plan se paga DENTRO de la app con Google Play (regla de Google),
  *    con precios más altos (ajuste play_factor, 20 % por defecto, redondeado hacia arriba a 0,50) porque Google cobra comisión.
  *
  * Cómo se sabe desde dónde entra: cada app abre /app.php?origen=play|apk|web y eso guarda la cookie tv_app.
@@ -22,12 +22,18 @@
  * (purchases.subscriptionsv2), la reconoce (acknowledge) y activa el plan. Cada 6 horas revisa las renovaciones.
  */
 
-const PLAY_PAQUETE = 'com.tukan.tuacademia';
+/** (13 nov 2026) Paquete real de la app de Google Play (repositorio qfcorp/tukan-apps, apps/tuacademia/app.json). */
+const PLAY_PAQUETE = 'com.tukansoftware.tuacademia';
 const APK_PAQUETE = 'com.tukan.tuacademia.directo';
 /**
- * Huella SHA-256 de la llave con la que firmamos (subida a Google Play y APK directo). La de Google se agrega en el panel.
- * TuAcademia TODAVÍA NO TIENE LLAVE: hay que generar una nueva (no se usa la de TuVocalía). Ver BLOC_DE_NOTAS.md → "Apps Android".
- * Cuando exista, se pone aquí o en app/config.php: 'huella_firma' => 'AA:BB:...'.
+ * (13 nov 2026) Huella SHA-256 de la LLAVE DE SUBIDA DE TUKÁN (tukan-apps/llave): con ella se firma el .aab de TuAcademia, como
+ * todas las apps Tukán. Siempre va en /.well-known/assetlinks.json de la app de Google Play (cuando Google Play está encendido).
+ * La de «Firma de apps» de Google se agrega después de la primera subida (Súper → 📱 Google Play, o sudo bash vps/app_android.sh HUELLA).
+ */
+const PLAY_HUELLA_SUBIDA = '39:0C:08:10:D4:40:C1:71:C4:30:C8:D0:F1:93:7B:8F:E4:37:03:25:27:2E:B2:F6:2E:4E:A6:5E:01:98:40:DC';
+/**
+ * Huella de la llave del APK directo (com.tukan.tuacademia.directo), opcional: app/config.php 'huella_firma' => 'AA:BB:...'.
+ * Sin ella el APK directo no sale en assetlinks (la app de Google Play no la necesita: usa PLAY_HUELLA_SUBIDA).
  */
 define('TV_HUELLA_FIRMA', strtoupper(trim((string)(CFG['huella_firma'] ?? ''))));
 
@@ -186,7 +192,8 @@ function play_productos(): array
                 'periodo' => play_periodo_iso($o['meses']), 'precio_web' => $o['precio_web'], 'precio' => $o['precio']];
         }
     }
-    foreach (modulos_deporte(true) as $k => $m) {
+    // (13 nov 2026) En TuAcademia en Google Play solo se venden los dos planes (Básico y Completo): las disciplinas adicionales no
+    foreach (es_academia() ? [] : modulos_deporte(true) as $k => $m) {
         $w = precio_web_modulo_extra($k);
         if ($w <= 0) continue;
         $id = play_id_modulo($k);
@@ -561,7 +568,8 @@ function play_crear_productos(): array
 
 function play_huellas(): array
 {
-    $h = TV_HUELLA_FIRMA !== '' ? [TV_HUELLA_FIRMA] : []; // (TuAcademia) sin llave propia todavía
+    $h = [PLAY_HUELLA_SUBIDA]; // (13 nov 2026) llave de subida de Tukán
+    if (TV_HUELLA_FIRMA !== '') $h[] = TV_HUELLA_FIRMA;
     foreach (preg_split('/[\s,;]+/', strtoupper((string)ajuste('play_huellas', ''))) as $x) {
         $x = trim($x);
         if (preg_match('/^([0-9A-F]{2}:){31}[0-9A-F]{2}$/', $x)) $h[] = $x;
@@ -574,8 +582,8 @@ function play_assetlinks(): array
 {
     $rel = ['delegate_permission/common.handle_all_urls'];
     $r = [];
-    // (TuAcademia) solo se publica cada app si tiene huella (sin llave todavía, la lista queda vacía)
-    if (play_permitido() && play_huellas()) $r[] = ['relation' => $rel, 'target' => ['namespace' => 'android_app', 'package_name' => play_paquete(), 'sha256_cert_fingerprints' => play_huellas()]];
+    // (13 nov 2026) la app de Google Play sale cuando Google Play está encendido (app/config.php 'google_play' => true; lo deja vps/app_android.sh)
+    if (play_permitido()) $r[] = ['relation' => $rel, 'target' => ['namespace' => 'android_app', 'package_name' => play_paquete(), 'sha256_cert_fingerprints' => play_huellas()]];
     if (TV_HUELLA_FIRMA !== '') $r[] = ['relation' => $rel, 'target' => ['namespace' => 'android_app', 'package_name' => APK_PAQUETE, 'sha256_cert_fingerprints' => [TV_HUELLA_FIRMA]]];
     return $r;
 }
@@ -639,7 +647,7 @@ function html_mi_plan_play(array $liga, array $planes): string
         if (!$ops) continue;
         $h .= '<div class="plan"><h3>' . e($pl['nombre']) . '</h3><p class="suave" style="margin:0 0 6px">' . e((string)$pl['eslogan']) . '</p><ul>';
         foreach (textos_limites_plan($pl, $tipo) as $t) $h .= '<li>' . e($t) . '</li>';
-        $h .= '<li>' . e('Incluye 1 deporte') . '</li></ul>';
+        $h .= (es_academia() ? '' : '<li>' . e('Incluye 1 deporte') . '</li>') . '</ul>';
         foreach ($ops as $o) {
             $h .= '<button type="button" class="btn btn-grande play-comprar" style="margin-bottom:6px" data-producto="' . e($o['play_id']) . '">▶ <span class="play-precio" data-producto="' . e($o['play_id']) . '">' . dinero($o['precio']) . '</span> ' . e($o['texto'])
                 . ($o['gratis'] ? ' <small>(' . texto_ahorro($o['gratis']) . ')</small>' : '') . '</button>';
@@ -647,6 +655,9 @@ function html_mi_plan_play(array $liga, array $planes): string
         $h .= '</div>';
     }
     $h .= '</div>';
+    if (es_academia()) { // (13 nov 2026) en TuAcademia en Google Play solo se venden los dos planes
+        return $h . '<p class="suave" style="font-size:.85rem">Los pagos los cobra Google Play y se renuevan solos hasta que los cancele en Google Play. Los precios pueden variar según su país; el valor exacto lo muestra Google antes de pagar.</p></div><script src="assets/play.js?v=380"></script>';
+    }
     // Deportes adicionales
     $mods = modulos_deporte(true);
     $tiene = deportes_liga($liga);
@@ -707,6 +718,88 @@ CREATE INDEX IF NOT EXISTS idx_play_compras_liga ON play_compras(liga_id);
 SQL);
     // (TuAcademia) la novedad «ahora es app para Android» se publica cuando exista la app (todavía no hay llave ni APK)
     guardar_ajuste('play_esquema', '1');
+}
+
+/* ============================================================
+ * 10) CUENTA PARA EL REVISOR DE GOOGLE (13 nov 2026)
+ * Google pide una cuenta de prueba para revisar la app. Se arma una ACADEMIA DE EJEMPLO aparte («Academia Ejemplo Tukán», datos
+ * inventados, con la misma receta de la Academia Demo) y el usuario revisor.google@tukanec.com (dueño/administrador de esa academia),
+ * con el plan Completo activo por 1 año sin pagos a Tukán. La crea y la borra app/revisor_google.php (solo CLI; la clave sale una vez).
+ * Nunca toca otra academia ni otro usuario.
+ * ============================================================ */
+
+const REVISOR_GOOGLE_CORREO = 'revisor.google@tukanec.com';
+const REVISOR_GOOGLE_ACADEMIA = 'Academia Ejemplo Tukán';
+const REVISOR_GOOGLE_SLUG = 'academia-ejemplo-tukan';
+
+/** Academia de ejemplo del revisor (null si no existe). */
+function revisor_google_academia(): ?array
+{
+    return fila('SELECT * FROM ligas WHERE slug = ?', [REVISOR_GOOGLE_SLUG]);
+}
+
+/** Plan Completo de TuAcademia (o, si no está, el plan activo de academias más caro). */
+function revisor_google_plan(): ?array
+{
+    return fila("SELECT * FROM planes WHERE slug = 'academia-completo' AND activo = 1")
+        ?? fila("SELECT * FROM planes WHERE activo = 1 AND tipo_cuenta IN ('escuela', 'ambos') ORDER BY precio_mensual DESC, id DESC LIMIT 1");
+}
+
+/** Revisa que el correo y la dirección del revisor no sean de otra cuenta (si lo son, se niega). */
+function revisor_google_revisar(?array $l): void
+{
+    $u = fila('SELECT * FROM usuarios WHERE lower(email) = ?', [REVISOR_GOOGLE_CORREO]);
+    if ($u && $u['rol'] === 'super') throw new RuntimeException('El correo ' . REVISOR_GOOGLE_CORREO . ' es de un superadministrador: no se toca.');
+    if ($l && ($l['origen'] ?? '') !== 'google_play') throw new RuntimeException('La dirección ' . REVISOR_GOOGLE_SLUG . ' es de otra academia (no la del revisor): no se toca.');
+    if ($u && (!$l || (int)$u['liga_id'] !== (int)$l['id'])) throw new RuntimeException('El correo ' . REVISOR_GOOGLE_CORREO . ' es de otra cuenta: no se toca.');
+}
+
+/**
+ * Crea (o vuelve a crear con fechas de hoy y clave nueva) la academia de ejemplo y su usuario.
+ * Devuelve ['clave', 'liga_id', 'alumnos', 'cursos', 'plan', 'vence'].
+ */
+function revisor_google_crear(): array
+{
+    $l = revisor_google_academia();
+    revisor_google_revisar($l);
+    if ($l) revisor_google_borrar();
+    $clave = 'Demo-' . random_int(100000, 999999);
+    $pl = revisor_google_plan();
+    $vence = date('Y-m-d', strtotime('+1 year'));
+    $lid = crear_academia_demo([
+        'liga' => [
+            'nombre' => REVISOR_GOOGLE_ACADEMIA, 'slug' => REVISOR_GOOGLE_SLUG, 'ciudad' => 'Ciudad Ejemplo', 'color' => '#5b2b8a',
+            'admin_nombre' => 'Revisor de Google Play', 'admin_email' => REVISOR_GOOGLE_CORREO, 'admin_clave' => $clave,
+            'plan_id' => $pl['id'] ?? null, 'vence' => $vence, 'origen' => 'google_play',
+        ],
+        'semilla' => 'revisor-google',
+    ]);
+    sin_auditoria(function () use ($lid): void {
+        q("UPDATE ligas SET contacto_nombre = 'Revisión de Google Play', es_prueba = 0, es_demo = 0, notas_admin = ? WHERE id = ?",
+            ['Cuenta de ejemplo para el revisor de Google Play (datos inventados, sin pagos a Tukán). Se borra con: php app/revisor_google.php borrar', $lid]);
+        q("UPDATE usuarios SET perfil = 'admin', totp_activo = 0, totp_secreto = '' WHERE liga_id = ? AND lower(email) = ?", [$lid, REVISOR_GOOGLE_CORREO]);
+        // Sin teléfonos que puedan ser de alguien de verdad (los botones de WhatsApp de «Mensajes de hoy» van a un número de ejemplo)
+        q("UPDATE esc_alumnos SET representante_telefono = '0990000000', emergencia_telefono = '0990000000' WHERE liga_id = ?", [$lid]);
+        q("UPDATE esc_profesores SET telefono = '' WHERE liga_id = ?", [$lid]);
+    });
+    bitacora_evento('ligas', 'Creó la cuenta de ejemplo para el revisor de Google Play (' . REVISOR_GOOGLE_CORREO . ')', $lid, $lid);
+    return ['clave' => $clave, 'liga_id' => $lid, 'plan' => (string)($pl['nombre'] ?? ''), 'vence' => $vence,
+        'alumnos' => (int)valor('SELECT COUNT(*) FROM esc_alumnos WHERE liga_id = ?', [$lid]),
+        'cursos' => (int)valor('SELECT COUNT(*) FROM esc_grupos WHERE liga_id = ?', [$lid])];
+}
+
+/** Borra la academia de ejemplo del revisor y sus usuarios (solo esa: la de esa dirección y origen Google Play). Devuelve 1 o 0. */
+function revisor_google_borrar(): int
+{
+    $l = revisor_google_academia();
+    revisor_google_revisar($l);
+    if (!$l) return 0;
+    sin_auditoria(function () use ($l): void {
+        q('DELETE FROM usuarios WHERE liga_id = ?', [$l['id']]);
+        q('DELETE FROM ligas WHERE id = ?', [$l['id']]);
+    });
+    bitacora_evento('ligas', 'Borró la cuenta de ejemplo del revisor de Google Play (' . REVISOR_GOOGLE_CORREO . ')');
+    return 1;
 }
 
 play_preparar();

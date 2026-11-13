@@ -16,6 +16,10 @@ $tipo = ($liga['tipo'] ?? 'liga') === 'escuela' ? 'escuela' : 'liga';
 // (Anexo B) Pedir un módulo: crea un pedido «cambio_modulos» que revisa Tukán (Panel Tukán Central o Ligas → Editar)
 if (es_post() && post('accion') === 'pedir_modulo') {
     if (!puede('config', true)) throw new RuntimeException('Solo el administrador puede pedir módulos.');
+    if (en_app_play()) { // (13 nov 2026) en la app de Google Play solo se elige lo que ya trae el plan (nada que se cobre por fuera)
+        $mcA = modulos_cliente($liga);
+        if ($mcA['todos_en_demo'] || $mcA['modulos_elegir'] <= 0 || $mcA['por_elegir'] <= 0 || in_array(post('modulo'), modulos_fuera_del_cupo(), true)) throw new RuntimeException('Esta acción no está disponible en la app.');
+    }
     crear_pedido_modulos($liga, $yo['nombre'] . ' <' . $yo['email'] . '>', [post('modulo')], [], post('mensaje'));
     flash('¡Listo! Recibimos su pedido. Le avisamos apenas quede encendido (normalmente el mismo día).');
     ir('admin.php?p=mi_plan#modulos');
@@ -123,7 +127,8 @@ cabecera_admin('Mi plan');
     <h2 style="margin-top:0">🧩 Módulos</h2>
     <?php $mc = modulos_cliente($liga); ?>
     <p style="margin-top:0">Tiene <b><?= count($mods) ?></b> de <?= count(catalogo_modulos($tipo)) ?> módulos encendidos.</p>
-    <?php if ($ver_precios || $plan_propio): ?><p>Su mensual: <b><?= dinero($mc['mensual']) ?> al mes</b><?= $mc['precio_acordado'] !== null ? ' (precio acordado)' : '' ?>.</p>
+    <?php if ($play): // (13 nov 2026) en la app de Google Play no se muestra el valor del software ?><p>Su plan se paga con Google Play.</p>
+    <?php elseif ($ver_precios || $plan_propio): ?><p>Su mensual: <b><?= dinero($mc['mensual']) ?> al mes</b><?= $mc['precio_acordado'] !== null ? ' (precio acordado)' : '' ?>.</p>
     <?php else: ?><p>El valor de su plan se lo cotizamos a su medida.</p><?php endif; ?>
     <p><a class="btn btn-sec btn-chico" href="#modulos">Ver mis módulos y agregar más</a></p>
   </div>
@@ -133,7 +138,7 @@ cabecera_admin('Mi plan');
 <div class="tarjeta" style="margin-top:14px" id="deportes">
   <h2 style="margin-top:0">🧩 Deportes de su cuenta</h2>
   <p style="margin-top:0">Tiene: <b><?= e(texto_modulos(deportes_liga($liga))) ?></b><?= !empty($liga['es_demo']) ? '' : ($ver_precios ? ' · ' . e(texto_precio_modulos(deportes_cobrados($liga))) : '') ?></p>
-  <p class="suave">Todos sus deportes quedan en esta misma cuenta: un solo panel, una sola página pública, los mismos usuarios y las mismas finanzas. <?= $play ? 'Para agregar un deporte, use <a href="#play-caja">Deportes adicionales</a> más abajo.' : ($ver_precios ? 'Para agregar o quitar un deporte, márquelo en <a href="#contratar">Contratar o renovar</a> al enviar su comprobante.' : 'Agregar otro deporte o disciplina es <b>por cotización</b>: ' . html_boton_cotizacion('deportes')) ?></p>
+  <p class="suave">Todos sus deportes quedan en esta misma cuenta: un solo panel, una sola página pública, los mismos usuarios y las mismas finanzas. <?= $play ? (es_academia() ? '' : 'Para agregar un deporte, use <a href="#play-caja">Deportes adicionales</a> más abajo.') : ($ver_precios ? 'Para agregar o quitar un deporte, márquelo en <a href="#contratar">Contratar o renovar</a> al enviar su comprobante.' : 'Agregar otro deporte o disciplina es <b>por cotización</b>: ' . html_boton_cotizacion('deportes')) ?></p>
 </div>
 <?= html_modulos_bloqueados($liga) ?>
 

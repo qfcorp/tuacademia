@@ -32,12 +32,11 @@ mv "$DESTINO/app.nuevo" "$DESTINO/app"; rm -rf "$DESTINO/app.viejo"
     mkdir -p "$DESTINO/public/$(dirname "$f")"; cp "$f" "$DESTINO/public/$f"; done )
 printf 'upload_max_filesize = 12M\npost_max_size = 14M\nmemory_limit = 256M\nmax_execution_time = 60\n' > "$DESTINO/public/.user.ini"
 touch "$DESTINO/data/.servidor"   # marca: aqui NUNCA se corren las pruebas (reiniciar.sh borra la base)
-# app/config.php del servidor (solo la primera vez). Google Play APAGADO hasta que se decida.
+# app/config.php del servidor (solo la primera vez). Google Play APAGADO hasta que se decida (lo enciende vps/app_android.sh).
 if [ ! -f "$DESTINO/app/config.php" ]; then
   cat > "$DESTINO/app/config.php" <<'PHP'
 <?php
-// TuAcademia en el VPS. Producto 'academia'. App de Google Play APAGADA: se enciende con 'google_play' => true cuando se decida
-// (y 'huella_firma' => 'AA:BB:...' cuando exista la llave de firma nueva de Android).
+// TuAcademia en el VPS. Producto 'academia'. App de Google Play APAGADA: la enciende sudo bash /var/www/tuacademia/vps/app_android.sh
 return ['producto' => 'academia', 'google_play' => false];
 PHP
   verde "app/config.php creado (Google Play apagado)."
@@ -59,6 +58,11 @@ fi
 if [ -f "$T/vps/configurar_ia_correo.sh" ]; then
   mkdir -p "$DESTINO/vps" && cp "$T/vps/configurar_ia_correo.sh" "$DESTINO/vps/configurar_ia_correo.sh" \
     && chown -R root:root "$DESTINO/vps" && chmod 755 "$DESTINO/vps" && chmod 644 "$DESTINO/vps/configurar_ia_correo.sh"
+fi
+# App de Android de Google Play (13 nov 2026): sudo bash $DESTINO/vps/app_android.sh [HUELLA_DE_GOOGLE] (se corre a mano)
+if [ -f "$T/vps/app_android.sh" ]; then
+  mkdir -p "$DESTINO/vps" && cp "$T/vps/app_android.sh" "$DESTINO/vps/app_android.sh" \
+    && chown -R root:root "$DESTINO/vps" && chmod 755 "$DESTINO/vps" && chmod 644 "$DESTINO/vps/app_android.sh"
 fi
 docker exec "$CONTENEDOR" kill -USR2 1 >/dev/null 2>&1   # PHP toma el programa nuevo al instante
 verde "Programa copiado."

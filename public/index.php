@@ -72,6 +72,12 @@ if ($slug === '' && $liga_dom && !in_array($v_global, ['privacidad', 'derechos',
 // (TuAcademia) el directorio de ligas no existe: se muestra el de academias
 if (PRODUCTO === 'academia' && $v_global === 'ligas') $_GET['tipo'] = 'escuela';
 if ($slug === '') {
+    // (13 nov 2026) Dentro de la app de Google Play no se muestran las páginas de venta del software (portada con WhatsApp de ventas,
+    // pedir demo o cotización, folletos y comparación de planes): llevan al inicio de la app. El súper usuario no cambia.
+    if (en_app_play() && !in_array($v_global, ['privacidad', 'derechos', 'ligas', 'manual'], true)) {
+        header('Location: ' . url_base() . 'app.php', true, 302);
+        exit;
+    }
     if ($v_global === 'privacidad') {
         require APP_DIR . '/publico/privacidad.php';
     } elseif ($v_global === 'derechos') {

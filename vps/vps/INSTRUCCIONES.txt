@@ -57,6 +57,14 @@ MODULOS POR ACADEMIA Y "TODO SE PIDE DEMO" (18-oct-2026). Para actualizar:
 AVISOS POR TELEGRAM A LOS PADRES: necesitan el bot en Superadministrador > Ajustes > Bot de Telegram (token y usuario).
   Cada academia elige los avisos en Dinero > Avisos por Telegram; los padres se conectan desde su portal.
 
+APP DE ANDROID EN GOOGLE PLAY (13-nov-2026), una linea a la vez:
+  Actualizar y encender Google Play + assetlinks (debe terminar en "OK: la app de Android ya puede abrir ..."):
+    cd $HOME/tuacademia && git pull && cd $HOME && sudo bash tuacademia/vps/vps/vps_2_codigo.sh && sudo bash /var/www/tuacademia/vps/app_android.sh
+  Cuenta del revisor de Google (la contrasena sale una sola vez):
+    sudo docker exec -u www-data tuacademia-php php /var/www/tuacademia/app/revisor_google.php crear
+  Borrarla cuando ya no se necesite:
+    sudo docker exec -u www-data tuacademia-php php /var/www/tuacademia/app/revisor_google.php borrar
+
 NUNCA correr en el servidor los scripts de pruebas/ (borran la base). vps_2_codigo.sh deja la marca data/.servidor para impedirlo.
 
 CONECTAR CON EL PANEL TUKAN CENTRAL (panel.tukanec.com)

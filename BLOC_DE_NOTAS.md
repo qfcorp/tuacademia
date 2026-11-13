@@ -52,8 +52,9 @@ portal de padres, cinturones de artes marciales). Sobre eso se hizo TuAcademia.
    - Los planes de TuVocalía quedan guardados pero apagados.
 6. **App de Google Play: APAGADA** (como en TuSalón). Todo el código está, pero nadie ve precios ni botones de Google.
    Se enciende en `app/config.php` con `'google_play' => true` cuando se decida.
-7. **Apps Android**: paquetes `com.tukan.tuacademia` (Google Play) y `com.tukan.tuacademia.directo` (APK).
-   **La huella de firma está vacía**: hay que generar una llave nueva (ver sección 9).
+7. **Apps Android**: (13 nov 2026) la app de Google Play es `com.tukansoftware.tuacademia` (tukan-apps), firmada con la **llave de subida
+   de Tukán** (su huella ya va en `app/play.php`). Se enciende con `sudo bash /var/www/tuacademia/vps/app_android.sh` y la cuenta del
+   revisor se crea con `app/revisor_google.php crear` (ver README_GITHUB.md «App de Android para Google Play»). APK directo: `com.tukan.tuacademia.directo`.
 8. **Demo**: en el producto academia la demostración es una **academia de baile y música** (ya no hay liga de demostración).
 
 ## 4. Qué se agregó
@@ -174,7 +175,7 @@ Para actualizar: `cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps
 ## 8. Pendientes
 
 - [ ] **Elegir el nombre definitivo** (ver sección 11) y cambiarlo: Ajustes → Marca, `vps/vps/comun.sh` (SITIO), Cloudflare, Android.
-- [ ] **Llave de firma de Android nueva** (ver sección 9) y su huella en `app/config.php`.
+- [x] ~~Llave de firma de Android nueva~~ (13 nov 2026: la app usa la llave de subida de Tukán; falta solo la huella de Google después de la primera subida).
 - [ ] **Ícono de la app** de academia (el actual es la pelota de "LIGAS") y capturas para Google Play.
 - [ ] **Probar Payphone con claves reales** de una academia (está hecho y probado con un simulador).
 - [ ] **Manual en PDF** nuevo (`Manual-TuAcademia-Academias.pdf`); el manual en la web ya tiene la sección 31 de academias. Revisar el texto del manual (todavía dice "escuela deportiva" en varias partes) y las traducciones (inglés, francés, portugués e italiano no tienen los textos nuevos).
@@ -183,10 +184,13 @@ Para actualizar: `cd tuacademia && git pull && cd .. && sudo bash tuacademia/vps
 - [ ] **Comisión de Payphone**: hoy la academia recibe el pago completo en su cuenta de Payphone; no se cobra comisión de Tukán por esos pagos.
 - [ ] Revisar los **precios** provisionales ($19 / $29) y qué va en cada plan.
 - [ ] Torneos internos de la academia (fútbol, natación) con tabla o carriles, si los piden.
-- [ ] Encender la app de **Google Play** cuando se decida (`'google_play' => true`).
+- [ ] Encender la app de **Google Play** cuando se decida: `sudo bash /var/www/tuacademia/vps/app_android.sh` (pone `'google_play' => true`).
 - [ ] Correos de bienvenida y avisos: revisar que el texto hable de academias (algunos todavía dicen "liga o escuela").
 
 ## 9. Apps Android: llave de firma nueva
+
+> (13 nov 2026) Ya no hace falta para Google Play: la app `com.tukansoftware.tuacademia` se firma con la llave de subida de Tukán
+> (repositorio tukan-apps). Esta sección queda solo para un APK directo propio.
 
 TuAcademia **no** usa la llave de TuVocalía. Para crear la nueva (en una computadora con Java, una sola vez):
 

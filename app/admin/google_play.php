@@ -12,7 +12,7 @@ if (es_post()) {
         if ($f < 0 || $f > 100) throw new RuntimeException('El aumento debe estar entre 0 y 100 %.');
         guardar_ajuste('play_factor', (string)$f);
         $pq = trim(post('play_paquete'));
-        if ($pq !== '' && !preg_match('/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/', $pq)) throw new RuntimeException('El nombre del paquete no es válido (ejemplo: com.tukan.tuacademia).');
+        if ($pq !== '' && !preg_match('/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/', $pq)) throw new RuntimeException('El nombre del paquete no es válido (ejemplo: com.tukansoftware.tuacademia).');
         guardar_ajuste('play_paquete', $pq !== '' ? $pq : PLAY_PAQUETE);
         guardar_ajuste('play_idioma', trim(post('play_idioma')) !== '' ? trim(post('play_idioma')) : 'es-419');
         guardar_ajuste('play_huellas', mb_substr(trim(post('play_huellas')), 0, 1000));
@@ -67,9 +67,7 @@ cabecera_admin('Google Play');
 <div class="aviso aviso-info">⏸ <b>La app de Google Play está APAGADA en este servidor</b> (todavía no se publica). Todo funciona como en la web: nadie ve precios de Google ni botones de Google Play.
   Se enciende cuando se decida, escribiendo <code>'google_play' => true</code> en <code>app/config.php</code>. Esta página sirve para dejar todo preparado.</div>
 <?php endif; ?>
-<?php if (TV_HUELLA_FIRMA === ''): ?>
-<div class="aviso aviso-error">🔑 TuAcademia todavía no tiene su <b>llave de firma de Android</b>. Hay que generar una nueva (no se usa la de TuVocalía) y poner su huella SHA-256 en <code>app/config.php</code> (<code>'huella_firma' => '…'</code>). Los pasos están en BLOC_DE_NOTAS.md → «Apps Android».</div>
-<?php endif; ?>
+<p class="aviso aviso-info">🔑 La app de Google Play (<code><?= e(play_paquete()) ?></code>) se firma con la <b>llave de subida de Tukán</b>: su huella ya va sola en assetlinks. Falta solo la de «Firma de apps» de Google (cuadro de Ajustes), después de la primera subida.</p>
 <p class="suave">Hay tres formas de usar <?= e(marca()) ?> en el celular: el <b>navegador</b> (como siempre), el <b>APK</b> que se baja de <a href="descargar.php" target="_blank">descargar.php</a> y la <b>app de Google Play</b>. En las dos primeras se paga como siempre, con los precios normales. En la de Google Play el plan solo se puede pagar con Google, con los precios de abajo (Google se queda con su comisión).</p>
 
 <?php if ($log): ?>
@@ -112,7 +110,7 @@ cabecera_admin('Google Play');
     </form>
     <h3>📦 APK directo</h3>
     <p><?= apk_disponible() ? '✅ Disponible: <a href="descargar.php?apk=1">descargar.php?apk=1</a> (' . round(filesize(apk_archivo()) / 1048576, 1) . ' MB)' : '➖ Todavía no está en el servidor (public/descargas/tuacademia.apk).' ?></p>
-    <p class="suave" style="margin:0">Huella de nuestra firma: <code style="font-size:.75rem;word-break:break-all"><?= TV_HUELLA_FIRMA !== '' ? e(TV_HUELLA_FIRMA) : '— (falta generar la llave)' ?></code></p>
+    <p class="suave" style="margin:0">Huella de la llave de subida de Tukán: <code style="font-size:.75rem;word-break:break-all"><?= e(PLAY_HUELLA_SUBIDA) ?></code><?= TV_HUELLA_FIRMA !== '' ? ' · APK directo: <code style="font-size:.75rem;word-break:break-all">' . e(TV_HUELLA_FIRMA) . '</code>' : '' ?></p>
     <p class="suave">Comprobar: <a href="/.well-known/assetlinks.json" target="_blank">/.well-known/assetlinks.json</a></p>
     <p style="margin:0"><b>Cobrado por Google Play:</b> <?= (int)$tot['n'] ?> pago(s) · <?= dinero($tot['m']) ?> (antes de la comisión de Google)</p>
   </div>

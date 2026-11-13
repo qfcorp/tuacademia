@@ -1227,21 +1227,37 @@ function acad_demo_clases(int $lid, array $cursos, array $gids, array $alumnos, 
     }
 }
 
-function crear_academia_demo(): int
+/**
+ * Sin $o: la academia de demostración de siempre (borra la anterior, es_demo = 1).
+ * (13 nov 2026) Con $o crea en cambio una ACADEMIA DE EJEMPLO aparte con los mismos datos inventados (la usa la cuenta del revisor de
+ * Google Play, app/revisor_google.php). No borra nada ni toca la demo: es una cuenta normal (es_demo = 0) con su plan y vencimiento.
+ *   $o = ['liga' => ['nombre', 'slug', 'ciudad', 'color', 'admin_nombre', 'admin_email', 'admin_clave', 'plan_id', 'vence', 'origen'], 'semilla' => '...']
+ * En la academia de ejemplo no se crea el usuario del profesor y la clave del portal de padres es al azar (no la de la demo).
+ */
+function crear_academia_demo(array $o = []): int
 {
-    return sin_auditoria(function (): int {
-        mt_srand(crc32('academia' . date('Y-m-d')));
+    return sin_auditoria(function () use ($o): int {
+        $ej = !empty($o['liga']);
+        mt_srand(crc32(($ej ? (string)($o['semilla'] ?? 'ejemplo') : 'academia') . date('Y-m-d')));
+        if ($ej) {
+            $x = $o['liga'];
+            $r = crear_liga_completa(['nombre' => $x['nombre'], 'slug' => $x['slug'] ?? '', 'ciudad' => $x['ciudad'] ?? 'Quito', 'color' => $x['color'] ?? '#7b3fb0', 'modalidad' => 'F7', 'tipo' => 'escuela',
+                'deporte_escuela' => 'ballet', 'admin_nombre' => $x['admin_nombre'], 'admin_email' => $x['admin_email'], 'admin_clave' => $x['admin_clave'],
+                'plan_id' => $x['plan_id'] ?? null, 'vence' => $x['vence'] ?? '', 'origen' => $x['origen'] ?? 'super']);
+        } else {
         q("DELETE FROM ligas WHERE es_demo = 1");
         q("DELETE FROM usuarios WHERE email IN ('escuela@demo.tuacademia.tukanec.com', 'profesor@demo.tuacademia.tukanec.com', 'staff@demo.tuacademia.tukanec.com')");
         $r = crear_liga_completa(['nombre' => 'Academia Demo ' . marca(), 'slug' => 'academia-demo', 'ciudad' => 'Quito', 'color' => '#7b3fb0', 'modalidad' => 'F7', 'tipo' => 'escuela',
             'deporte_escuela' => 'ballet', 'admin_nombre' => 'Dueña de la academia', 'admin_email' => 'escuela@demo.tuacademia.tukanec.com', 'admin_clave' => bin2hex(random_bytes(12))]);
+        }
         $lid = (int)$r['liga_id'];
         $Y = (int)date('Y');
         $hoy = date('Y-m-d');
-        q("UPDATE ligas SET es_demo = 1, vence = '', es_prueba = 0, color2 = '#f2b705', contacto_nombre = 'Academia Demo', contacto_telefono = '0990000000', esc_mensualidad = 40,
-           esc_matricula = 20, esc_dia_vence = 5, esc_desc_hermano = 10, esc_inscripcion = 1, deuna_celular = '0990000000', deuna_titular = 'Academia Demo',
+        $nom_ac = $ej ? $o['liga']['nombre'] : 'Academia Demo';
+        q("UPDATE ligas SET es_demo = ?, vence = ?, es_prueba = 0, color2 = '#f2b705', contacto_nombre = ?, contacto_telefono = '0990000000', esc_mensualidad = 40,
+           esc_matricula = 20, esc_dia_vence = 5, esc_desc_hermano = 10, esc_inscripcion = 1, deuna_celular = '0990000000', deuna_titular = ?,
            esc_texto_inscripcion = 'Clases de lunes a sábado. Ballet: malla, medias y zapatillas. Música: traer su instrumento (piano en la academia).',
-           datos_pago = 'Banco de ejemplo · Cuenta de ahorros 0000000000 · A nombre de Academia Demo' WHERE id = ?", [$lid]);
+           datos_pago = ? WHERE id = ?", [$ej ? 0 : 1, $ej ? (string)($o['liga']['vence'] ?? '') : '', $nom_ac, $nom_ac, 'Banco de ejemplo · Cuenta de ahorros 0000000000 · A nombre de ' . $nom_ac, $lid]);
         $liga = fila('SELECT * FROM ligas WHERE id = ?', [$lid]);
         preparar_escuela($lid);
         $s1 = (int)valor('SELECT id FROM esc_sedes WHERE liga_id = ? ORDER BY id LIMIT 1', [$lid]);
@@ -1251,7 +1267,7 @@ function crear_academia_demo(): int
             q('INSERT INTO esc_profesores (liga_id, nombre, cedula, telefono, especialidad, tipo_pago, valor_pago) VALUES (?,?,?,?,?,?,?)', [$lid, $n, cedula_demo(), '099' . random_int(1000000, 9999999), $esp, $tp, $v]);
             $prof[] = (int)db()->lastInsertId();
         }
-        q('UPDATE esc_profesores SET usuario_id = ? WHERE id = ?', [usuario_demo('profesor@demo.tuacademia.tukanec.com', 'Lucía Mena', 'liga', $lid, ['perfil' => 'profesor']), $prof[0]]);
+        if (!$ej) q('UPDATE esc_profesores SET usuario_id = ? WHERE id = ?', [usuario_demo('profesor@demo.tuacademia.tukanec.com', 'Lucía Mena', 'liga', $lid, ['perfil' => 'profesor']), $prof[0]]);
         // [nombre, disciplina, desde, hasta, profesor, días, inicio, fin, lugar, pensión]
         $cursos = [
             ['Ballet infantil', 'ballet', $Y - 9, $Y - 5, 0, '2,4', '16:00', '17:00', 'Salón de espejos', 40.0],
@@ -1299,7 +1315,7 @@ function crear_academia_demo(): int
         }
         acad_demo_clases($lid, $cursos, $gids, $alumnos, $prof); // (arreglos 14-oct) clases de las últimas semanas con asistencia y fotos de baile y música
         codigo_familia($lid, $fam_ced);
-        q("UPDATE esc_familias SET pin = ? WHERE liga_id = ? AND cedula = ?", [password_hash(DEMO_CLAVE, PASSWORD_DEFAULT), $lid, $fam_ced]);
+        q("UPDATE esc_familias SET pin = ? WHERE liga_id = ? AND cedula = ?", [password_hash($ej ? bin2hex(random_bytes(8)) : DEMO_CLAVE, PASSWORD_DEFAULT), $lid, $fam_ced]);
         // Pensiones de este mes y del anterior: casi todas pagadas, algunas vencidas y otras por vencer (para «Mensajes de hoy»)
         generar_mensualidades($liga, date('Y-m', strtotime('first day of last month')));
         generar_mensualidades($liga);

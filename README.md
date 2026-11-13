@@ -17,7 +17,7 @@ encendido. Todo lo de ligas y campeonatos sigue en el código, apagado.
 | Qué | Dónde |
 |---|---|
 | Interruptor del producto | `app/bootstrap.php` → `'producto' => 'academia'` (o `'ligas'` en `app/config.php` para volver a TuVocalía) |
-| App de Google Play | APAGADA: `'google_play' => false`. Se enciende en `app/config.php` cuando se decida |
+| App de Google Play | APAGADA: `'google_play' => false`. Se enciende con `sudo bash /var/www/tuacademia/vps/app_android.sh` (13 nov 2026; ver README_GITHUB.md) |
 | Todo lo nuevo de academias | `app/academia.php` (+ `app/admin/mensajes.php`, `recitales.php`, `particulares.php`, `public/payphone.php`) |
 | Migración de la base | `app/db.php` → `esquema_v34()` (user_version 34) |
 | Módulos por academia (Anexo B: encender, apagar, precios, Mi plan, pedidos) | `app/modulos_catalogo.php` (igual en TuVocalía). Ver BLOC_DE_NOTAS §14 |

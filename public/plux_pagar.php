@@ -16,6 +16,7 @@ if (!is_array($in) || !is_string($in['csrf'] ?? null) || !hash_equals(csrf_token
 $pg = preg_match('/^[a-f0-9]{32}$/', get('t')) ? fila('SELECT * FROM pagos_linea WHERE token = ?', [get('t')]) : null;
 if (!$pg) $fin(['status' => 'failed', 'message' => 'Pago no encontrado.']);
 if ($pg['estado'] === 'pagado') $fin(['status' => 'success']);
+if ($pg['destino'] === 'tuvocalia' && en_app_ios()) $fin(['status' => 'failed', 'message' => 'Este pago no está disponible en la app.']); // (13 nov 2026) la suscripción no se paga en el iPhone
 if ($pg['estado'] !== 'pendiente') $fin(['status' => 'failed', 'message' => 'Este pago ya no se puede completar. Vuelva a generarlo.']);
 if ($pg['destino'] === 'organizacion' && !modulo_activo(fila('SELECT * FROM ligas WHERE id = ?', [$pg['liga_id']]), 'pagos_tarjeta')) $fin(['status' => 'failed', 'message' => 'El pago con tarjeta no está disponible en este momento.']); // (Anexo B)
 if (pasarela_modo() !== 'plux' || !plux_listo() || !plux_configurado()) $fin(['status' => 'failed', 'message' => 'El pago con tarjeta no está disponible en este momento.']);

@@ -158,7 +158,8 @@ function html_aviso_vencimiento(array $liga): string
     $cuando = $s['dias'] === 0 ? 'vence HOY' : ($s['dias'] === 1 ? 'vence MAÑANA' : 'vence en ' . $s['dias'] . ' días');
     $h = '<div class="aviso-vence">'
         . '<div class="aviso-vence-tit">⏰ ' . ($s['estado'] === 'prueba' ? 'Su demo' : 'Su suscripción') . ' de ' . e(marca()) . ' ' . $cuando . ' (' . e($liga['vence']) . ')</div>'
-        . '<p>Para que el panel siga funcionando sin interrupciones, renueve antes de esa fecha.</p>';
+        . (function_exists('en_app_ios') && en_app_ios() ? '' : '<p>Para que el panel siga funcionando sin interrupciones, renueve antes de esa fecha.</p>');
+    if (function_exists('en_app_ios') && en_app_ios()) return $h . '</div>'; // (13 nov 2026) iPhone: solo cuándo vence (sin valor, datos para pagar, botones ni WhatsApp)
     if ($valor !== '') $h .= '<p class="aviso-vence-valor">💵 ' . e($valor) . '</p>';
     if (function_exists('en_app_play') && en_app_play()) { // (v38) en la app de Google Play solo se renueva con Google
         if (puede('config')) $h .= '<p style="margin:10px 0 0"><a class="btn" href="admin.php?p=mi_plan#play-caja">▶ Renovar con Google Play</a></p>';

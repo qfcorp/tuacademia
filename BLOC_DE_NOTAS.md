@@ -1,6 +1,6 @@
 # Bloc de notas — TuAcademia (nombre provisional)
 
-Para Dimitry. Escrito en español sencillo. Última actualización: 5 de noviembre de 2026 (ver **§18 Mi plan con tarjeta por el panel**).
+Para Dimitry. Escrito en español sencillo. Última actualización: 13 de noviembre de 2026 (ver **App de iPhone: sin precios ni pagos**, al final).
 
 ---
 
@@ -622,3 +622,23 @@ El Panel Tukán Central crea la demo solo y le manda la clave al correo del inte
   **13/13** (modo ligas), conector v1 **125/125**, v2 **394/394**, módulos **108/108**, cancelar plan **11/11**, usuarios **43/43**,
   IA **92/92**, demos automáticas **97/97**, TuFactura **19/19**, identidad gráfica **39/39** (modo academia y modo ligas),
   recorrido 20 min sin errores de PHP, Plux 3DS **4/4**.
+
+## App de iPhone: sin precios ni pagos (regla de Apple), se reconoce por TukanIOS (13 nov 2026)
+
+Regla de Apple 3.1.1: dentro de la app de iPhone no se puede ver **ningún precio** de TuAcademia (planes, módulos, suscripciones), ni botones,
+enlaces o formularios para pagar, contratar, cotizar, mejorar o cancelar, ni textos que digan dónde pagar. Código: **`app/app_ios.php`**
+(el mismo archivo en TuVocalía).
+- **Cómo se reconoce**: el User-Agent de la app trae `TukanIOS` (ej. `… TukanIOS/1.0.0`), o la cookie `canal=ios` que deja la dirección con la que
+  abre la app, **`/app.php?origen=ios`** (`?origen=web` la quita). En el iPhone `<html>` lleva `class="tukan-ios"` (se pone sola en todas las páginas).
+- `en_app_ios()`; `en_app_tienda()` = Google Play **o** iPhone (en `app/play.php`): se usa donde antes se escondía solo en Google Play (cotizar,
+  páginas de venta, «Solicitar este módulo»). El **cobro con Google Play nunca va en el iPhone** (`en_app_play()` da no; `play.php` se niega).
+- **Mi plan** en el iPhone: solo «Tu plan: … Activo hasta …», «Tu periodo de prueba: activo hasta …», «Tu periodo de prueba terminó.» o «Tu plan …
+  venció el …», los límites y los módulos encendidos. Sin precios, planes, cotizar, pedir módulos, pagar, transferencia, historial de pagos ni cancelar.
+- **Avisos** sin valor, datos para pagar, «Contratar mi plan», «Renovar ahora», «renueve» ni WhatsApp de ventas (vencimiento, demo terminada,
+  cuenta vencida, suspendida o pausada, «solo cuentas pagadas»). Sin «Agregue más deportes», «agréguelo en Mi plan» ni «cambie de plan».
+  Portada, pedir demo, planes y comparar llevan a `app.php`. El manual y la Ayuda, sin los capítulos de Mi plan, renovar, cancelar y cotizar.
+- **POST** de pago, cotización, pedido de módulo, cambio o cancelación del plan → «Esta acción no está disponible en la app.»; `pagar.php` y
+  `plux_pagar.php` de la suscripción tampoco abren. Las **pensiones, matrículas y cobros de la academia a sus alumnos sí se ven y se cobran**.
+- **Servidor**: viene con el código; se instala con el comando de siempre:
+  `cd $HOME/tuacademia && git pull && cd $HOME && sudo bash tuacademia/vps/vps/vps_2_codigo.sh`
+- Prueba: `TA_PUERTO=8641 TA_SIM=8642 bash pruebas/v38/reiniciar.sh && TA_PUERTO=8641 python3 pruebas/app_iphone/prueba_app_iphone.py` → **58/58**.

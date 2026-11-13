@@ -65,10 +65,21 @@ function fijar_origen_app(string $o): void
 /** ¿Se está usando la app de Google Play? (el superadministrador siempre ve los precios normales) */
 function en_app_play(): bool
 {
+    if (function_exists('en_app_ios') && en_app_ios()) return false; // (13 nov 2026) el cobro de Google Play nunca va en el iPhone
     if (!empty($GLOBALS['__forzar_app_play'])) return true; // pruebas automáticas
     if (!play_permitido()) return false; // (TuAcademia) app de Google Play apagada: todo funciona como en la web
     if (defined('SIN_PRECIO_PLAY') || PHP_SAPI === 'cli') return false;
     return app_origen() === 'play' && !es_super();
+}
+
+/**
+ * (13 nov 2026) ¿Se está usando una app de tienda (Google Play o iPhone)? Ahí no se muestran las formas de pagar el software por
+ * fuera (transferencia, tarjeta, WhatsApp de ventas, cotizaciones, páginas de venta). En el iPhone además no hay ningún precio
+ * ni cobro (ni siquiera el de Google Play): ver app/app_ios.php.
+ */
+function en_app_tienda(): bool
+{
+    return en_app_play() || (function_exists('en_app_ios') && en_app_ios());
 }
 
 /* ============================================================

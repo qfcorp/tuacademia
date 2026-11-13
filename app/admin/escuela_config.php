@@ -42,7 +42,7 @@ if (es_post()) {
         flash(post('esc_inscripcion') === '1' ? 'Inscripción en línea abierta.' : 'Inscripción en línea cerrada.');
     } elseif ($accion === 'formativas') {
         // (v17) Modo club: divisiones formativas (partidos, maduración, cuerpo técnico, valoraciones, colegio)
-        if (post('esc_formativas') === '1' && !modulo_activo($liga, 'esc_formativas') && !es_super()) throw new RuntimeException('Su plan no incluye las divisiones formativas. Puede cambiar de plan en Mi plan.');
+        if (post('esc_formativas') === '1' && !modulo_activo($liga, 'esc_formativas') && !es_super()) throw new RuntimeException('Su plan no incluye las divisiones formativas.' . texto_app_ios(' Puede cambiar de plan en Mi plan.', ''));
         q('UPDATE ligas SET esc_formativas = ? WHERE id = ?', [post('esc_formativas') === '1' ? 1 : 0, $lid]);
         flash(post('esc_formativas') === '1' ? 'Divisiones formativas activadas: ahora tiene el menú 🏆 Club y la pestaña Club en la ficha de cada alumno.' : 'Divisiones formativas desactivadas (los datos se conservan).');
     } elseif ($accion === 'sede_nueva') {

@@ -14,6 +14,7 @@ $responder = function (array $r, int $cod = 200): never {
     exit;
 };
 if (!es_post()) $responder(['ok' => false, 'error' => 'Solo POST'], 405);
+if (en_app_ios()) $responder(['ok' => false, 'error' => 'Esta acción no está disponible en la app.'], 403); // (13 nov 2026) el cobro de Google Play nunca va en el iPhone
 $t = $_POST['csrf'] ?? '';
 if (!is_string($t) || !hash_equals(csrf_token(), $t)) $responder(['ok' => false, 'error' => 'La página venció. Recárguela e intente de nuevo.'], 400);
 $u = usuario();

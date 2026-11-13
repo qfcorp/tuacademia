@@ -13,6 +13,15 @@ if (es_post() && post('accion') === 'aceptar_terminos_tukan') {
     ir('admin.php');
 }
 $tipo = ($liga['tipo'] ?? 'liga') === 'escuela' ? 'escuela' : 'liga';
+// (13 nov 2026) App de iPhone (regla de Apple 3.1.1): Mi plan solo con información neutra (plan, vigencia, límites y módulos).
+// Sin precios, sin contratar, renovar, cotizar, pedir módulos, pagar ni cancelar, y sin decir dónde pagar. Ver app/app_ios.php.
+if (en_app_ios()) {
+    if (es_post() && in_array(post('accion'), ['pedir_modulo', 'pedir_cotizacion', 'comprobante', 'pagar', 'cancelar_plan', 'seguir_plan', 'cancelar_tarjeta'], true)) exigir_fuera_de_ios();
+    cabecera_admin('Mi plan');
+    echo html_mi_plan_ios($liga);
+    pie_admin();
+    return;
+}
 // (Anexo B) Pedir un módulo: crea un pedido «cambio_modulos» que revisa Tukán (Panel Tukán Central o Ligas → Editar)
 if (es_post() && post('accion') === 'pedir_modulo') {
     if (!puede('config', true)) throw new RuntimeException('Solo el administrador puede pedir módulos.');

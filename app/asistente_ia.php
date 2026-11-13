@@ -174,12 +174,14 @@ function ia_nombres_modo(): array
 function ia_manual(string $modo): string
 {
     static $c = [];
-    if (isset($c[$modo])) return $c[$modo];
+    $ios = function_exists('en_app_ios') && en_app_ios(); // (13 nov 2026) en el iPhone, la Ayuda usa el manual sin lo del plan y los pagos
+    if (isset($c[$modo . $ios])) return $c[$modo . $ios];
     $f = APP_DIR . '/manuales/' . $modo . '.html';
     if (!is_file($f)) $f = APP_DIR . '/manuales/' . (is_file(APP_DIR . '/manuales/academia.html') ? 'academia' : 'ligas') . '.html';
     $html = (string)@file_get_contents($f);
     // los manuales de la web traen enlaces a capturas y menús; para la ayuda solo cuenta el texto con sus títulos
-    return $c[$modo] = $html !== '' ? tukan_ia_html_a_texto($html) : '';
+    if ($ios) $html = ios_limpiar_manual($html);
+    return $c[$modo . $ios] = $html !== '' ? tukan_ia_html_a_texto($html) : '';
 }
 
 /* ============================================================

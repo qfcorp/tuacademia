@@ -42,7 +42,7 @@ if (!isset($manuales[$m])) {
         </div>
       <?php endforeach; ?>
     </div>
-    <div class="aviso aviso-info" style="margin-top:16px">📅 ¿Todavía no usa <?= e(marca()) ?>? <a href="solicitar-demo"><b>Pida su demo</b></a>.</div>
+    <?php if (!en_app_tienda()): // (13 nov 2026) en las apps de tienda no se vende ?><div class="aviso aviso-info" style="margin-top:16px">📅 ¿Todavía no usa <?= e(marca()) ?>? <a href="solicitar-demo"><b>Pida su demo</b></a>.</div><?php endif; ?>
     <?php
     pie_publico();
     return;
@@ -56,6 +56,7 @@ if ($idm !== 'es' && is_file(APP_DIR . '/manuales/' . $m . '.' . $idm . '.html')
     $traducido = true;
 }
 $html = (string)@file_get_contents($archivo_manual);
+$html = ios_limpiar_manual($html); // (13 nov 2026) en el iPhone, sin las secciones del plan, precios y pagos del software
 $html = str_replace('(3 días con todos', '(' . dias_demo() . ' días con todos', $html); // (10 nov 2026) solo la nota de la demo (antes cambiaba cualquier «7 días»)
 preg_match_all('#<h2 id="(s\d+)">(.*?)</h2>#s', $html, $sec, PREG_SET_ORDER);
 $impresion = get('imprimir') === '1';

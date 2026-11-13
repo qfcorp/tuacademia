@@ -211,7 +211,7 @@ function html_tarjeta_demo(?array $l): string
     $hasta = preg_match('/^\d{4}-(\d{2})-(\d{2})/', $v, $m) ? $m[2] . '/' . $m[1] : '';
     $s = estado_suscripcion($l);
     $dias = $s['estado'] === 'prueba' ? ((int)$s['dias'] === 0 ? 'vence hoy' : 'le quedan ' . (int)$s['dias'] . ' día' . ((int)$s['dias'] === 1 ? '' : 's')) : 'terminó';
-    $plan = function_exists('en_app_android') && en_app_android() || !puede('config') ? '' // (28 oct 2026) en la app de Android no se contrata
+    $plan = function_exists('en_app_tienda') && en_app_tienda() || !puede('config') ? '' // (13 nov 2026) en las apps de Google Play y de iPhone no se contrata
         : '<a class="tk-boton chico" href="admin.php?p=mi_plan#contratar">⭐ Ver Mi plan</a>';
     return '<div class="tk-tira tarjeta-demo" id="tarjeta-demo"><div>'
         . '<span>⏳ <b>Demo:</b> ' . e($dias) . '.</span> '

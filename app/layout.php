@@ -77,7 +77,7 @@ function cabecera_admin(string $titulo): void
 <?php endif; ?>
 <main class="tk-contenido contenedor">
 <?php if ($u && !es_super() && !empty($liga['es_demo'])): ?>
-<div class="demo-cinta">👀 Está en la <b>demostración</b> de <?= e(marca()) ?> <?= demo_guardar() ? '(puede probar y guardar; todo se borra cada madrugada)' : '(solo mirar, no se guardan cambios)' ?>. <a href="index.php?v=demo">← Entrar a otro panel</a> · <a href="<?= e(url_empezar()) ?>">Solicite su demo →</a></div>
+<div class="demo-cinta">👀 Está en la <b>demostración</b> de <?= e(marca()) ?> <?= demo_guardar() ? '(puede probar y guardar; todo se borra cada madrugada)' : '(solo mirar, no se guardan cambios)' ?>. <a href="index.php?v=demo">← Entrar a otro panel</a><?php if (!en_app_ios()): // (13 nov 2026) en el iPhone no se vende ?> · <a href="<?= e(url_empezar()) ?>">Solicite su demo →</a><?php endif; ?></div>
 <?php endif; ?>
 <?php if ($liga && $u && get('p') !== 'login' && empty($liga['es_demo']) && liga_suspendida($liga)): // (Tukán Central v2) cuenta suspendida por Tukán ?>
   <div class="aviso aviso-error aviso-suspendida" id="cuenta-suspendida">⛔ <b><?= e(texto_suspension($liga)) ?></b><?= es_super() && ($liga['suspendida_motivo'] ?? '') !== '' ? ' Motivo: ' . e($liga['suspendida_motivo']) : '' ?></div>
@@ -91,8 +91,8 @@ function cabecera_admin(string $titulo): void
         $wa = telefono_wa((string)ajuste('ventas_whatsapp')); ?>
   <div class="aviso <?= $sus['estado'] === 'prueba' ? 'aviso-info' : 'aviso-error' ?> aviso-suscripcion">
     <?= $sus['estado'] === 'prueba' ? '🎁' : '⚠️' ?> <?= e($sus['texto']) ?>
-    <?php if (puede('config')): ?> · <a href="admin.php?p=mi_plan#contratar"><b><?= $sus['estado'] === 'prueba' || !empty($liga['es_prueba']) ? '💵 Contratar mi plan' : '💵 Renovar ahora' ?></b></a><?php endif; // (v33) ?>
-    <?php if ($wa): ?> · <a href="https://wa.me/<?= e($wa) ?>?text=<?= rawurlencode('Hola, quiero ' . ($sus['estado'] === 'prueba' ? 'contratar' : 'renovar') . ' ' . marca() . ' para la liga ' . $liga['nombre']) ?>" target="_blank">WhatsApp</a><?php endif; ?>
+    <?php if (puede('config') && !en_app_ios()): // (13 nov 2026) en el iPhone no se contrata ni se renueva ?> · <a href="admin.php?p=mi_plan#contratar"><b><?= $sus['estado'] === 'prueba' || !empty($liga['es_prueba']) ? '💵 Contratar mi plan' : '💵 Renovar ahora' ?></b></a><?php endif; // (v33) ?>
+    <?php if ($wa && !en_app_ios()): ?> · <a href="https://wa.me/<?= e($wa) ?>?text=<?= rawurlencode('Hola, quiero ' . ($sus['estado'] === 'prueba' ? 'contratar' : 'renovar') . ' ' . marca() . ' para la liga ' . $liga['nombre']) ?>" target="_blank">WhatsApp</a><?php endif; ?>
   </div>
 <?php endif; endif; ?>
 <?php foreach (tomar_flash() as [$tipo, $msg]): ?>

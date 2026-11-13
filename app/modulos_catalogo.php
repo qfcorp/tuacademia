@@ -858,7 +858,7 @@ function tema_cotizacion(array $l, string $que): array
 /** El cliente pide una cotización: queda como ticket «Pagos, plan o factura» (llega al súper y al Panel Tukán Central). */
 function pedir_cotizacion(array $l, string $que, string $mensaje = ''): int
 {
-    if (function_exists('en_app_play') && en_app_play()) throw new RuntimeException('Esta acción no está disponible en la app.'); // (13 nov 2026)
+    if (function_exists('en_app_tienda') && en_app_tienda()) throw new RuntimeException('Esta acción no está disponible en la app.'); // (13 nov 2026) Google Play o iPhone
     [$asunto, $texto] = tema_cotizacion($l, $que);
     $ya = fila("SELECT id FROM soporte_tickets WHERE liga_id = ? AND asunto = ? AND estado NOT IN ('resuelto', 'cerrado')", [$l['id'], mb_substr($asunto, 0, 120)]);
     if ($ya) throw new RuntimeException('Ya pidió esa cotización. Le respondemos en ❓ Soporte apenas la tengamos.');
@@ -869,7 +869,7 @@ function pedir_cotizacion(array $l, string $que, string $mensaje = ''): int
 /** Botón «Pedir cotización» (formulario a Mi plan). */
 function html_boton_cotizacion(string $que, string $etiqueta = 'Pedir cotización', string $clase = 'btn btn-chico'): string
 {
-    if (function_exists('en_app_play') && en_app_play()) return ''; // (13 nov 2026) en la app de Google Play no se cotiza el software por fuera
+    if (function_exists('en_app_tienda') && en_app_tienda()) return ''; // (13 nov 2026) en la app de Google Play o de iPhone no se cotiza el software por fuera
     if (function_exists('puede') && !puede('config', true)) return '<span class="etiqueta">Por cotización</span>';
     return '<form method="post" action="admin.php?p=mi_plan" class="inline">' . csrf_campo() . '<input type="hidden" name="accion" value="pedir_cotizacion">'
         . '<input type="hidden" name="que" value="' . e($que) . '"><button class="' . e($clase) . '">' . e($etiqueta) . '</button></form>';
@@ -968,7 +968,7 @@ function html_mi_plan_modulos(array $l, bool $puede_pedir): string
     foreach (filas("SELECT encender FROM modulos_pedidos WHERE liga_id = ? AND estado = 'pendiente'", [$l['id']]) as $p) foreach (array_filter(explode(',', (string)$p['encender'])) as $k) $pend[$k] = true;
     $paga = !$m['todos_en_demo'] && empty($l['es_prueba']);
     // (13 nov 2026) En la app de Google Play: sin precios del software ni pedidos que se cobran por fuera (solo «Elegir» lo que trae su plan)
-    $app = function_exists('en_app_play') && en_app_play();
+    $app = function_exists('en_app_tienda') && en_app_tienda(); // (13 nov 2026) también en el iPhone
     if ($app) { $paga = false; $puede_pedir_extra = false; } else $puede_pedir_extra = $puede_pedir;
     $no_incluido = function_exists('es_academia') && es_academia() ? 'Viene en el plan Completo' : 'No incluido en su plan';
     ob_start();
@@ -1010,7 +1010,7 @@ function html_mi_plan_modulos(array $l, bool $puede_pedir): string
           . ($m['precio_deportes'] > 0 ? ' + ' . (function_exists('es_academia') && es_academia() ? 'disciplinas' : 'deportes') . ' ' . dinero($m['precio_deportes']) : '')
           . ($m['descuento'] > 0 ? ' − descuentos ' . dinero($m['descuento']) : ''); ?>
       <?php if ($ver): ?><p class="mod-total">Su mensual: <?= $partes ?> = <b data-total-mensual><?= dinero($m['mensual']) ?> al mes</b><?= $m['precio_acordado'] !== null ? ' (precio acordado con ' . e(ajuste('empresa', 'QF Producciones')) . ')' : '' ?></p>
-      <?php elseif ($app): ?><p class="mod-total" id="mod-total-app">Su plan se paga y se renueva con Google Play (más abajo, en «Renovar o cambiar de plan»).</p>
+      <?php elseif ($app): if (function_exists('en_app_play') && en_app_play()): // (13 nov 2026) en el iPhone, nada de cómo se paga ?><p class="mod-total" id="mod-total-app">Su plan se paga y se renueva con Google Play (más abajo, en «Renovar o cambiar de plan»).</p><?php endif; ?>
       <?php elseif ($paga): ?><p class="mod-total">Lo que paga hoy por su plan: <?= $m['precio_acordado'] === null ? $partes . ' = ' : '' ?><b data-total-mensual><?= dinero($m['mensual']) ?> al mes</b>. Lo que agregue fuera de su plan se lo cotizamos y le confirmamos el nuevo valor.</p>
       <?php else: ?><p class="mod-total">El valor de su plan se lo cotizamos a su medida, con los módulos que elija.</p><?php endif; ?>
     </div>

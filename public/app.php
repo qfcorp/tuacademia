@@ -49,7 +49,7 @@ $destino = $u ? ['super' => 'admin.php', 'liga' => 'admin.php', 'arbitro' => 'ar
     <p class="suave" style="margin-top:0">Le llegan avisos de sus goles, resultados y horarios. Para seguir otro equipo, ábralo en la página de su liga y toque <b>Seguir a este equipo</b>.</p>
     <div id="lista-equipos"></div>
   </div>
-  <?php if (app_origen() === 'web'): // (v38) dentro de las apps de Android no hace falta ?>
+  <?php if (app_origen() === 'web' && !en_app_ios()): // (v38) dentro de las apps de Android (y de iPhone) no hace falta ?>
   <div class="tarjeta" id="instalar" style="display:none">
     <h2 style="margin-top:0">📲 Instalar en el celular</h2>
     <button class="btn btn-grande" id="btn-instalar">Instalar aplicación</button>

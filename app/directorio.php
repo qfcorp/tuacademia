@@ -73,7 +73,7 @@ function html_menu_clientes(): string
             }
             $h .= '<a class="mc-todas" href="' . $ruta . '">' . e($todas) . ' (' . count($lista) . ') →</a>';
         } else {
-            $h .= '<p class="mc-vacio">' . e($vacio) . '</p><a class="mc-todas" href="' . e(url_empezar($tipo === 'escuela' ? 'escuela' : '')) . '">' . e(texto_empezar(true)) . ' →</a>';
+            $h .= '<p class="mc-vacio">' . e($vacio) . '</p>' . (function_exists('en_app_tienda') && en_app_tienda() ? '' : '<a class="mc-todas" href="' . e(url_empezar($tipo === 'escuela' ? 'escuela' : '')) . '">' . e(texto_empezar(true)) . ' →</a>'); // (13 nov 2026) en las apps de tienda no se vende
         }
         $h .= '</div></details>';
     }

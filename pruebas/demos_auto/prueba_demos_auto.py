@@ -114,6 +114,7 @@ s = requests.Session()
 s.trust_env = False
 r = s.get(B + 'index.php?v=solicitar')
 chk(r.status_code == 200, 'el formulario abre')
+chk('data-aviso-datos-reales' in r.text and 'Si están incompletos o no son verdaderos, no podremos preparar su demo.' in r.text, 'aviso: datos reales o no se prepara la demo (13 nov 2026)')
 for campo in CAMPOS:
     chk(re.search(r'<input[^>]*name="%s"[^>]*required' % campo, r.text) is not None, 'el campo «%s» es obligatorio en el navegador (required)' % campo)
 chk('Le enviaremos la clave de su demo a este correo: escríbalo bien.' in r.text, 'el formulario dice que la clave llega al correo y que lo escriba bien')

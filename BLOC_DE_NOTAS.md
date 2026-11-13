@@ -642,3 +642,5 @@ enlaces o formularios para pagar, contratar, cotizar, mejorar o cancelar, ni tex
 - **Servidor**: viene con el código; se instala con el comando de siempre:
   `cd $HOME/tuacademia && git pull && cd $HOME && sudo bash tuacademia/vps/vps/vps_2_codigo.sh`
 - Prueba: `TA_PUERTO=8641 TA_SIM=8642 bash pruebas/v38/reiniciar.sh && TA_PUERTO=8641 python3 pruebas/app_iphone/prueba_app_iphone.py` → **58/58**.
+
+- 13 nov 2026: **Aviso de datos reales en el formulario de demo** (pedido de Dimitry): sin datos verdaderos no se prepara la demo. Prueba nueva (`data-aviso-datos-reales`).

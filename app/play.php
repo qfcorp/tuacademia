@@ -774,7 +774,7 @@ function revisor_google_crear(): array
     $l = revisor_google_academia();
     revisor_google_revisar($l);
     if ($l) revisor_google_borrar();
-    $clave = 'Demo-' . random_int(100000, 999999);
+    $clave = (strlen((string) getenv('REVISOR_CLAVE')) >= 8 ? (string) getenv('REVISOR_CLAVE') : 'Demo-' . random_int(100000, 999999));  // (13 nov 2026) REVISOR_CLAVE=... fija la clave
     $pl = revisor_google_plan();
     $vence = date('Y-m-d', strtotime('+1 year'));
     $lid = crear_academia_demo([

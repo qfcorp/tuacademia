@@ -26,7 +26,7 @@ if (es_post() && $super) {
 }
 
 $vista = (int)valor('SELECT novedad_vista FROM usuarios WHERE id = ?', [usuario()['id']]);
-$lista = $super ? filas('SELECT * FROM novedades ORDER BY fecha DESC, id DESC LIMIT 200') : novedades_para($liga);
+$lista = $super ? ios_filtrar_novedades(filas('SELECT * FROM novedades ORDER BY fecha DESC, id DESC LIMIT 200')) : novedades_para($liga); // (25 nov 2026) iPhone: sin las del plan del software
 marcar_novedades_vistas();
 $editar = $super && (int)get('editar') ? fila('SELECT * FROM novedades WHERE id = ?', [(int)get('editar')]) : null;
 cabecera_admin('Novedades');

@@ -1,6 +1,6 @@
 # Bloc de notas — TuAcademia (nombre provisional)
 
-Para Dimitry. Escrito en español sencillo. Última actualización: 5 de noviembre de 2026 (ver **§18 Mi plan con tarjeta por el panel**).
+Para Dimitry. Escrito en español sencillo. Última actualización: 25 de noviembre de 2026 (ver **App de iPhone, segunda parte: el superadministrador y todas las pantallas**, al final).
 
 ---
 
@@ -623,4 +623,57 @@ El Panel Tukán Central crea la demo solo y le manda la clave al correo del inte
   IA **92/92**, demos automáticas **97/97**, TuFactura **19/19**, identidad gráfica **39/39** (modo academia y modo ligas),
   recorrido 20 min sin errores de PHP, Plux 3DS **4/4**.
 
+## App de iPhone: sin precios ni pagos (regla de Apple), se reconoce por TukanIOS (13 nov 2026)
+
+Regla de Apple 3.1.1: dentro de la app de iPhone no se puede ver **ningún precio** de TuAcademia (planes, módulos, suscripciones), ni botones,
+enlaces o formularios para pagar, contratar, cotizar, mejorar o cancelar, ni textos que digan dónde pagar. Código: **`app/app_ios.php`**
+(el mismo archivo en TuVocalía).
+- **Cómo se reconoce**: el User-Agent de la app trae `TukanIOS` (ej. `… TukanIOS/1.0.0`), o la cookie `canal=ios` que deja la dirección con la que
+  abre la app, **`/app.php?origen=ios`** (`?origen=web` la quita). En el iPhone `<html>` lleva `class="tukan-ios"` (se pone sola en todas las páginas).
+- `en_app_ios()`; `en_app_tienda()` = Google Play **o** iPhone (en `app/play.php`): se usa donde antes se escondía solo en Google Play (cotizar,
+  páginas de venta, «Solicitar este módulo»). El **cobro con Google Play nunca va en el iPhone** (`en_app_play()` da no; `play.php` se niega).
+- **Mi plan** en el iPhone: solo «Tu plan: … Activo hasta …», «Tu periodo de prueba: activo hasta …», «Tu periodo de prueba terminó.» o «Tu plan …
+  venció el …», los límites y los módulos encendidos. Sin precios, planes, cotizar, pedir módulos, pagar, transferencia, historial de pagos ni cancelar.
+- **Avisos** sin valor, datos para pagar, «Contratar mi plan», «Renovar ahora», «renueve» ni WhatsApp de ventas (vencimiento, demo terminada,
+  cuenta vencida, suspendida o pausada, «solo cuentas pagadas»). Sin «Agregue más deportes», «agréguelo en Mi plan» ni «cambie de plan».
+  Portada, pedir demo, planes y comparar llevan a `app.php`. El manual y la Ayuda, sin los capítulos de Mi plan, renovar, cancelar y cotizar.
+- **POST** de pago, cotización, pedido de módulo, cambio o cancelación del plan → «Esta acción no está disponible en la app.»; `pagar.php` y
+  `plux_pagar.php` de la suscripción tampoco abren. Las **pensiones, matrículas y cobros de la academia a sus alumnos sí se ven y se cobran**.
+- **Servidor**: viene con el código; se instala con el comando de siempre:
+  `cd $HOME/tuacademia && git pull && cd $HOME && sudo bash tuacademia/vps/vps/vps_2_codigo.sh`
+- Prueba: `TA_PUERTO=8641 TA_SIM=8642 bash pruebas/v38/reiniciar.sh && TA_PUERTO=8641 python3 pruebas/app_iphone/prueba_app_iphone.py` → **58/58**.
+
 - 13 nov 2026: **Aviso de datos reales en el formulario de demo** (pedido de Dimitry): sin datos verdaderos no se prepara la demo. Prueba nueva (`data-aviso-datos-reales`).
+
+## App de iPhone, segunda parte: el superadministrador y todas las pantallas sin precios del software (25 nov 2026)
+
+Lo de la app de iPhone (13 nov) estaba en la rama `app-iphone-sin-precios`, que nunca se había unido a `main`: ahora sí, junto con lo que
+TuVocalía ya tenía aprobado por Apple (23 nov) y una revisión de **todas** las pantallas del dueño y del superadministrador.
+Regla: en el iPhone no se ve ningún precio, plan para contratar, botón ni enlace de pago **del software Tukán**. Lo que la academia cobra a sus
+alumnos (Pagos, pensiones, Tienda, Contabilidad, Factura electrónica, rol de pago de profesores) **sí se sigue viendo**. En la web y en Android, igual que antes.
+- **Superadministrador** (`PAGINAS_NEGOCIO_IOS` en `app/app_ios.php`): en el iPhone no salen en el menú ni se abren Negocio, Ventas, Planes,
+  Vendedores, Disciplinas (precios), Embudo, Ajustes, Cobros, Recomiende y gane y **Google Play** → «Esta sección no está disponible en la app.»
+  (`public/admin.php`, `app/menu.php`). `ver_precios_software()` da **no** en el iPhone aunque sea el súper.
+- **Academias (lista del súper)**: en el iPhone solo se ve la lista y «Entrar al panel»; **crear o editar una cuenta** (planes, precios de módulos,
+  combos, «Registrar pago / renovar») no se abre ni se guarda (solo «Restaurar» de la papelera).
+- **Novedades**: en el iPhone se esconden las que hablan del plan (precios, contratar, renovar, cotizar, comprobante, descuentos por recomendar).
+- **Soporte**: en el iPhone no salen ni se abren los tickets «Pagos, plan o factura» (cotizaciones del plan), ni ese tipo al abrir un ticket;
+  la demo no muestra el WhatsApp de ventas ni «Solicitar mi demo». **Bitácora**: sin cotizaciones, pagos a Tukán ni cambios de plan/vencimiento.
+- **Parámetros y Avisos por Telegram**: sin «Ver planes» ni «Está en el plan Completo». **Ingreso** (login): sin «Solicite una demo».
+- Mensajes del panel en el iPhone sin «Solicite su demo», «para renovar», «al contratar», «plan pagado» ni «planes completos».
+- **Manual** en el iPhone: además de lo de antes, sin la nota «¿Todavía no usa TuAcademia? Pida su demo», sin «cuentas pagadas de los planes
+  completos», «hace falta el plan…», recomendar y ganar descuentos, la imagen «Elegir los deportes al contratar» ni el botón **Descargar PDF**
+  (los PDF traen el capítulo de Mi plan). `/manual.pdf` y `/primeros_pasos.pdf` no se descargan en el iPhone; la tira de la demo va sin los PDF.
+- **Ayuda (IA)**: si la respuesta (de la IA o de una pregunta frecuente) habla de precios, contratar, renovar o cotizar, en el iPhone sale
+  «Esa consulta no está disponible en la app. En ⭐ Mi plan puede ver su plan…».
+- Prueba `pruebas/app_iphone/prueba_app_iphone.py` → **113/113** (antes 58): secciones 7 a 10 nuevas, con una **revisión estricta** de todas las
+  pantallas del dueño (por vencer y en demo), del súper y del súper dentro de una academia: sin «$» ni «precio» del software, USD, «planes»,
+  contratar, mejorar el plan, cotizar, renovar ni URLs de pago; y la misma revisión en la web sí los encuentra (la web sigue igual).
+- Las demás pruebas, con la base nueva en cada una: app de iPhone en modo ligas **113/113**, prueba_academia **258/259** (la vieja «familia Ruiz»,
+  igual en main), arreglos_14oct **105/105**, app_android **73/73**, demos automáticas **98/98**, identidad gráfica **39/39**, TuFactura **19/19**,
+  usuarios **43/43**, conector v1 **125/125**, v2 **394/394**, módulos **108/108**, cancelar plan **11/11**, prueba38 (modo ligas) **100/100**,
+  recorrido sin errores de PHP. IA **91/92**: la única falla («las librerías son copias SIN cambios de tukan-central/compartido») es igual en main.
+  navegador_academia se queda esperando un recital (igual en main).
+- **Servidor** (NO se instaló; hacerlo cuando Dimitry diga), en PuTTY del VPS del ERP:
+  `cd $HOME/tuacademia && git pull && cd $HOME && sudo bash tuacademia/vps/vps/vps_2_codigo.sh`
+

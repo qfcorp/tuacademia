@@ -106,7 +106,7 @@ function menu_panel(): array
         if (puede('bitacora')) $cf[] = $it('admin.php?p=bitacora', 'Bitácora', '📜', ['bitacora'], 'Quién hizo cada cambio');
         if ((puede('equipos') || puede('alumnos') || puede('campeonatos')) && acad_requisitos_aplican($liga)) $cf[] = $it('admin.php?p=requisitos', 'Requisitos y documentos', '📋', ['requisitos'], 'Quién debe datos o documentos de su deporte'); // (v35)
         if (puede('config')) $cf[] = $it('admin.php?p=datos', 'Protección de datos', '🔒', ['datos'], 'Autorizaciones y solicitudes (LOPDP)', solicitudes_derechos_pendientes((int)$liga['id']));
-        if (!es_super() && puede('config')) $cf[] = $it('admin.php?p=mi_plan', 'Mi plan', '⭐', ['mi_plan'], 'Plan, módulos y pagos');
+        if (!es_super() && puede('config')) $cf[] = $it('admin.php?p=mi_plan', 'Mi plan', '⭐', ['mi_plan'], texto_app_ios('Plan, módulos y pagos', 'Plan y módulos encendidos')); // (25 nov 2026) iPhone: sin «pagos»
         // (v27) Subida masiva y descarga de todos los datos (cuentas pagadas; la pantalla explica si no está disponible)
         if (puede('config')) $cf[] = $it('admin.php?p=cargas', 'Subir datos desde Excel', '📥', ['cargas', 'importar'], es_escuela($liga) ? 'Sedes, profesores, grupos y alumnos' : 'Equipos, jugadores, árbitros, canchas y competidores');
         if (puede('config')) $cf[] = $it('admin.php?p=mis_datos', 'Descargar mis datos', '📦', ['mis_datos'], 'Todo en un Excel');
@@ -149,6 +149,13 @@ function menu_panel(): array
     }
     $cu[] = $it('admin.php?p=salir', 'Salir', '🚪', ['salir']);
     $g['cuenta'] = ['titulo' => 'Mi cuenta', 'ico' => '👤', 'items' => $cu];
+    // (23 nov 2026) iPhone: sin las pantallas del negocio de Tukán (precios, ventas, cobros) — app/app_ios.php
+    if (function_exists('en_app_ios') && en_app_ios()) {
+        foreach ($g as $k => $grupo) {
+            $g[$k]['items'] = array_values(array_filter($grupo['items'], fn($i) => !array_intersect((array)($i['activos'] ?? []), PAGINAS_NEGOCIO_IOS)));
+            if (!$g[$k]['items']) unset($g[$k]);
+        }
+    }
     return $cache = $g;
 }
 

@@ -52,6 +52,13 @@ function plan_de_liga(array $liga): ?array
  */
 function estado_suscripcion(array $liga): array
 {
+    $s = estado_suscripcion_web($liga);
+    if (function_exists('en_app_ios') && en_app_ios()) $s['texto'] = texto_estado_ios($liga, $s); // (13 nov 2026) iPhone: texto neutro (sin «contrate» ni «renueve»)
+    return $s;
+}
+
+function estado_suscripcion_web(array $liga): array
+{
     if (($liga['vence'] ?? '') === '') return ['estado' => 'sin_limite', 'dias' => null, 'texto' => 'Sin vencimiento'];
     $hoy = new DateTime('today');
     $vence = DateTime::createFromFormat('Y-m-d', $liga['vence']) ?: new DateTime('today');
@@ -83,7 +90,7 @@ function exigir_suscripcion(array $liga): void
 {
     if (liga_suspendida($liga)) throw new RuntimeException(texto_suspension($liga)); // (Tukán Central v2)
     if (estado_suscripcion($liga)['estado'] === 'vencida') {
-        throw new RuntimeException('La suscripción de ' . $liga['nombre'] . ' está vencida: por ahora no se pueden guardar cambios. La liga debe renovar su plan.');
+        throw new RuntimeException('La suscripción de ' . $liga['nombre'] . ' está vencida: por ahora no se pueden guardar cambios.' . (function_exists('en_app_ios') && en_app_ios() ? '' : ' La liga debe renovar su plan.'));
     }
 }
 

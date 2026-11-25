@@ -9,7 +9,7 @@ $super = es_super();
 $liga = liga_trabajo();
 if (!$super && !$liga) throw new RuntimeException('Elija primero una liga o escuela.');
 $demo = !$super && $liga && !empty($liga['es_demo']);
-$wa_ventas = telefono_wa((string)ajuste('ventas_whatsapp'));
+$wa_ventas = en_app_ios() ? '' : telefono_wa((string)ajuste('ventas_whatsapp')); // (25 nov 2026) iPhone: sin el WhatsApp de ventas
 
 // Captura adjunta (privada): solo quien puede ver el ticket
 if (get('adjunto') !== '') {
@@ -85,6 +85,11 @@ if (es_post()) {
 }
 
 $t = (int)get('t') ? ticket_visible((int)get('t')) : null;
+// (25 nov 2026) iPhone: los tickets de «Pagos, plan o factura» (cotizaciones, pagos del plan) no se abren ni se listan en la app
+if ($t && en_app_ios() && ($t['tipo'] ?? '') === 'pagos') {
+    flash('Este ticket no está disponible en la app.', 'error');
+    ir('admin.php?p=soporte');
+}
 if ($t) {
     q('UPDATE soporte_tickets SET ' . ($super ? 'sin_leer_super' : 'sin_leer_cliente') . ' = 0 WHERE id = ?', [$t['id']]);
 }
@@ -154,7 +159,7 @@ elseif (!$super && get('nuevo') !== ''):
       <h1>🎫 Soporte</h1>
       <div class="tarjeta"><p>En la <b>demostración</b> no se abren tickets. ¿Tiene una pregunta o quiere pedir una funcionalidad? Escríbanos y le ayudamos enseguida.</p>
         <?php if ($wa_ventas): ?><a class="btn" target="_blank" rel="noopener" href="https://wa.me/<?= e($wa_ventas) ?>?text=<?= rawurlencode('Hola, estoy probando la demo de ' . marca() . ' y tengo una consulta: ') ?>">💬 Escribir por WhatsApp</a><?php endif; ?>
-        <a class="btn btn-sec" href="<?= e(url_empezar()) ?>">Solicitar mi demo de <?= dias_demo() ?> días</a></div>
+        <?php if (!en_app_ios()): // (25 nov 2026) iPhone: sin pedir demo ?><a class="btn btn-sec" href="<?= e(url_empezar()) ?>">Solicitar mi demo de <?= dias_demo() ?> días</a><?php endif; ?></div>
     <?php elseif ($tipo === 'funcionalidad'): ?>
       <h1>💡 Pedir una funcionalidad nueva</h1>
       <p class="suave">Cuéntenos con detalle qué le gustaría que haga <?= e(marca()) ?>. Mientras más claro, más rápido lo podemos evaluar y desarrollar. Le avisamos aquí cuando tengamos novedades.</p>
@@ -178,7 +183,7 @@ elseif (!$super && get('nuevo') !== ''):
       <form method="post" enctype="multipart/form-data" class="tarjeta">
         <?= csrf_campo() ?><input type="hidden" name="accion" value="crear"><input type="hidden" name="pagina" value="<?= e($desde) ?>">
         <div class="campos">
-          <div><label>¿Sobre qué es?</label><select name="tipo"><?php foreach (tipos_ticket() as $k => [$i, $n]): if ($k === 'funcionalidad') continue; ?><option value="<?= $k ?>" <?= $k === $tipo ? 'selected' : '' ?>><?= $i ?> <?= e($n) ?></option><?php endforeach; ?></select></div>
+          <div><label>¿Sobre qué es?</label><select name="tipo"><?php foreach (tipos_ticket() as $k => [$i, $n]): if ($k === 'funcionalidad' || ($k === 'pagos' && en_app_ios())) continue; // (25 nov 2026) iPhone: sin «Pagos, plan o factura» ?><option value="<?= $k ?>" <?= $k === $tipo ? 'selected' : '' ?>><?= $i ?> <?= e($n) ?></option><?php endforeach; ?></select></div>
           <div><label>Prioridad</label><select name="prioridad"><?php foreach (prioridades_ticket() as $k => $n): ?><option value="<?= $k ?>" <?= $k === 'normal' ? 'selected' : '' ?>><?= e($n) ?></option><?php endforeach; ?></select></div>
         </div>
         <label>Asunto *</label><input name="asunto" required maxlength="120" placeholder="Ej: No me deja imprimir los carnets">
@@ -205,6 +210,7 @@ else:
     if ($f_estado === 'abiertos') $w[] = "t.estado NOT IN ('resuelto','cerrado')";
     elseif (array_key_exists($f_estado, estados_ticket())) { $w[] = 't.estado = ?'; $par[] = $f_estado; }
     if ($f_tipo !== '') { $w[] = 't.tipo = ?'; $par[] = $f_tipo; }
+    if (en_app_ios()) $w[] = "t.tipo <> 'pagos'"; // (25 nov 2026) iPhone: sin los tickets del plan del software
     if ($super && get('buscar') !== '') { $w[] = '(l.nombre LIKE ? OR t.asunto LIKE ? OR t.autor LIKE ?)'; $b = '%' . get('buscar') . '%'; array_push($par, $b, $b, $b); }
     $lista = filas('SELECT t.*, l.nombre AS liga, (SELECT COUNT(*) FROM soporte_mensajes m WHERE m.ticket_id = t.id) AS n_msg FROM soporte_tickets t LEFT JOIN ligas l ON l.id = t.liga_id'
         . ($w ? ' WHERE ' . implode(' AND ', $w) : '') . " ORDER BY CASE t.prioridad WHEN 'urgente' THEN 0 WHEN 'alta' THEN 1 ELSE 2 END, t.actualizado DESC LIMIT 300", $par);
@@ -227,7 +233,7 @@ else:
         <input type="hidden" name="p" value="soporte">
         <select name="estado" onchange="this.form.submit()"><option value="abiertos" <?= $f_estado === 'abiertos' ? 'selected' : '' ?>>Abiertos</option><option value="todos" <?= $f_estado === 'todos' ? 'selected' : '' ?>>Todos</option>
           <?php foreach (estados_ticket() as $k => $n): ?><option value="<?= $k ?>" <?= $f_estado === $k ? 'selected' : '' ?>><?= e($n) ?></option><?php endforeach; ?></select>
-        <select name="tipo" onchange="this.form.submit()"><option value="">Todos los tipos</option><?php foreach (tipos_ticket() as $k => [$i, $n]): ?><option value="<?= $k ?>" <?= $f_tipo === $k ? 'selected' : '' ?>><?= $i ?> <?= e($n) ?></option><?php endforeach; ?></select>
+        <select name="tipo" onchange="this.form.submit()"><option value="">Todos los tipos</option><?php foreach (tipos_ticket() as $k => [$i, $n]): if ($k === 'pagos' && en_app_ios()) continue; ?><option value="<?= $k ?>" <?= $f_tipo === $k ? 'selected' : '' ?>><?= $i ?> <?= e($n) ?></option><?php endforeach; ?></select>
         <input name="buscar" value="<?= e(get('buscar')) ?>" placeholder="Buscar liga, asunto o persona"><button class="btn btn-sec btn-chico">Buscar</button>
       </form>
     <?php elseif ($demo): ?>

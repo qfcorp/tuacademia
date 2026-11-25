@@ -17,6 +17,12 @@ if (!$pg) {
     exit;
 }
 $liga = fila('SELECT * FROM ligas WHERE id = ?', [$pg['liga_id']]);
+if ($pg['destino'] === 'tuvocalia' && en_app_ios()) { // (13 nov 2026) la suscripción al software no se paga dentro de la app de iPhone (regla de Apple)
+    cabecera_publica('Pago no disponible');
+    echo '<div class="tarjeta login" id="pago-no-disponible-app"><h1>Pago no disponible</h1><p>Este pago no está disponible en la app.</p></div>';
+    pie_publico();
+    exit;
+}
 cortar_liga_publica($liga, false, true); // (Anexo A) en la papelera → 404; pausada → «temporalmente no disponible»
 if ($pg['destino'] === 'organizacion' && $pg['estado'] === 'pendiente') exigir_modulo_portal($liga, 'pagos_tarjeta'); // (Anexo B) la suscripción siempre se puede pagar
 $datos = json_decode($pg['datos'], true) ?: [];

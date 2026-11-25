@@ -26,9 +26,10 @@ function motivo_solo_pagadas(?array $liga, string $modulo = ''): string
 {
     if (es_super()) return '';
     if (!$liga) return 'Elija primero una liga o escuela.';
-    if (!empty($liga['es_demo'])) return 'Esta función no está disponible en la demostración: se activa al contratar ' . marca() . '.';
-    if (!empty($liga['es_prueba']) || estado_suscripcion($liga)['estado'] === 'prueba') return 'Esta función se activa cuando su cuenta pasa de la demo a un plan pagado.';
-    if ($modulo !== '' && !modulo_activo($liga, $modulo)) return 'Su plan no incluye «' . nombre_modulo($modulo) . '». Está en los planes completos (Profesional y Escuela Completo).';
+    $ios = function_exists('en_app_ios') && en_app_ios(); // (25 nov 2026) iPhone: sin «al contratar», «plan pagado» ni «planes completos»
+    if (!empty($liga['es_demo'])) return 'Esta función no está disponible en la demostración' . ($ios ? '.' : ': se activa al contratar ' . marca() . '.');
+    if (!empty($liga['es_prueba']) || estado_suscripcion($liga)['estado'] === 'prueba') return $ios ? 'Esta función no está disponible durante el periodo de prueba.' : 'Esta función se activa cuando su cuenta pasa de la demo a un plan pagado.';
+    if ($modulo !== '' && !modulo_activo($liga, $modulo)) return 'Su plan no incluye «' . nombre_modulo($modulo) . '».' . ($ios ? '' : ' Está en los planes completos (Profesional y Escuela Completo).');
     return '';
 }
 
@@ -43,10 +44,11 @@ function pantalla_solo_pagadas(string $titulo, string $motivo, string $volver = 
     <h1><?= e($titulo) ?></h1>
     <div class="tarjeta" style="max-width:720px">
       <p style="font-size:1.1rem">🔒 <?= e($motivo) ?></p>
-      <p class="suave">Con un plan pagado puede subir de una sola vez todos sus <?= $liga && es_escuela($liga) ? 'alumnos, grupos, profesores y sedes' : 'equipos, jugadores, árbitros, canchas y competidores' ?> desde Excel, y descargar una copia de todos sus datos cuando quiera.</p>
+      <p class="suave"><?= en_app_ios() ? 'En las cuentas pagadas se puede subir' : 'Con un plan pagado puede subir' ?> de una sola vez todos sus <?= $liga && es_escuela($liga) ? 'alumnos, grupos, profesores y sedes' : 'equipos, jugadores, árbitros, canchas y competidores' ?> desde Excel, y descargar una copia de todos sus datos cuando quiera.</p>
       <div class="acciones">
-        <?php if ($liga && empty($liga['es_demo'])): ?><a class="btn" href="admin.php?p=mi_plan">Ver planes y pagar</a><?php else: ?><a class="btn" href="<?= e(url_empezar()) ?>">Solicitar mi cuenta</a><?php endif; ?>
-        <?php if ($wa): ?><a class="btn btn-sec" href="https://wa.me/<?= e($wa) ?>?text=<?= rawurlencode('Hola, quiero activar ' . marca() . ($liga ? ' para ' . $liga['nombre'] : '')) ?>" target="_blank" rel="noopener">WhatsApp de ventas</a><?php endif; ?>
+        <?php if (en_app_ios()): // (13 nov 2026) en el iPhone no se vende ?>
+        <?php elseif ($liga && empty($liga['es_demo'])): ?><a class="btn" href="admin.php?p=mi_plan">Ver planes y pagar</a><?php else: ?><a class="btn" href="<?= e(url_empezar()) ?>">Solicitar mi cuenta</a><?php endif; ?>
+        <?php if ($wa && !en_app_ios()): ?><a class="btn btn-sec" href="https://wa.me/<?= e($wa) ?>?text=<?= rawurlencode('Hola, quiero activar ' . marca() . ($liga ? ' para ' . $liga['nombre'] : '')) ?>" target="_blank" rel="noopener">WhatsApp de ventas</a><?php endif; ?>
       </div>
     </div>
     <?php
@@ -290,7 +292,8 @@ function novedades_para(?array $liga, int $limite = 50): array
     $sql = 'SELECT * FROM novedades WHERE publicada = 1' . ($para !== '' && !es_super() ? " AND para IN ('todos', '" . $para . "')" : '')
         . (PRODUCTO === 'academia' ? " AND (version = 'academia' OR fecha >= '2026-10-13')" : '') // (TuAcademia) no se muestra el historial de TuVocalía
         . ' ORDER BY fecha DESC, id DESC LIMIT ' . (int)$limite;
-    return filas($sql);
+    $l = filas($sql);
+    return function_exists('ios_filtrar_novedades') ? ios_filtrar_novedades($l) : $l; // (25 nov 2026) iPhone: sin las del plan del software
 }
 
 function novedades_sin_ver(): int

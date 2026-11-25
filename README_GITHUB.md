@@ -59,3 +59,17 @@ sudo docker exec -u www-data tuacademia-php php /var/www/tuacademia/app/revisor_
 Cuando Google dé la huella de «Firma de apps» (Play Console → Integridad de la app), Claude arma el comando
 `sudo bash /var/www/tuacademia/vps/app_android.sh` seguido de esa huella (la agrega sin borrar la de Tukán).
 Prueba: `bash pruebas/v38/reiniciar.sh && python3 pruebas/app_android/prueba_app_android.py` → **73/73**.
+
+## App de iPhone: sin precios ni pagos (regla de Apple), se reconoce por TukanIOS (13 nov 2026)
+`app/app_ios.php` (igual en TuVocalía). La app de iPhone abre `/app.php?origen=ios` (cookie `canal=ios`) y su User-Agent trae `TukanIOS`.
+Ahí no se ve ningún precio del software ni nada para pagar, contratar, cotizar, mejorar o cancelar, ni dónde pagar: Mi plan neutro
+(`html_mi_plan_ios()`), avisos sin valor ni WhatsApp de ventas, páginas de venta → `app.php`, manual y Ayuda sin los capítulos de Mi plan,
+POST de pago/cotización/cancelación rechazados, `pagar.php`/`plux_pagar.php` de la suscripción y `play.php` cerrados. `en_app_tienda()` (Google
+Play o iPhone) reemplaza a `en_app_play()` donde solo se escondía; el cobro de Google Play nunca va en el iPhone. `<html class="tukan-ios">`.
+Lo que la academia cobra a sus alumnos sigue. Detalle en `BLOC_DE_NOTAS.md`. Viene con el código (`vps_2_codigo.sh` de siempre).
+Prueba: `TA_PUERTO=8641 TA_SIM=8642 bash pruebas/v38/reiniciar.sh && TA_PUERTO=8641 python3 pruebas/app_iphone/prueba_app_iphone.py` → **58/58**.
+(25 nov 2026, segunda parte, igual que TuVocalía #18 y más): en el iPhone el súper no ve ni abre Negocio, Ventas, Planes, Vendedores,
+Disciplinas, Embudo, Ajustes, Cobros, Recomiende y gane ni Google Play (`PAGINAS_NEGOCIO_IOS`, `pagina_negocio_ios()`); no crea ni edita cuentas
+(planes y precios); `ver_precios_software()` = no. Novedades, tickets «Pagos, plan o factura», bitácora, Parámetros, login, manual (nota de la demo,
+PDF) y Ayuda IA sin nada del plan del software (`ios_filtrar_novedades()`, `ios_bitacora_oculta()`, `ios_limpiar_manual()`).
+Prueba → **113/113** (revisión estricta de todas las pantallas del dueño y del súper, y la misma revisión en la web encuentra los precios).

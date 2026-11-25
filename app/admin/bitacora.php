@@ -100,6 +100,7 @@ cabecera_admin('Bitácora');
   <?php foreach ($filas as $r):
       $d = json_decode($r['despues'] ?? $r['antes'] ?? '[]', true) ?: [];
       $cambios = detalle_cambios($r);
+      if (ios_bitacora_oculta($r, $cambios)) continue; // (25 nov 2026) iPhone: sin lo del plan del software
       $etq = etiqueta_registro($r['tabla'], $d);
   ?>
   <tr>

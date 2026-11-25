@@ -118,7 +118,7 @@ function liga_suspendida(?array $l): bool
 /** Mensaje para la cuenta suspendida. */
 function texto_suspension(array $l): string
 {
-    $wa = trim((string)ajuste('ventas_whatsapp'));
+    $wa = function_exists('en_app_tienda') && en_app_tienda() ? '' : trim((string)ajuste('ventas_whatsapp')); // (13 nov 2026) en las apps de tienda (iPhone, Google Play), sin el WhatsApp de ventas
     return 'Cuenta suspendida. Comuníquese con ' . ajuste('empresa') . ($wa !== '' ? ' (WhatsApp ' . $wa . ')' : '') . ' para reactivarla. Sus datos siguen guardados.';
 }
 

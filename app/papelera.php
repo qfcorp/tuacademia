@@ -104,7 +104,7 @@ function pantalla_cuenta_pausada(array $l): never
         . '<p><b>' . e((string)$l['nombre']) . '</b> no está disponible por ahora. Tus datos siguen guardados.</p>'
         . '<p style="background:#fff6e5;border-left:4px solid #e0a100;padding:10px 12px;border-radius:6px"><b>Motivo:</b> ' . e(texto_motivo_pausa($l)) . '</p>'
         . '<p>Para reactivarla comunícate con ' . e($empresa !== '' ? $empresa : marca()) . '.</p>'
-        . ($wa !== '' ? '<p><a href="https://wa.me/' . e($wa) . '?text=' . rawurlencode($texto) . '" style="display:inline-block;background:#1f9d55;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">WhatsApp ' . e($num) . '</a></p>' : '')
+        . ($wa !== '' && !(function_exists('en_app_tienda') && en_app_tienda()) ? '<p><a href="https://wa.me/' . e($wa) . '?text=' . rawurlencode($texto) . '" style="display:inline-block;background:#1f9d55;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">WhatsApp ' . e($num) . '</a></p>' : '')
         . '<p style="margin-bottom:0"><a href="admin.php?p=salir" style="color:#555">Cerrar sesión</a></p>';
     pagina_sencilla(403, 'Tu cuenta está pausada', $html);
 }

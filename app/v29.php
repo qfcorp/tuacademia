@@ -43,6 +43,7 @@ function fixture_pro_activo(?array $liga, bool $publico = false): bool
 /** Caja "🔒 exclusivo del plan Profesional" con el botón para contratar (panel). */
 function html_bloqueo_fixture_pro(array $liga, string $motivo): string
 {
+    if (function_exists('en_app_ios') && en_app_ios()) return '<p style="margin:.3rem 0">🔒 ' . e($motivo) . '</p>'; // (25 nov 2026) iPhone: sin ofrecer otro plan ni WhatsApp de ventas
     $wa = telefono_wa((string)ajuste('ventas_whatsapp'));
     $h = '<p style="margin:.3rem 0">🔒 ' . e($motivo) . '</p>'
         . '<p class="suave" style="margin:.3rem 0 .6rem">Con el plan Profesional imprime el fixture completo de cada campeonato (con o sin resultados) y ve el esquema de todo el torneo desde el primer día: grupos, jornadas y la llave de la fase final con los cruces, que se llenan solos con los clasificados.</p>'

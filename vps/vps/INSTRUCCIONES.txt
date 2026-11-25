@@ -65,6 +65,10 @@ APP DE ANDROID EN GOOGLE PLAY (13-nov-2026), una linea a la vez:
   Borrarla cuando ya no se necesite:
     sudo docker exec -u www-data tuacademia-php php /var/www/tuacademia/app/revisor_google.php borrar
 
+APP DE IPHONE SIN PRECIOS DEL SOFTWARE (13 y 25-nov-2026): viene con el codigo, no hay que configurar nada:
+    cd $HOME/tuacademia && git pull && cd $HOME && sudo bash tuacademia/vps/vps/vps_2_codigo.sh
+  La app de iPhone se reconoce por TukanIOS en el User-Agent o por /app.php?origen=ios. En la web y en Android todo sigue igual.
+
 NUNCA correr en el servidor los scripts de pruebas/ (borran la base). vps_2_codigo.sh deja la marca data/.servidor para impedirlo.
 
 CONECTAR CON EL PANEL TUKAN CENTRAL (panel.tukanec.com)

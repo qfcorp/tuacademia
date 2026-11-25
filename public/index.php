@@ -74,7 +74,7 @@ if (PRODUCTO === 'academia' && $v_global === 'ligas') $_GET['tipo'] = 'escuela';
 if ($slug === '') {
     // (13 nov 2026) Dentro de la app de Google Play no se muestran las páginas de venta del software (portada con WhatsApp de ventas,
     // pedir demo o cotización, folletos y comparación de planes): llevan al inicio de la app. El súper usuario no cambia.
-    if (en_app_play() && !in_array($v_global, ['privacidad', 'derechos', 'ligas', 'manual'], true)) {
+    if (en_app_tienda() && !in_array($v_global, ['privacidad', 'derechos', 'ligas', 'manual'], true)) { // (13 nov 2026) también en el iPhone
         header('Location: ' . url_base() . 'app.php', true, 302);
         exit;
     }

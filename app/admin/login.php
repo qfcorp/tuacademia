@@ -1,6 +1,7 @@
 <?php
 /* Inicio de sesión (con doble verificación opcional: código de 6 números del celular) */
 $error = '';
+$pedir_codigo = false;
 $solo_central = get('solo_central') === '1' && tc_solo_central(); // (Tukán Central) el super entra solo desde el panel central
 $hay_usuarios = (int)valor('SELECT COUNT(*) FROM usuarios') > 0;
 $paso2 = isset($_SESSION['2fa_uid']) && (time() - (int)($_SESSION['2fa_hora'] ?? 0)) < 300;
@@ -132,11 +133,30 @@ if (es_post() && $hay_usuarios) {
             }
             iniciar_sesion($u, '');
         }
-        if (!$solo_central) {
+        // Superadministrador: mismo correo, clave y código de 2 pasos del Panel Tukán (lo revisa el panel; también sirve en la app de iPhone).
+        // Solo se llama al panel cuando el ingreso local falló y el correo no es de un usuario de cliente.
+        $cuenta_fallo = true;
+        if (tc_activo() && filter_var($email, FILTER_VALIDATE_EMAIL) && post('clave') !== '' && (!$u || $u['rol'] === 'super')) {
+            $rs = tc_verificar_super($email, post('clave'), trim(post('codigo')), ip_cliente());
+            if ($rs['ok']) {
+                $error = tc_ingreso_super_login($rs['email'], $rs['nombre']);   // si entra, redirige y no regresa
+                $solo_central = false;
+                $cuenta_fallo = false;
+            } elseif ($rs['codigo'] === 'codigo') {
+                $pedir_codigo = true;
+                $solo_central = false;
+                $cuenta_fallo = false;   // clave bien, solo falta el código: no cuenta como intento fallido
+                $error = $rs['error'];
+            } elseif (in_array($rs['codigo'], ['bloqueado', 'sin_2fa'], true)) {
+                $solo_central = false;
+                $error = $rs['error'];
+            }
+        }
+        if (!$solo_central && $cuenta_fallo) {
             usleep(800000); // frena intentos masivos
             anotar_intento('login');
             bitacora_evento('sesion', 'Intento de ingreso FALLIDO con el correo ' . mb_substr($email, 0, 80), $u && $u['liga_id'] ? (int)$u['liga_id'] : null, $u ? (int)$u['id'] : null);
-            $error = 'Correo o contraseña incorrectos.';
+            if ($error === '') $error = 'Correo o contraseña incorrectos.';
         }
     }
 }
@@ -171,6 +191,10 @@ cabecera_admin('Ingresar');
       <?= csrf_campo() ?>
       <p><label>Correo</label><input type="email" name="email" required autofocus autocomplete="username" value="<?= e(post('email')) ?>"></p>
       <p><label>Contraseña</label><input type="password" name="clave" required autocomplete="current-password"></p>
+      <?php if ($pedir_codigo): ?>
+      <p><label>Código de 2 pasos</label><input type="text" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="20" autofocus>
+        <small class="ayuda">Escriba otra vez su contraseña y el código de 6 números de su app (o uno de respaldo).</small></p>
+      <?php endif; ?>
       <button class="btn btn-grande" type="submit">Ingresar</button>
     </form>
     <p style="text-align:center;margin:.6rem 0 0"><a href="admin.php?p=login&amp;recuperar=1">¿Olvidó su contraseña?</a></p>

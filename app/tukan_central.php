@@ -430,6 +430,76 @@ function tc_sso(array $p): never
     ir('admin.php');
 }
 
+/* ---------- Ingreso del súper usuario desde el login normal (Anexo C del protocolo v2: super_api.php del panel) ---------- */
+
+/**
+ * El programa NO revisa la clave del súper usuario: se la manda al Panel Tukán (misma clave y mismo código de 2 pasos del panel).
+ * Devuelve ['ok' => bool, 'codigo' => 'ok'|'codigo'|'credenciales'|'bloqueado'|'sin_2fa'|'rol'|'red'|..., 'error' => texto, 'email', 'nombre'].
+ * Falla de red o respuesta rota: codigo 'red'.
+ */
+function tc_verificar_super(string $email, string $clave, string $codigo, string $ip): array
+{
+    $red = ['ok' => false, 'codigo' => 'red', 'error' => 'No se pudo hablar con el Panel Tukán. Intente de nuevo.'];
+    $c = tc_config();
+    if (!$c['activo'] || !function_exists('curl_init')) return $red;
+    $cuerpo = json_encode(['email' => $email, 'clave' => $clave, 'codigo' => $codigo, 'ip' => $ip], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $ahora = time();
+    $p = ['v' => 2, 'tipo' => 'super', 'inst' => $c['id'], 'email' => filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : 'sistema@tukanec.com',
+          'nombre' => 'Ingreso', 'rol' => 'dueno', 'iat' => $ahora, 'exp' => $ahora + 60, 'nonce' => bin2hex(random_bytes(16)),
+          'bh' => tc_b64(hash('sha256', (string)$cuerpo, true))];
+    $ch = curl_init($c['url'] . '/super_api.php');
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $cuerpo, CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_TIMEOUT => 8,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json', 'X-Tukan-Token: ' . tc_firmar($p, $c['secreto'])]]);
+    $r = curl_exec($ch);
+    curl_close($ch);
+    if ($r === false) return $red;
+    $j = json_decode((string)$r, true);
+    if (!is_array($j) || !array_key_exists('ok', $j)) return $red;
+    if ($j['ok'] === true) {
+        $mail = mb_strtolower(trim((string)($j['email'] ?? '')), 'UTF-8');
+        if (!filter_var($mail, FILTER_VALIDATE_EMAIL)) return $red;
+        return ['ok' => true, 'codigo' => 'ok', 'error' => '', 'email' => $mail, 'nombre' => (string)($j['nombre'] ?? '')];
+    }
+    return ['ok' => false, 'codigo' => (string)($j['codigo'] ?? 'credenciales'), 'error' => (string)($j['error'] ?? 'Correo o contraseña incorrectos.')];
+}
+
+/**
+ * Abre la sesión del superadministrador después de que el panel aceptó su clave y su código (igual que tc_sso, pero desde el login).
+ * Busca o crea el súper con ese correo. Devuelve un texto de error si no se pudo (el correo es de un usuario de un cliente o está
+ * desactivado); si entra, redirige a admin.php y no regresa.
+ */
+function tc_ingreso_super_login(string $email, string $nombre): string
+{
+    $email = mb_strtolower(trim($email), 'UTF-8');
+    $nombre = mb_substr(trim(preg_replace('/\s+/', ' ', $nombre)), 0, 80);
+    if ($nombre === '') $nombre = (string)strstr($email, '@', true);
+    contexto_auditoria(['usuario_id' => null, 'usuario' => 'Panel Tukán Central <' . $email . '>', 'rol' => 'super', 'liga_id' => null, 'origen' => 'tukan_central']);
+    $u = fila('SELECT * FROM usuarios WHERE lower(email) = ?', [$email]);
+    if ($u && $u['rol'] !== 'super') {
+        bitacora_evento('seguridad', 'Ingreso con clave del Panel Tukán: se negó la entrada con ' . $email . ' porque ese correo es de un usuario que no es superadministrador', $u['liga_id'] ? (int)$u['liga_id'] : null, (int)$u['id']);
+        return 'Correo o contraseña incorrectos.';
+    }
+    if ($u && (int)$u['activo'] !== 1) {
+        bitacora_evento('seguridad', 'Ingreso con clave del Panel Tukán: se negó la entrada con ' . $email . ' porque ese superadministrador está desactivado', null, (int)$u['id']);
+        return 'Su superadministrador está desactivado en este programa.';
+    }
+    if (!$u) {
+        // Clave aleatoria imposible de adivinar: este usuario solo entra con el Panel Tukán (o con crear_admin.php)
+        q("INSERT INTO usuarios (nombre, email, clave, rol) VALUES (?, ?, ?, 'super')", [$nombre !== '' ? $nombre : 'Super Tukán', $email, password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT)]);
+        $u = fila('SELECT * FROM usuarios WHERE lower(email) = ?', [$email]);
+        bitacora_evento('sesion', 'Superadministrador creado por el Panel Tukán Central', null, (int)$u['id']);
+    }
+    session_regenerate_id(true);
+    unset($_SESSION['2fa_uid'], $_SESSION['2fa_hora'], $_SESSION['2fa_fallos'], $_SESSION['liga_trabajo'],
+        $_SESSION['vista_previa'], $_SESSION['liga_combo'], $_SESSION['jugador_portal'], $_SESSION['familia']);
+    $_SESSION['uid'] = (int)$u['id'];
+    $_SESSION['tukan_central'] = time();
+    contexto_auditoria(['usuario_id' => (int)$u['id'], 'usuario' => $u['nombre'] . ' <' . $u['email'] . '>', 'rol' => 'super', 'liga_id' => null, 'origen' => 'tukan_central']);
+    q('UPDATE usuarios SET ultimo_ingreso = ? WHERE id = ?', [date('Y-m-d H:i:s'), $u['id']]);
+    bitacora_evento('sesion', 'Entró escribiendo su clave y código de 2 pasos (login del programa) · IP ' . ip_cliente(), null, (int)$u['id']);
+    ir('admin.php');
+}
+
 /* ---------- Estado (protocolo §5; v2 §2.4) ---------- */
 
 /** Versión: commit corto de git (.git/HEAD), o app/VERSION (lo escribe vps_2_codigo.sh), o la versión de la base. */

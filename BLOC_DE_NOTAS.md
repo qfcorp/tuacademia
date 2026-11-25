@@ -1,6 +1,6 @@
 # Bloc de notas — TuAcademia (nombre provisional)
 
-Para Dimitry. Escrito en español sencillo. Última actualización: 5 de noviembre de 2026 (ver **§18 Mi plan con tarjeta por el panel**).
+Para Dimitry. Escrito en español sencillo. Última actualización: 25 de noviembre de 2026 (ver **Súper usuario por el login normal**, al final).
 
 ---
 
@@ -624,3 +624,11 @@ El Panel Tukán Central crea la demo solo y le manda la clave al correo del inte
   recorrido 20 min sin errores de PHP, Plux 3DS **4/4**.
 
 - 13 nov 2026: **Aviso de datos reales en el formulario de demo** (pedido de Dimitry): sin datos verdaderos no se prepara la demo. Prueba nueva (`data-aviso-datos-reales`).
+
+## Súper usuario: entra por el login normal con su clave y código de 2 pasos del Panel Tukán (25 nov 2026, también en la app de iPhone)
+- Antes: el superadministrador solo entraba con el botón «Entrar» del Panel Tukán Central; en el login normal (el que abre la app) decía «Correo o contraseña incorrectos».
+- Ahora: en `app/admin/login.php`, si el ingreso local falla, el correo es válido y el programa está conectado al Panel Tukán, se le pregunta al panel (`tc_verificar_super()` en `app/tukan_central.php`, POST firmado v2 tipo `super` a `/super_api.php`, Anexo C del protocolo). El programa NO guarda ni compara la clave: la revisa el panel (misma clave, mismo código de 2 pasos, mismo bloqueo de 5 fallos/15 min).
+- Si sale bien, `tc_ingreso_super_login()` abre la sesión igual que el SSO (busca o crea el superadministrador con ese correo, `tukan_central` en la sesión, «← Panel Tukán») y anota en la bitácora con la IP. Si falta el código, la pantalla pide «Código de 2 pasos» sin contarlo como intento fallido. Panel caído: mensaje de siempre.
+- Reglas: la clave de un usuario de cliente (liga o escuela) NUNCA se manda al panel (solo se consulta cuando el correo no existe o es de un superadministrador); un correo de cliente nunca se vuelve superadministrador. Con `TUKAN_SOLO_CENTRAL=1` el súper local con su clave sola sigue bloqueado, pero con clave y código del Panel entra (así sirve en la app).
+- Sirve igual en TuVocalía (mismo código). Pruebas: `pruebas/tukan_central/prueba_super_login.py` (30; panel de mentira `panel_super_simulado.php`; base nueva con `pruebas/v38/reiniciar.sh`). `prueba_central.py` (125) y `prueba_usuarios.py` (43) siguen bien.
+- **Falta:** poner en el servidor el `location = /super_api.php` en nginx del Panel Central (los servidores ya instalados lo necesitan a mano) y desplegar primero el Panel Central. La app no se recompila.

@@ -74,3 +74,6 @@ Con este módulo, los recibos de las mensualidades y cobros (y, en ligas, los pa
 **Si algo falla**
 - Si TuFactura o el SRI no responden, el cobro igual se guarda. La factura queda pendiente: toca **Reintentar las pendientes** o **Revisar**.
 - Si apagas el módulo, las facturas hechas se quedan en TuFactura.
+
+## Superadministrador
+El superadministrador de Tukán entra por el login normal del programa (también en la app de iPhone) escribiendo su correo, su contraseña y su código de 2 pasos del Panel Tukán. La contraseña y el código se revisan en el Panel Tukán; el programa no los guarda.

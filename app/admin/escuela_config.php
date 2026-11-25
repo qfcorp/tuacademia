@@ -108,7 +108,7 @@ $ed = puede('config', true);
       <div><label>A nombre de</label><input type="text" name="deuna_titular" maxlength="80" value="<?= e($liga['deuna_titular'] ?? '') ?>" placeholder="Como sale en DeUna"></div>
     </div>
     <h3>💳 Payphone (opcional)</h3>
-    <p class="suave" style="margin-top:0">Para que los padres paguen con tarjeta. En su cuenta de Payphone: <b>Desarrolladores → Crear aplicación (tipo Web)</b>, ponga como <b>URL de respuesta</b> <code><?= e(url_base()) ?>payphone.php</code> y copie aquí el <b>Token</b> y el <b>Store ID</b>.<?= !modulo_activo($liga, 'pago_payphone') ? ' <b>Está en el plan Completo.</b>' : '' ?></p>
+    <p class="suave" style="margin-top:0">Para que los padres paguen con tarjeta. En su cuenta de Payphone: <b>Desarrolladores → Crear aplicación (tipo Web)</b>, ponga como <b>URL de respuesta</b> <code><?= e(url_base()) ?>payphone.php</code> y copie aquí el <b>Token</b> y el <b>Store ID</b>.<?= !modulo_activo($liga, 'pago_payphone') && !en_app_ios() ? ' <b>Está en el plan Completo.</b>' : '' // (25 nov 2026) iPhone: sin ofrecer otro plan ?></p>
     <div class="campos">
       <div class="campo-ancho"><label>Token de Payphone</label><input type="password" name="payphone_token" maxlength="2000" value="<?= e($liga['payphone_token'] ?? '') ?>" autocomplete="off"></div>
       <div><label>Store ID</label><input type="text" name="payphone_store_id" maxlength="80" value="<?= e($liga['payphone_store_id'] ?? '') ?>" autocomplete="off"></div>
@@ -123,7 +123,7 @@ $ed = puede('config', true);
 <div class="tarjeta" id="formativas"<?= es_academia() && !acad_muestra_posicion($liga) ? ' style="display:none"' : '' ?>>
   <h2 style="margin-top:0">🏆 Divisiones formativas (modo club)</h2>
   <p class="suave" style="margin-top:0">Para clubes y academias que compiten con sus categorías (Sub-10 a Sub-19). Agrega: <b>partidos con convocatoria y minutos jugados</b>, <b>maduración y pico de crecimiento</b>, <b>notas del cuerpo técnico por área</b> (preparación física, psicología, nutrición, médico), <b>valoraciones con potencial</b>, <b>seguimiento del colegio</b> y <b>lesiones con fases de regreso</b>. Si su escuela es recreativa, déjelo apagado: el menú queda más simple.</p>
-  <?php if (!modulo_activo($liga, 'esc_formativas') && !es_super()): ?><p class="aviso aviso-info">Su plan actual no incluye esta sección. <a href="admin.php?p=mi_plan">Ver planes</a>.</p><?php endif; ?>
+  <?php if (!modulo_activo($liga, 'esc_formativas') && !es_super()): ?><p class="aviso aviso-info">Su plan actual no incluye esta sección.<?php if (!en_app_ios()): // (25 nov 2026) iPhone: sin «Ver planes» ?> <a href="admin.php?p=mi_plan">Ver planes</a>.<?php endif; ?></p><?php endif; ?>
   <form method="post"><?= csrf_campo() ?><input type="hidden" name="accion" value="formativas">
     <label class="check"><input type="checkbox" name="esc_formativas" value="1" <?= !empty($liga['esc_formativas']) ? 'checked' : '' ?>> Activar las divisiones formativas en esta escuela</label>
     <?php if ($ed): ?><button class="btn" style="margin-top:8px">Guardar</button><?php endif; ?>

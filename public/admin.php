@@ -76,7 +76,7 @@ if (get('combo') !== '' && $u['rol'] === 'liga') {
 // (v10) Liga de demostración: se puede mirar todo, pero no se guarda nada
 // (v15) Si se permite guardar en la demo (se borra cada madrugada), solo se bloquea la cuenta y los usuarios
 if (es_post() && !es_super() && $p !== 'ayuda' && es_usuario_demo($u) && (!demo_guardar() || in_array($p, ['seguridad', 'clave', 'usuarios', 'mi_plan', 'pasarela', 'pagos_linea', 'soporte', 'cargas', 'mis_datos'], true))) {
-    flash('Esta es la demostración: puede mirar todo, pero los cambios no se guardan. Solicite su demo para probarlo con sus datos.', 'error');
+    flash('Esta es la demostración: puede mirar todo, pero los cambios no se guardan.' . texto_app_ios(' Solicite su demo para probarlo con sus datos.', ''), 'error'); // (25 nov 2026) iPhone: sin «Solicite su demo»
     ir($_SERVER['HTTP_REFERER'] ?? 'admin.php');
 }
 // Doble verificación obligatoria para administradores (si el superadministrador la exige)
@@ -86,6 +86,11 @@ if (empty($u['vista_super']) && empty($_SESSION['tukan_central']) && doble_verif
 }
 // (v37) El administrador de un evento entra directo a sus olimpiadas
 if ($p === 'inicio' && perfil_actual() === 'evento') $p = 'olimpiadas';
+// (23 nov 2026) iPhone: las pantallas del negocio de Tukán (precios, ventas, cobros) no se abren (regla de Apple 3.1.1)
+if (function_exists('pagina_negocio_ios') && pagina_negocio_ios($p)) {
+    flash('Esta sección no está disponible en la app.', 'error');
+    ir('admin.php');
+}
 // (v7) Perfil del usuario de la liga: solo entra a sus menús; "Solo consulta" no puede guardar nada
 if (!puede_pagina($p)) {
     flash('Su perfil (' . nombre_perfil(perfil_actual()) . ') no tiene acceso a esa sección.', 'error');
@@ -102,7 +107,7 @@ if (es_post() && !in_array($p, ['seguridad', 'clave'], true) && !puede_pagina($p
 }
 // Suscripción vencida: el panel de la liga queda en solo lectura
 if (es_post() && !in_array($p, ['seguridad', 'mi_plan', 'soporte', 'novedades', 'ayuda'], true) && !liga_puede_editar(liga_trabajo())) { // (v12) con la suscripción vencida igual puede pagar en Mi plan
-    flash(liga_suspendida(liga_trabajo()) ? texto_suspension(liga_trabajo()) : estado_suscripcion(liga_trabajo())['texto'] . ' Comuníquese con ' . ajuste('empresa') . ' para renovar.', 'error'); // (Tukán Central v2) suspendida
+    flash(liga_suspendida(liga_trabajo()) ? texto_suspension(liga_trabajo()) : estado_suscripcion(liga_trabajo())['texto'] . texto_app_ios(' Comuníquese con ' . ajuste('empresa') . ' para renovar.', ''), 'error'); // (Tukán Central v2) suspendida; (25 nov 2026) iPhone: sin «para renovar»
     ir($_SERVER['HTTP_REFERER'] ?? 'admin.php');
 }
 // (v35) Campeonato de un módulo deportivo que la cuenta no tiene (se lo quitaron o no lo renovó): se puede ver, no cambiar
@@ -110,7 +115,7 @@ if (liga_trabajo() && in_array($p, ['torneo', 'carrera', 'duelo', 'bolos', 'prue
     $mod_t = (string)valor('SELECT modalidad FROM torneos WHERE id = ? AND liga_id = ?', [(int)get('id'), (int)liga_trabajo()['id']]);
     if ($mod_t !== '' && !modalidad_permitida(liga_trabajo(), $mod_t)) {
         if (es_post() && !es_super()) {
-            flash('Este campeonato es del módulo ' . nombre_modulo_deporte(modulo_de_modalidad($mod_t)) . ', que su cuenta no tiene: puede verlo pero no cambiarlo. Agregue el módulo en ⭐ Mi plan.', 'error');
+            flash('Este campeonato es del módulo ' . nombre_modulo_deporte(modulo_de_modalidad($mod_t)) . ', que su cuenta no tiene: puede verlo pero no cambiarlo.' . texto_app_ios(' Agregue el módulo en ⭐ Mi plan.', ''), 'error');
             ir($_SERVER['HTTP_REFERER'] ?? 'admin.php?p=torneos');
         }
         if (!es_post()) flash('🔒 Este campeonato es del módulo ' . nombre_modulo_deporte(modulo_de_modalidad($mod_t)) . ', que su cuenta no tiene. Puede verlo, pero ' . texto_app_ios('para cambiarlo agregue el módulo en ⭐ Mi plan.', 'no cambiarlo.'), 'error');

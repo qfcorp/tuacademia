@@ -2,6 +2,8 @@
 /*
  * APP DE iPHONE (App Store) — SIN PRECIOS NI PAGOS DEL SOFTWARE (13 nov 2026)
  * (Mismo archivo en TuVocalía y TuAcademia.)
+ * (25 nov 2026) Esta copia de TuAcademia trae además: 'google_play' en PAGINAS_NEGOCIO_IOS, ios_filtrar_novedades(), ios_bitacora_oculta()
+ *  y más limpieza del manual (nota de la demo, «cuentas pagadas», imágenes de contratar). Falta pasarlo a TuVocalía.
  *
  * Regla de Apple 3.1.1: dentro de la app de iPhone NO se puede ver ningún precio de lo que vende Tukán (planes, módulos,
  * suscripciones), ni botones, enlaces o formularios para pagar, contratar, cotizar, mejorar o cancelar, ni textos que digan
@@ -37,6 +39,49 @@ function en_app_ios(): bool
     if (PHP_SAPI === 'cli') return false;
     if (str_contains((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 'TukanIOS')) return true;
     return (string)($_COOKIE[TUKAN_IOS_COOKIE] ?? '') === 'ios';
+}
+
+/**
+ * (23 nov 2026) Pantallas del negocio de Tukán (superadministrador): precios de planes y módulos, ventas, vendedores,
+ * embudo, ajustes de precios y cobros. En el iPhone no se muestran ni se abren (regla de Apple 3.1.1).
+ * (25 nov 2026) También «Google Play» (precios y compras de la app de Android); en TuAcademia «Disciplinas» es p=modulos.
+ */
+const PAGINAS_NEGOCIO_IOS = ['negocio', 'suscripciones', 'planes', 'vendedores', 'modulos', 'embudo', 'ajustes', 'pasarela', 'referidos', 'google_play'];
+
+/** ¿Esta pantalla del panel está escondida en el iPhone? */
+function pagina_negocio_ios(string $p): bool
+{
+    return en_app_ios() && in_array($p, PAGINAS_NEGOCIO_IOS, true);
+}
+
+/**
+ * (25 nov 2026) Novedades en el iPhone: se esconden las que hablan del plan del software (precios, contratar, renovar, cotizar,
+ * comprobantes, descuentos por recomendar, Mi plan…). Las demás novedades se ven igual.
+ */
+function ios_filtrar_novedades(array $lista): array
+{
+    if (!en_app_ios()) return $lista;
+    $malo = '/precio|\$\s?\d|contrat|renov|cotiza|comprobante|\bplan(es)?\b|mi_plan|recomiende|recomendaci|descuento|suscrip|Google Play|pagar\b|pague\b|transfer/iu';
+    return array_values(array_filter($lista, fn($n) => !preg_match($malo, ($n['titulo'] ?? '') . ' ' . ($n['texto'] ?? '') . ' ' . ($n['enlace'] ?? ''))));
+}
+
+/**
+ * (25 nov 2026) Bitácora en el iPhone: sin lo del plan del software. Quita de $cambios los campos del plan (plan, vence, prueba,
+ * precio acordado, módulos, combo, descuentos, vendedor, dominio) y dice si la fila entera se esconde (cotizaciones, tickets de
+ * pagos del plan, pagos a Tukán, planes, pedidos de módulos, o una modificación que solo cambió el plan).
+ */
+function ios_bitacora_oculta(array $r, array &$cambios): bool
+{
+    if (!en_app_ios()) return false;
+    $tabla = (string)($r['tabla'] ?? '');
+    if (in_array($tabla, ['planes', 'solicitudes_pago', 'modulos_pedidos', 'suscripciones', 'vendedores', 'comisiones', 'play_compras'], true)) return true;
+    $d = json_decode((string)($r['despues'] ?? $r['antes'] ?? ''), true) ?: [];
+    if ($tabla === 'pagos_linea' && ($d['destino'] ?? '') !== 'organizacion') return true;
+    if ($tabla === 'soporte_tickets' && ($d['tipo'] ?? '') === 'pagos') return true;
+    if (preg_match('/cotiza|precio|\bplan(es)?\b|renov|suscrip|comprobante del plan|Google Play|Tukán/iu', (string)($r['descripcion'] ?? ''))) return true;
+    $antes = count($cambios);
+    $cambios = array_values(array_filter($cambios, fn($c) => !preg_match('/plan|vence|prueba|precio|modulos|módulos|combo|descuento|vendedor|dominio|suscrip|pago tukan|gracia/iu', (string)$c[0])));
+    return $antes > 0 && !$cambios && ($r['operacion'] ?? '') !== 'evento';
 }
 
 /** Para los POST que cobran, contratan, cotizan, cambian o cancelan el plan del software: en el iPhone no se hacen (mensaje neutro). */
@@ -125,12 +170,20 @@ function ios_limpiar_manual(string $html): string
         }
         return $out;
     };
+    // (25 nov 2026) la nota «¿Todavía no usa …? Pida su demo» (en todos los idiomas)
+    $html = preg_replace('#<div class="nota-demo">.*?</div>#su', '', $html) ?? $html;
     // capítulos <section …><h1>…</h1>…</section> (manual de TuAcademia)
     $html = preg_replace_callback('#<section\b[^>]*>\s*<h1\b[^>]*>(.*?)</h1>.*?</section>#su', fn($m) => preg_match($titulo, strip_tags($m[1])) ? '' : $m[0], $html) ?? $html;
     $html = $sin($html, 'h2');
     $html = implode('', array_map(fn($pz) => $sin($pz, 'h3'), preg_split('/(?=<h2\b)/i', $html) ?: [$html]));
-    $malo = '/Mi plan\b|My plan|Mon forfait|Il mio piano|Meu plano|Solicitar demo|Request a demo|cotizaci|request a quote|devis|preventiv|orçamento|Solicitar este módulo|Pedir cotización|Precios:|más IVA|Google Play|Contratar mi plan|Renovar ahora|Ver planes y pagar|Pagar con tarjeta/iu';
-    return preg_replace_callback('#<(li|p|tr)\b[^>]*>.*?</\1>#su', fn($m) => preg_match($malo, $m[0]) ? '' : $m[0], $html) ?? $html;
+    $malo = '/Mi plan\b|My plan|Mon forfait|Il mio piano|Meu plano|Solicitar demo|Request a demo|cotizaci|request a quote|devis|preventiv|orçamento|Solicitar este módulo|Pedir cotización|Precios:|más IVA|Google Play|Contratar mi plan|Renovar ahora|Ver planes y pagar|Pagar con tarjeta'
+        // (25 nov 2026) pedir demo, recomendar y ganar descuentos, «hace falta el plan …», «cuentas pagadas»
+        . '|Pida su demo|solicitar-demo|meses de descuento|months? (of )?discount|mois de (réduction|remise)|mesi di sconto|meses de desconto|cuando contraten|hace falta el plan|planes completos|cuentas pagadas|paid accounts|al contratar|ao contratar|when subscribing|Deportes de su cuenta|Hay dos planes|se cotiza|lo que contrató/iu';
+    $html = preg_replace('#<span class="mod">[^<]*\bplan\b[^<]*</span>#iu', '', $html) ?? $html; // etiqueta «Incluido en el plan Completo · extra en el Básico»
+    $html = preg_replace_callback('#<(li|p|tr|figure)\b[^>]*>.*?</\1>#su', fn($m) => preg_match($malo, $m[0]) ? '' : $m[0], $html) ?? $html;
+    // (25 nov 2026) también las notas sueltas (<div> sin otro <div> adentro) y las imágenes cuyo texto habla de contratar
+    $html = preg_replace_callback('#<div\b[^>]*>(?:(?!<div\b).)*?</div>#su', fn($m) => preg_match($malo, $m[0]) ? '' : $m[0], $html) ?? $html;
+    return preg_replace_callback('#<img\b[^>]*\balt="([^"]*)"[^>]*>#u', fn($m) => preg_match('/contrat|precio|plan\b/iu', $m[1]) ? '' : $m[0], $html) ?? $html;
 }
 
 /**

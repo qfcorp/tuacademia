@@ -228,10 +228,17 @@ function ia_ayuda(?array $l, string $pregunta): array
 {
     [$prog, $nombre] = ia_programa();
     $modo = ia_modo($l);
-    return tukan_ia_ayuda($pregunta, ia_manual($modo), ia_faq_modo($modo), [
+    $r = tukan_ia_ayuda($pregunta, ia_manual($modo), ia_faq_modo($modo), [
         'guardian' => ia_guardian($l), 'programa' => $prog, 'nombre' => $nombre,
         'max_nuevas_mes' => (!$l || ia_modulo($l)) ? null : IA_NUEVAS_SIN_MODULO,
     ]);
+    // (25 nov 2026) iPhone (regla de Apple 3.1.1): si la respuesta (de la IA o de una pregunta frecuente) habla de precios,
+    // contratar, renovar, cotizar o pagar el software, se cambia por un texto neutro
+    if (function_exists('en_app_ios') && en_app_ios() && !empty($r['respuesta'])
+        && preg_match('/cotiza|contrat|renov(ar|ación|acion|ar su|ar el)|cambiar de plan|mejorar (su|el) plan|precio (del|de su|de los) (plan|módulo|modulo)|\$\s?\d[\d.,]*\s*(al mes|\/mes|por mes|al año|mensual)|pagos\.tukanec|Google Play|wa\.me|Solicitar este módulo|Pedir cotización/iu', (string)$r['respuesta'])) {
+        $r['respuesta'] = 'Esa consulta no está disponible en la app. En ⭐ Mi plan puede ver su plan, hasta cuándo está activo y sus módulos encendidos.';
+    }
+    return $r;
 }
 
 /** Respuesta en HTML seguro: **negritas** y saltos de línea. */

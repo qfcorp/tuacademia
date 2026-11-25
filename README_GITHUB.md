@@ -68,3 +68,8 @@ POST de pago/cotización/cancelación rechazados, `pagar.php`/`plux_pagar.php` d
 Play o iPhone) reemplaza a `en_app_play()` donde solo se escondía; el cobro de Google Play nunca va en el iPhone. `<html class="tukan-ios">`.
 Lo que la academia cobra a sus alumnos sigue. Detalle en `BLOC_DE_NOTAS.md`. Viene con el código (`vps_2_codigo.sh` de siempre).
 Prueba: `TA_PUERTO=8641 TA_SIM=8642 bash pruebas/v38/reiniciar.sh && TA_PUERTO=8641 python3 pruebas/app_iphone/prueba_app_iphone.py` → **58/58**.
+(25 nov 2026, segunda parte, igual que TuVocalía #18 y más): en el iPhone el súper no ve ni abre Negocio, Ventas, Planes, Vendedores,
+Disciplinas, Embudo, Ajustes, Cobros, Recomiende y gane ni Google Play (`PAGINAS_NEGOCIO_IOS`, `pagina_negocio_ios()`); no crea ni edita cuentas
+(planes y precios); `ver_precios_software()` = no. Novedades, tickets «Pagos, plan o factura», bitácora, Parámetros, login, manual (nota de la demo,
+PDF) y Ayuda IA sin nada del plan del software (`ios_filtrar_novedades()`, `ios_bitacora_oculta()`, `ios_limpiar_manual()`).
+Prueba → **113/113** (revisión estricta de todas las pantallas del dueño y del súper, y la misma revisión en la web encuentra los precios).

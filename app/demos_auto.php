@@ -165,7 +165,7 @@ function demo_url_pdf(string $cual, string $tipo = 'ligas'): string
 /** Responde /manual.pdf o /primeros_pasos.pdf (sin sesión): 200 application/pdf con nombre claro, o 404 si no hay ese PDF. */
 function demo_servir_pdf(string $cual, string $tipo): never
 {
-    $pdf = demo_pdf($cual, $tipo);
+    $pdf = function_exists('en_app_ios') && en_app_ios() ? null : demo_pdf($cual, $tipo); // (25 nov 2026) iPhone: los PDF traen el capítulo de Mi plan
     while (ob_get_level() > 0) ob_end_clean();
     header_remove('Set-Cookie');
     header('X-Content-Type-Options: nosniff');
@@ -189,6 +189,7 @@ function demo_servir_pdf(string $cual, string $tipo): never
 /** Los dos botones de descarga (manual y primeros pasos) del tipo de la cuenta. */
 function html_botones_manual_pdf(?array $l): string
 {
+    if (function_exists('en_app_ios') && en_app_ios()) return ''; // (25 nov 2026) iPhone: los PDF traen el capítulo de Mi plan (precios y cotizar)
     $t = demo_tipo_de_cuenta($l);
     $h = '';
     if (demo_pdf('manual', $t)) $h .= '<a class="btn btn-chico" id="btn-manual-pdf" href="' . e(demo_url_pdf('manual', $t)) . '" download>📘 Descargar el manual</a> ';
@@ -215,6 +216,6 @@ function html_tarjeta_demo(?array $l): string
         : '<a class="tk-boton chico" href="admin.php?p=mi_plan#contratar">⭐ Ver Mi plan</a>';
     return '<div class="tk-tira tarjeta-demo" id="tarjeta-demo"><div>'
         . '<span>⏳ <b>Demo:</b> ' . e($dias) . '.</span> '
-        . '<b>🎁 ' . ($hasta !== '' ? 'Su demo dura hasta el ' . e($hasta) . '.' : 'Está en su demo.') . ' Descargue el manual y la guía de primeros pasos</b>'
+        . '<b>🎁 ' . ($hasta !== '' ? 'Su demo dura hasta el ' . e($hasta) . '.' : 'Está en su demo.') . (function_exists('en_app_ios') && en_app_ios() ? '' : ' Descargue el manual y la guía de primeros pasos') . '</b>' // (25 nov 2026) iPhone: sin los PDF
         . html_botones_manual_pdf($l) . '</div>' . $plan . '</div>';
 }

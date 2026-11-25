@@ -41,6 +41,8 @@ SOLO_PDF=1 bash docs/manual/generar/generar.sh   # solo vuelve a armar los PDF c
 
 - **App de iPhone: sin precios ni pagos (regla de Apple), se reconoce por TukanIOS** (13 nov 2026): dentro de la app de iPhone el manual y la Ayuda
   se muestran sin los capítulos de Mi plan, renovar, cancelar y cotizar (`ios_limpiar_manual()` en `app/app_ios.php`); el archivo no cambia.
+  (25 nov 2026) Tampoco la nota «¿Todavía no usa…? Pida su demo», «cuentas pagadas», «hace falta el plan…», recomendar y ganar descuentos
+  ni el botón «Descargar PDF» (el PDF trae el capítulo de Mi plan).
 - `docs/manual/manual.html`: el texto del manual (se edita aquí). `generar.sh` lo copia a `app/manuales/academia.html`: lo lee la Ayuda del programa.
 - `docs/manual/generar/capturas.py`: capturas reales con Playwright (celular 390 px y computadora 1280 px); con `--guia` también las de la guía Primeros pasos.
 - `docs/manual/generar/pdf.py`: HTML → PDF A4 con índice de páginas.

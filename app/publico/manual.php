@@ -24,7 +24,7 @@ $pdf_idioma = function (string $f) use ($idm): string {
     return is_file(RAIZ . '/public/assets/manual/' . $t) ? $t : $f;
 };
 $pdf_url = fn(string $f): string => 'assets/manual/' . $pdf_idioma($f);
-$pdf_hay = fn(string $f): bool => is_file(RAIZ . '/public/assets/manual/' . $pdf_idioma($f));
+$pdf_hay = fn(string $f): bool => !en_app_ios() && is_file(RAIZ . '/public/assets/manual/' . $pdf_idioma($f)); // (25 nov 2026) iPhone: sin descargar el PDF (trae el capítulo de Mi plan)
 
 if (!isset($manuales[$m])) {
     cabecera_publica('Manuales de ' . marca());

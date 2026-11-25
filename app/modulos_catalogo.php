@@ -834,7 +834,7 @@ function texto_ahorro(int|float|string $meses): string
 /** ¿Puede ver los precios del software? Solo el súper usuario de Tukán (el panel central los lee por el conector). */
 function ver_precios_software(): bool
 {
-    return function_exists('es_super') && es_super();
+    return function_exists('es_super') && es_super() && !(function_exists('en_app_ios') && en_app_ios()); // (25 nov 2026) en el iPhone, ni el súper
 }
 
 /** Lo que se puede cotizar desde Mi plan: 'plan' (el suyo), 'plan:ID', 'deporte:CLAVE' o 'deportes'. Devuelve [asunto, texto] o lanza. */

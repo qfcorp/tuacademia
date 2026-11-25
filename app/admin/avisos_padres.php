@@ -41,7 +41,7 @@ cabecera_admin('Avisos por Telegram');
 <?php if (!tg_activo()): ?>
   <div class="aviso aviso-info">Los avisos por Telegram todavía no están encendidos en el sistema. Escríbale a <?= e(ajuste('empresa', 'Tukán Software')) ?> para activarlos.</div>
 <?php elseif (!modulo_activo($liga, 'avisos')): ?>
-  <div class="aviso aviso-info">Su plan no incluye los avisos por Telegram. <a href="admin.php?p=mi_plan">Ver planes</a>.</div>
+  <div class="aviso aviso-info">Su plan no incluye los avisos por Telegram.<?php if (!en_app_ios()): // (25 nov 2026) iPhone: sin «Ver planes» ?> <a href="admin.php?p=mi_plan">Ver planes</a>.<?php endif; ?></div>
 <?php endif; ?>
 
 <div class="cifras">

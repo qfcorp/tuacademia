@@ -19,6 +19,13 @@ if (get('entrar') !== '') {
     }
     ir('admin.php');
 }
+// (25 nov 2026) iPhone: crear o editar una cuenta lleva planes, precios de módulos, combos y pagos del software (regla de Apple 3.1.1).
+// En la app solo se ve la lista y se entra al panel de cada cuenta; lo demás, en la web.
+$ios_lista = en_app_ios();
+if ($ios_lista && (get('editar') !== '' || get('nueva') === '1' || (es_post() && post('accion') !== 'restaurar'))) {
+    flash('Esta sección no está disponible en la app.', 'error');
+    ir('admin.php?p=ligas');
+}
 
 // (21 oct 2026) «Enviar por correo» en «Demo lista»: la contraseña viaja SELLADA en el POST (no se guarda); el resultado se muestra
 // aquí mismo (sin redirigir, para no perder el sello si hay que corregir el correo). No pasa por el resto de los formularios.
@@ -435,7 +442,7 @@ if ($nueva): ?>
 ?>
   <div class="fila-titulo">
     <h1>Ligas y escuelas (<?= count($todas) ?>)</h1>
-    <div class="acciones"><a class="btn" href="admin.php?p=ligas&amp;nueva=1">+ Nueva liga</a><a class="btn" href="admin.php?p=ligas&amp;nueva=1&amp;tipo=escuela">+ Nueva escuela</a></div>
+    <?php if (!$ios_lista): // (25 nov 2026) en el iPhone no se crean cuentas ?><div class="acciones"><a class="btn" href="admin.php?p=ligas&amp;nueva=1">+ Nueva liga</a><a class="btn" href="admin.php?p=ligas&amp;nueva=1&amp;tipo=escuela">+ Nueva escuela</a></div><?php endif; ?>
   </div>
   <p class="suave" style="margin-top:0">Para trabajar dentro de una liga o escuela toque <b>Administrar</b> (liga) o <b>Entrar al panel</b> (escuela). Para volver aquí, arriba: "cambiar de liga o escuela".</p>
   <nav class="pestanas">
@@ -461,7 +468,7 @@ if ($nueva): ?>
     </div>
   <?php else: ?>
   <?php if (!$ligas): ?>
-    <div class="tarjeta"><?= $filtro === 'escuela' ? 'Aún no hay escuelas. Cree la primera con el botón <b>+ Nueva escuela</b>.' : 'Aún no hay ligas. Cree la primera con el botón <b>+ Nueva liga</b>.' ?></div>
+    <div class="tarjeta"><?= $filtro === 'escuela' ? 'Aún no hay escuelas.' . ($ios_lista ? '' : ' Cree la primera con el botón <b>+ Nueva escuela</b>.') : 'Aún no hay ligas.' . ($ios_lista ? '' : ' Cree la primera con el botón <b>+ Nueva liga</b>.') ?></div>
   <?php endif; ?>
   <div class="rejilla">
     <?php foreach ($ligas as $l): $sus = estado_suscripcion($l); $es_esc = ($l['tipo'] ?? 'liga') === 'escuela'; ?>
@@ -478,7 +485,7 @@ if ($nueva): ?>
           <small><?= e($l['plan'] ?? 'sin plan') ?><?= $l['vence'] !== '' ? ' · vence ' . e($l['vence']) : '' ?></small></p>
         <div class="acciones">
           <a class="btn btn-chico" href="admin.php?p=ligas&amp;entrar=<?= (int)$l['id'] ?>"><?= $es_esc ? '🎓 Entrar al panel' : 'Administrar' ?></a>
-          <a class="btn btn-sec btn-chico" href="admin.php?p=ligas&amp;editar=<?= (int)$l['id'] ?>">Editar</a>
+          <?php if (!$ios_lista): // (25 nov 2026) en el iPhone no se editan cuentas (planes y precios) ?><a class="btn btn-sec btn-chico" href="admin.php?p=ligas&amp;editar=<?= (int)$l['id'] ?>">Editar</a><?php endif; ?>
           <a class="btn btn-sec btn-chico" href="<?= e(url_liga($l)) ?>" target="_blank">Ver pública</a>
         </div>
       </div>

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 (13 nov 2026) App de iPhone (App Store, regla de Apple 3.1.1): app/app_ios.php.
+(25 nov 2026) Secciones 7 a 10: superadministrador (pantallas del negocio de Tukán, crear/editar cuentas), revisión estricta de todas
+las pantallas del dueño y del súper («$», USD, precio, plan, contratar, mejorar, URLs de pago), novedades, login, manual y PDF.
 Con el User-Agent «TukanIOS» (o la cookie canal=ios que deja /app.php?origen=ios) NO se ve ningún precio del software, ni botones,
 enlaces o formularios para pagar, contratar, cotizar, mejorar o cancelar, ni el WhatsApp de ventas ni dónde pagar.
 Lo que la academia cobra a SUS alumnos (pensiones, inscripciones…) sí se sigue viendo. Sin TukanIOS todo sigue igual.
@@ -228,6 +230,171 @@ chk(limpio(r) and 'no está disponible en la app' not in r.text and 'Pensión de
     'iPhone: el cobro de la academia a SUS alumnos (pensión) sí se ve, con su valor')
 r = requests.post(B + 'play.php', data={'csrf': 'x', 'accion': 'verificar'}, headers={'User-Agent': UA_IOS})
 chk(r.status_code == 403 and 'no está disponible en la app' in r.text, 'iPhone: play.php (Google Play) se niega')
+
+print('\n== 7. Superadministrador en el iPhone (23 nov 2026): sin las pantallas del negocio de Tukán')
+NEGOCIO = ['negocio', 'suscripciones', 'planes', 'vendedores', 'modulos', 'embudo', 'ajustes', 'pasarela', 'referidos', 'google_play']
+sup_ios = entrar('super@prueba.com', UA_IOS)
+sup_web = entrar('super@prueba.com', UA_WEB)
+r = sup_ios.get(B + 'admin.php')
+menu_ios = set(re.findall(r'href="admin\.php\?p=([a-z_]+)', r.text))
+chk(limpio(r) and not (menu_ios & set(NEGOCIO)), 'iPhone: el menú del súper no tiene Negocio, Ventas, Vendedores, Disciplinas (precios), Embudo, Ajustes, Cobros ni Google Play %s' % sorted(menu_ios & set(NEGOCIO)))
+chk('ligas' in menu_ios, 'iPhone: el súper sí ve «Academias»')
+r = sup_web.get(B + 'admin.php')
+menu_web = set(re.findall(r'href="admin\.php\?p=([a-z_]+)', r.text))
+chk(set(NEGOCIO) - {'planes', 'referidos'} <= menu_web, 'sin TukanIOS: el súper sigue viendo todas las pantallas del negocio %s' % sorted(set(NEGOCIO) - {'planes', 'referidos'} - menu_web))
+for p_ in NEGOCIO:
+    r = sup_ios.get(B + 'admin.php?p=' + p_)
+    chk(limpio(r) and not re.search(r'p=' + p_ + r'\b', r.url) and 'no está disponible en la app' in r.text and not PRECIO.search(visible(r.text)),
+        'iPhone: admin.php?p=%s no se abre (aviso neutro, sin precios)' % p_)
+r = sup_web.get(B + 'admin.php?p=modulos')
+chk(limpio(r) and PRECIO.search(visible(r.text)) and 'no está disponible en la app' not in r.text, 'sin TukanIOS: «Disciplinas» sigue con sus precios')
+malas = {}
+for p_ in sorted(menu_ios - {'salir'}):
+    r = sup_ios.get(B + 'admin.php?p=' + p_)
+    if not limpio(r):
+        malas[p_] = 'error PHP'
+    elif prohibidos(r.text):
+        malas[p_] = prohibidos(r.text)
+chk(not malas, 'iPhone: ninguna pantalla del menú del súper ofrece contratar ni pagar el software %s' % malas)
+
+print('\n== 8. Súper en el iPhone: crear y editar cuentas (planes, precios de módulos, combos) solo en la web')
+ESC = val("SELECT liga_id FROM usuarios WHERE email = 'escuela@prueba.com'")
+r = sup_ios.get(B + 'admin.php?p=ligas')
+chk(limpio(r) and 'p=ligas&amp;editar=' not in r.text and 'nueva=1' not in r.text and 'p=ligas&amp;entrar=' in r.text,
+    'iPhone: la lista de academias sin «Editar» ni «+ Nueva», con «Entrar al panel»')
+for ruta in ('admin.php?p=ligas&editar=' + ESC, 'admin.php?p=ligas&nueva=1', 'admin.php?p=ligas&nueva=1&tipo=escuela'):
+    r = sup_ios.get(B + ruta)
+    chk(limpio(r) and 'editar=' not in r.url and 'nueva=' not in r.url and 'no está disponible en la app' in r.text and not PRECIO.search(visible(r.text)),
+        'iPhone: %s no se abre (sin planes ni precios)' % ruta.split('?')[1])
+n_ligas = val('SELECT COUNT(*) FROM ligas')
+sup_ios.get(B + 'admin.php?p=seguridad')
+r = sup_ios.get(B + 'admin.php?p=seguridad')
+r = sup_ios.post(B + 'admin.php?p=ligas&nueva=1', data={'csrf': csrf(r.text), 'accion': 'crear', 'nombre': 'Academia iPhone', 'admin_email': 'ip@example.com'})
+chk(limpio(r) and 'no está disponible en la app' in r.text and val('SELECT COUNT(*) FROM ligas') == n_ligas, 'iPhone: crear una cuenta por POST se rechaza')
+r = sup_web.get(B + 'admin.php?p=ligas')
+chk('p=ligas&amp;editar=' in r.text and 'nueva=1' in r.text, 'sin TukanIOS: la lista sigue con «Editar» y «+ Nueva»')
+r = sup_web.get(B + 'admin.php?p=ligas&editar=' + ESC)
+chk(limpio(r) and PRECIO.search(visible(r.text)) and 'no está disponible en la app' not in r.text, 'sin TukanIOS: editar la cuenta sigue con sus planes y precios')
+r = sup_web.get(B + 'admin.php?p=ligas&nueva=1')
+chk(limpio(r) and PRECIO.search(visible(r.text)), 'sin TukanIOS: crear cuenta sigue con los precios de las disciplinas')
+r = sup_ios.get(B + 'admin.php?p=mi_plan')
+chk(limpio(r) and not PRECIO.search(visible(r.text)), 'iPhone: el súper sin academia elegida no ve precios en Mi plan')
+chk(php('$GLOBALS["__forzar_app_ios"] = 1; $_SESSION["uid"] = valor("SELECT id FROM usuarios WHERE email = \'super@prueba.com\'"); echo ver_precios_software() ? 1 : 0;') == '0',
+    'iPhone: ver_precios_software() da no aunque sea el súper')
+
+print('\n== 9. Revisión estricta: ninguna pantalla del dueño ni del súper con precio, plan para contratar, mejorar o pagar el software')
+# Pantallas donde SÍ hay dinero de la academia (pensiones, tienda, contabilidad, rol de pago…): ahí «$» y «precio» son de la academia
+DINERO_ACADEMIA = {'inicio', 'cobros', 'grupos', 'indicadores', 'mensajes', 'contabilidad', 'tienda', 'profesores', 'particulares', 'recitales',
+                   'escuela_config', 'tufactura', 'mi_rol', 'alumnos', 'esc_recibo', 'examenes', 'bitacora',
+                   'finanzas', 'entradas', 'reservas', 'recibo', 'liquidacion', 'arbitros'}  # (modo ligas: el dinero de la liga)
+ACADEMIA = php('echo PRODUCTO;') == 'academia'  # los PDF y algunos textos de la web solo existen en el producto academia
+SIEMPRE = re.compile(r'\bUSD\b|contrat|Contrat|mejor(e|ar)\s+(su|el|de|mi)\s+plan|cambi(e|ar) de plan|\bplanes\b|Ver planes|pagos\.tukanec|cotizaci|Pedir este módulo|Solicitar este módulo|renueve|Renovar|renovar|Google Play|plux\.|payphone\.com|Recomiende y gane|meses de descuento|Solicite (una|su) demo|Pida su demo', re.I)
+DINERO = re.compile(r'\$\s?\d|\bprecio', re.I)
+# Frases neutras con «plan» que Apple aprobó en TuVocalía (informan, no venden)
+NEUTRAS = re.compile(r'Mi plan|Tu plan|Su plan( actual)? no incluye|Parámetros y plan|Plan y módulos encendidos|Plan (Escuela )?(Básico|Completo)|Periodo de prueba|\bplan(es)? de (clase|entrenamiento)', re.I)
+SOFTWARE = {'inicio', 'mi_plan', 'novedades', 'soporte', 'ayuda', 'ligas', 'demos', 'portales', 'escuela_config', 'avisos_padres', 'cargas', 'mis_datos', 'seguridad', 'usuarios', 'datos', 'indicadores'}
+
+
+def estricto(s, paginas):
+    malas = {}
+    for p_ in sorted(paginas):
+        r = s.get(B + 'admin.php?p=' + p_)
+        v = visible(r.text)
+        v = v[v.find('</header>') if '</header>' in v else 0:]
+        if not limpio(r):
+            malas[p_] = 'error PHP'
+            continue
+        m = SIEMPRE.search(v)
+        if m:
+            malas[p_] = m.group(0)
+        elif p_ not in DINERO_ACADEMIA and DINERO.search(v):
+            malas[p_] = DINERO.search(v).group(0)
+        elif p_ in SOFTWARE and re.search(r'\bplan\b', NEUTRAS.sub('', v), re.I):
+            i = re.search(r'\bplan\b', NEUTRAS.sub('', v), re.I).start()
+            malas[p_] = '«plan»: …' + NEUTRAS.sub('', v)[max(0, i - 40):i + 20] + '…'
+        elif p_ in SOFTWARE and re.search(r'mejorar', v, re.I):
+            malas[p_] = 'mejorar'
+    return malas
+
+
+def menu(s):
+    return set(re.findall(r'href="admin\.php\?p=([a-z_]+)', s.get(B + 'admin.php').text)) - {'salir'}
+
+
+php('q("UPDATE ligas SET vence = ?, es_prueba = 1, activa = 1 WHERE id = %s", [date("Y-m-d", strtotime("+5 days"))]);' % ESC)  # en demo: tira de la demo
+php('q("UPDATE ligas SET vence = ?, es_prueba = 0, activa = 1 WHERE id = %s", [date("Y-m-d", strtotime("+3 days"))]);' % LIGA)  # aviso de vencimiento
+for email, nombre in (('liga@prueba.com', 'dueño (cuenta 1, por vencer)'), ('escuela@prueba.com', 'dueño (cuenta 2, en demo)')):
+    s_ = entrar(email, UA_IOS)
+    pags = menu(s_) | {'inicio', 'mi_plan'}
+    m = estricto(s_, pags)
+    chk(len(pags) >= 10 and not m, 'iPhone, %s: %d pantallas sin «$»/precio del software, USD, plan para contratar, mejorar ni pagos %s' % (nombre, len(pags), m))
+s_ = entrar('super@prueba.com', UA_IOS)
+pags = menu(s_)
+m = estricto(s_, pags)
+chk(len(pags) >= 6 and not m, 'iPhone, súper: %d pantallas limpias %s' % (len(pags), m))
+s_.get(B + 'admin.php?p=ligas&entrar=' + ESC)
+pags = menu(s_) | {'inicio', 'mi_plan'}
+m = estricto(s_, pags)
+chk(len(pags) >= 15 and not m, 'iPhone, súper dentro de una academia: %d pantallas limpias %s' % (len(pags), m))
+m = estricto(entrar('liga@prueba.com', UA_WEB), {'inicio', 'mi_plan'})
+chk('mi_plan' in m and 'inicio' in m, 'sin TukanIOS: la misma revisión sí encuentra el plan y sus pagos en la web (Resumen y Mi plan) %s' % m)
+m = estricto(entrar('super@prueba.com', UA_WEB), {'negocio', 'suscripciones', 'modulos', 'ajustes'})
+chk(len(m) == 4, 'sin TukanIOS: el súper sigue con precios en Negocio, Ventas, Disciplinas y Ajustes %s' % sorted(m))
+s_web = entrar('escuela@prueba.com', UA_WEB)
+r = s_web.get(B + 'admin.php')
+chk(re.search(r'Contratar|Ver Mi plan', r.text) and ('manual.pdf' in r.text or not ACADEMIA), 'sin TukanIOS: el Resumen de la demo sigue con «Ver Mi plan» y los PDF')
+r = entrar('escuela@prueba.com', UA_IOS).get(B + 'admin.php')
+chk('tarjeta-demo' in r.text and 'manual.pdf' not in r.text and 'primeros_pasos.pdf' not in r.text, 'iPhone: la tira de la demo sin los PDF (traen el capítulo de Mi plan)')
+r = entrar('liga@prueba.com', UA_WEB).get(B + 'admin.php?p=escuela_config')
+chk('Ver planes' in r.text or 'plan Completo' in r.text or not ACADEMIA, 'sin TukanIOS: Parámetros sigue ofreciendo el plan Completo / Ver planes')
+r = entrar('liga@prueba.com', UA_IOS).get(B + 'admin.php?p=escuela_config')
+chk(limpio(r) and 'Ver planes' not in r.text and 'plan Completo' not in r.text, 'iPhone: Parámetros sin «Ver planes» ni «Está en el plan Completo»')
+
+print('\n== 10. Novedades, login, soporte, manual, PDF y Ayuda en el iPhone')
+php('q("INSERT INTO novedades (titulo, texto, para, enlace, version, publicada, fecha) VALUES (\'💵 Nuevo plan Pro\', \'Ahora el plan Pro cuesta $15 al mes: contrátelo en Mi plan.\', \'todos\', \'admin.php?p=mi_plan\', \'academia\', 1, ?)", [date("Y-m-d")]);')
+php('q("INSERT INTO novedades (titulo, texto, para, enlace, version, publicada, fecha) VALUES (\'📅 Calendario nuevo\', \'Vea las clases de la semana.\', \'todos\', \'\', \'academia\', 1, ?)", [date("Y-m-d")]);')
+r = entrar('escuela@prueba.com', UA_IOS).get(B + 'admin.php?p=novedades')
+chk(limpio(r) and 'Nuevo plan Pro' not in r.text and 'Calendario nuevo' in r.text, 'iPhone: novedades sin la del plan (las demás sí)')
+r = entrar('escuela@prueba.com', UA_WEB).get(B + 'admin.php?p=novedades')
+chk('Nuevo plan Pro' in r.text, 'sin TukanIOS: la novedad del plan se ve')
+r = sup_ios.get(B + 'admin.php?p=novedades')
+chk('Nuevo plan Pro' not in r.text and 'Calendario nuevo' in r.text, 'iPhone: el súper tampoco ve la novedad del plan')
+r = sesion(UA_IOS).get(B + 'admin.php?p=login')
+chk(limpio(r) and 'Solicite una demo' not in r.text and 'solicitar' not in r.text, 'iPhone: el ingreso sin «Solicite una demo»')
+r = sesion(UA_WEB).get(B + 'admin.php?p=login')
+chk('Solicite una demo' in r.text, 'sin TukanIOS: el ingreso sigue con «Solicite una demo»')
+r = entrar('escuela@prueba.com', UA_IOS).get(B + 'admin.php?p=soporte&nuevo=problema')
+chk(limpio(r) and 'Pagos, plan o factura' not in r.text and 'Algo no funciona' in r.text, 'iPhone: nuevo ticket sin el tipo «Pagos, plan o factura»')
+r = entrar('escuela@prueba.com', UA_WEB).get(B + 'admin.php?p=soporte&nuevo=problema')
+chk('Pagos, plan o factura' in r.text, 'sin TukanIOS: nuevo ticket sigue con «Pagos, plan o factura»')
+tk_cot = val("SELECT id FROM soporte_tickets WHERE liga_id = ? AND tipo = 'pagos' ORDER BY id LIMIT 1", LIGA)
+ios_l = entrar('liga@prueba.com', UA_IOS)
+r = ios_l.get(B + 'admin.php?p=soporte')
+chk(tk_cot != '' and limpio(r) and 'Cotizaci' not in r.text and ('t=' + tk_cot) not in r.text, 'iPhone: la lista de tickets sin el de la cotización del plan')
+r = ios_l.get(B + 'admin.php?p=soporte&t=' + tk_cot)
+chk(limpio(r) and 'no está disponible en la app' in r.text and 'Cotizaci' not in r.text, 'iPhone: el ticket de la cotización no se abre')
+r = ios_l.get(B + 'admin.php?p=bitacora')
+chk(limpio(r) and 'Cotizaci' not in r.text, 'iPhone: la bitácora sin la cotización del plan')
+web_l = entrar('liga@prueba.com', UA_WEB)
+chk('Cotizaci' in web_l.get(B + 'admin.php?p=soporte').text and 'Cotizaci' in web_l.get(B + 'admin.php?p=bitacora').text, 'sin TukanIOS: el ticket y la bitácora de la cotización se ven')
+for ruta in ('manual/escuelas', 'index.php?v=manual&m=escuelas&idioma=en', 'index.php?v=manual'):
+    r = sesion(UA_IOS).get(B + ruta)
+    v = visible(r.text)
+    m = re.search(r'class="nota-demo"|Pida su|solicitar-demo|cuentas pagadas|meses de descuento|Descargar PDF|\.pdf"|Request your|Not using|Mi plan|My plan|cotizaci|quote|Solicitar este módulo|Contratar|Renovar|Google Play|pagos\.tukanec|hace falta el plan|planes completos', r.text)
+    chk(limpio(r) and not m and '990001111' not in r.text, 'iPhone: %s sin Mi plan, cotizar, pedir demo, «cuentas pagadas», descuentos por recomendar ni PDF %s' % (ruta, m.group(0) if m else ''))
+r = sesion(UA_WEB).get(B + 'manual/escuelas')
+chk('class="nota-demo"' in r.text and 'Mi plan' in r.text, 'sin TukanIOS: el manual sigue con «Pida su demo» y Mi plan')
+r = sesion(UA_IOS).get(B + 'manual.pdf')
+chk(r.status_code == 404 and not r.headers.get('Content-Type', '').startswith('application/pdf'), 'iPhone: /manual.pdf no se descarga')
+r = sesion(UA_WEB).get(B + 'manual.pdf')
+chk(not ACADEMIA or (r.status_code == 200 and r.headers.get('Content-Type', '').startswith('application/pdf')), 'sin TukanIOS: /manual.pdf sigue descargándose')
+txt = php('$GLOBALS["__forzar_app_ios"] = 1; echo ia_manual("academia");')
+chk(txt != '' and not re.search(r'Hay dos planes|se cotiza|Solicitar este módulo|Pida su demo', txt), 'iPhone: la Ayuda (IA) lee el manual sin planes, cotizar ni pedir demo')
+php('ia_faq()->guardar(["pregunta" => "cuanto cuesta el plan completo", "respuesta" => "El plan Completo cuesta $29 al mes; contrátelo en Mi plan.", "aprobada" => 1, "origen" => "manual"]);')
+resp_ios = php('$GLOBALS["__forzar_app_ios"] = 1; $r = ia_ayuda(null, "cuanto cuesta el plan completo"); echo $r["fuente"] ?? "", "|", $r["respuesta"] ?? "";')
+resp_web = php('$r = ia_ayuda(null, "cuanto cuesta el plan completo"); echo $r["fuente"] ?? "", "|", $r["respuesta"] ?? "";')
+chk(resp_web.startswith('faq|') and '$29' in resp_web, 'sin TukanIOS: la pregunta frecuente con precio responde igual (%s)' % resp_web[:60])
+chk('$29' not in resp_ios and 'no está disponible en la app' in resp_ios, 'iPhone: la Ayuda no da el precio del plan (respuesta neutra)')
 
 log = os.path.join(REPO, 'pruebas', 'v38', 'web.log')
 if os.path.exists(log):

@@ -73,6 +73,7 @@ Con este módulo, los recibos de las mensualidades y cobros (y, en ligas, los pa
 - El total es exactamente lo que cobraste. Cuando la cuenta del SRI no lo permite, queda 1 centavo menos.
 - El mismo cobro nunca se factura dos veces.
 - El PDF autorizado se baja con un toque.
+- Clientes del exterior (país, ciudad o dirección que no es Ecuador): la factura sale sin IVA.
 - Los recibos van a nombre del representante (su cédula).
 
 **Si algo falla**

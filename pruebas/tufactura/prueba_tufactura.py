@@ -164,6 +164,9 @@ else:
     chk(len(pj("FacturaTukan::enlace()->lista(" + ESC + ")")) == 2, 'apagado: las facturas hechas se quedan')
 
 sim.terminate()
+# Venta al exterior sin IVA (27 nov 2026): la regla y TukanFactura::armar, sin base de datos (pruebas/tufactura/prueba_exterior.php)
+r = subprocess.run(['php', os.path.join(DIR, 'prueba_exterior.php')], capture_output=True, text=True)
+chk(r.returncode == 0, 'venta al exterior: sin IVA en ningún producto' + ('' if r.returncode == 0 else ': ' + r.stdout[-300:]))
 logs = [x for x in (os.path.join(REPO, 'pruebas', d, 'web.log') for d in ('tukan_central', 'v38')) if os.path.exists(x)]
 log = max(logs, key=os.path.getmtime) if logs else ''
 if log:
